@@ -1,0 +1,22 @@
+{% extends "base.html" %}{% load finance %}
+{% block title %}Pay & deduction types{% endblock %}
+{% block page_title %}Pay &amp; deduction types{% endblock %}
+{% block page_subtitle %}<p class="text-body-secondary mb-0">Configure earnings, withholdings and employer contributions to match your country's tax and pension rules.</p>{% endblock %}
+{% block actions %}{% if caps.manage_payroll %}<a href="{% url 'payroll:item_create' %}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> New type</a>{% endif %}{% endblock %}
+{% block content %}
+<div class="card table-card">
+  <table class="table table-hover">
+    <thead><tr><th>Name</th><th>Kind</th><th>Calculation</th><th class="num">Default</th><th>Expense account</th><th>Liability account</th></tr></thead>
+    <tbody>
+    {% for i in items %}
+      <tr {% if caps.manage_payroll %}data-href="{% url 'payroll:item_edit' i.pk %}"{% endif %} class="{% if not i.is_active %}text-body-tertiary{% endif %}">
+        <td>{% if caps.manage_payroll %}<a href="{% url 'payroll:item_edit' i.pk %}">{{ i.name }}</a>{% else %}{{ i.name }}{% endif %}{% if i.code %} <span class="badge text-bg-light border">built-in</span>{% endif %}{% if not i.in_wage_base %} <span class="badge text-bg-light border" title="Excluded from wages used for percentage items">excluded from wage base</span>{% endif %}</td>
+        <td class="small">{{ i.get_kind_display }}</td><td class="small">{{ i.get_calculation_display }}</td>
+        <td class="num">{% if i.calculation == 'percent' %}{{ i.default_amount|floatformat:"-4" }}%{% elif i.default_amount %}{{ i.default_amount|money }}{% endif %}</td>
+        <td class="small">{{ i.expense_account|default:"Employee's wage account" }}</td><td class="small">{{ i.liability_account|default:"" }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

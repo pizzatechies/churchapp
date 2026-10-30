@@ -1,0 +1,27 @@
+{% extends "base.html" %}{% load finance %}
+{% block title %}Vendors & payees{% endblock %}
+{% block page_title %}Vendors &amp; payees{% endblock %}
+{% block actions %}<a href="{% url 'expenses:vendor_create' %}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> New payee</a>{% endblock %}
+{% block content %}
+<form class="filter-bar row g-2 align-items-end" method="get">
+  <div class="col-md-6"><label class="form-label">Search</label><input class="form-control form-control-sm" name="q" value="{{ q }}"></div>
+  <div class="col-md-3"><div class="form-check"><input class="form-check-input" type="checkbox" name="inactive" value="1" id="inactive" {% if request.GET.inactive %}checked{% endif %} data-autosubmit><label class="form-check-label small" for="inactive">Include inactive</label></div></div>
+  <div class="col-md-3"><button class="btn btn-sm btn-outline-primary w-100">Search</button></div>
+</form>
+<div class="card table-card">
+  <table class="table table-hover">
+    <thead><tr><th>Name</th><th>Contact</th><th>Default account</th><th class="num">Expenses</th><th class="num">Owed</th></tr></thead>
+    <tbody>
+    {% for v in vendors %}
+      <tr data-href="{{ v.get_absolute_url }}" class="{% if not v.is_active %}text-body-tertiary{% endif %}">
+        <td><a href="{{ v.get_absolute_url }}">{{ v.name }}</a>{% if v.is_1099 %} <span class="badge text-bg-light border" title="Needs a year-end tax form">tax form</span>{% endif %}</td>
+        <td class="small">{{ v.contact_name }}{% if v.email %}<br>{{ v.email }}{% endif %}{% if v.phone %}<br>{{ v.phone }}{% endif %}</td>
+        <td class="small">{{ v.default_account|default:"" }}</td>
+        <td class="num">{{ v.bills }}</td>
+        <td class="num">{% if v.owed %}{{ v.owed|money }}{% endif %}</td>
+      </tr>
+    {% empty %}<tr><td colspan="5" class="empty-state">No payees yet.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

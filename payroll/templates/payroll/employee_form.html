@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}{% if employee %}Edit {{ employee }}{% else %}Add staff member{% endif %}{% endblock %}
+{% block page_title %}{% if employee %}Edit {{ employee }}{% else %}Add staff member{% endif %}{% endblock %}
+{% block content %}
+<form method="post" novalidate>{% csrf_token %}
+  {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+  <div class="card mb-3"><div class="card-header">Person</div><div class="card-body"><div class="row">
+    {% include "includes/field.html" with field=form.first_name col="col-md-4" %}
+    {% include "includes/field.html" with field=form.last_name col="col-md-4" %}
+    {% include "includes/field.html" with field=form.title col="col-md-4" %}
+    {% include "includes/field.html" with field=form.employee_type col="col-md-4" %}
+    {% include "includes/field.html" with field=form.email col="col-md-4" %}
+    {% include "includes/field.html" with field=form.phone col="col-md-4" %}
+    {% include "includes/field.html" with field=form.address col="col-md-8" %}
+    {% include "includes/field.html" with field=form.tax_id_last4 col="col-md-4" %}
+    {% include "includes/field.html" with field=form.hire_date col="col-md-4" %}
+    {% include "includes/field.html" with field=form.termination_date col="col-md-4" %}
+    {% include "includes/field.html" with field=form.is_active col="col-md-4" %}
+  </div></div></div>
+  <div class="card mb-3"><div class="card-header">Pay</div><div class="card-body"><div class="row">
+    {% include "includes/field.html" with field=form.pay_type col="col-md-4" %}
+    {% include "includes/field.html" with field=form.pay_frequency col="col-md-4" %}
+    {% include "includes/field.html" with field=form.annual_salary col="col-md-4" %}
+    {% include "includes/field.html" with field=form.hourly_rate col="col-md-4" %}
+    {% include "includes/field.html" with field=form.default_hours col="col-md-4" %}
+    {% include "includes/field.html" with field=form.annual_housing_allowance col="col-md-4" %}
+    {% include "includes/field.html" with field=form.wage_account col="col-md-6" %}
+    {% include "includes/field.html" with field=form.fund col="col-md-6" %}
+    {% include "includes/field.html" with field=form.notes col="col-12" %}
+  </div></div></div>
+  <div class="card mb-3" data-formset="items">
+    <div class="card-header">Deductions &amp; employer contributions</div>
+    {{ formset.management_form }}
+    {% if formset.non_form_errors %}<div class="alert alert-danger m-2">{{ formset.non_form_errors }}</div>{% endif %}
+    <table class="table line-table mb-0">
+      <thead><tr><th>Item</th><th class="amount-col">Rate % / amount</th><th></th></tr></thead>
+      <tbody data-formset-body>
+      {% for f in formset %}
+        <tr data-formset-row class="{% if f.DELETE.value %}is-deleted{% endif %}"><td>{{ f.id }}{{ f.item }}{{ f.item.errors }}{{ f.non_field_errors }}</td><td>{{ f.amount }}</td>
+        <td class="text-end"><span class="d-none">{{ f.DELETE }}</span><button type="button" class="btn btn-sm btn-link text-danger" data-formset-remove><i class="bi bi-x-lg"></i></button></td></tr>
+      {% endfor %}
+      </tbody>
+      <tfoot><tr><td colspan="3"><button type="button" class="btn btn-sm btn-outline-secondary" data-formset-add><i class="bi bi-plus"></i> Add item</button>
+        <span class="small text-body-secondary ms-2">Clergy are often exempt from employer social security; remove items that don't apply.</span></td></tr></tfoot>
+    </table>
+    <template><tr data-formset-row><td>{{ formset.empty_form.id }}{{ formset.empty_form.item }}</td><td>{{ formset.empty_form.amount }}</td>
+      <td class="text-end"><span class="d-none">{{ formset.empty_form.DELETE }}</span><button type="button" class="btn btn-sm btn-link text-danger" data-formset-remove><i class="bi bi-x-lg"></i></button></td></tr></template>
+  </div>
+  <div class="d-flex gap-2"><button class="btn btn-primary">Save</button><a href="{% if employee %}{{ employee.get_absolute_url }}{% else %}{% url 'payroll:employee_list' %}{% endif %}" class="btn btn-outline-secondary">Cancel</a></div>
+</form>
+{% endblock %}

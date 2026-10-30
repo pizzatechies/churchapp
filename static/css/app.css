@@ -222,3 +222,21 @@ tr.row-link { cursor: pointer; }
 }
 .print-only { display: none; }
 @media print { .print-only { display: block; } }
+
+/* ---------- charts (validated palette: categorical slots 1–2, both modes) ---------- */
+:root {
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --series-muted: #a3a29b;
+  --chart-grid: #e8ebef;
+  --chart-text: #52514e;
+}
+[data-bs-theme="dark"] {
+  --series-1: #3987e5;
+  --series-2: #d95926;
+  --series-muted: #6b6a64;
+  --chart-grid: #263445;
+  --chart-text: #c3c2b7;
+}
+.legend-key { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 0.35rem; vertical-align: baseline; }
+.legend-line { display: inline-block; width: 16px; height: 2px; margin-right: 0.35rem; vertical-align: middle; }

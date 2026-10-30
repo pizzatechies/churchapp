@@ -42,7 +42,7 @@ from .models import Campaign, Contribution, ContributionBatch, Donor, Pledge
 def batch_list(request):
     batches = ContributionBatch.objects.select_related("deposit_account").annotate(
         amount=MoneySum("contributions__amount"), gifts=Count("contributions"),
-    )
+    ).order_by("-date", "-id")
     status = request.GET.get("status", "")
     if status:
         batches = batches.filter(status=status)

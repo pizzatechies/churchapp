@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Reports{% endblock %}
+{% block page_title %}Reports{% endblock %}
+{% block page_subtitle %}<p class="text-body-secondary mb-0">Every report can be printed, saved as PDF or exported to a spreadsheet (CSV).</p>{% endblock %}
+{% block content %}
+<div class="row g-3">
+{% for title, icon, reports in groups %}
+  <div class="col-md-6 col-xl-4">
+    <div class="card h-100">
+      <div class="card-header"><i class="bi {{ icon }}"></i> {{ title }}</div>
+      <div class="list-group list-group-flush">
+        {% for url_name, name, desc in reports %}
+        <a class="list-group-item list-group-item-action" href="{% url url_name %}"><div class="fw-semibold">{{ name }}</div><div class="small text-body-secondary">{{ desc }}</div></a>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+{% endfor %}
+</div>
+{% endblock %}

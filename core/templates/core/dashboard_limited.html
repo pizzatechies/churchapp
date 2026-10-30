@@ -1,0 +1,17 @@
+{% extends "base.html" %}{% load finance %}
+{% block title %}Home{% endblock %}
+{% block page_title %}Welcome, {{ user.first_name|default:user.username }}{% endblock %}
+{% block actions %}{% if caps.manage_giving %}<a href="{% url 'giving:batch_create' %}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> New offering batch</a>{% endif %}{% endblock %}
+{% block content %}
+{% if caps.manage_giving %}
+<div class="card table-card">
+  <div class="card-header">Open offering batches</div>
+  <table class="table table-hover"><tbody>
+  {% for b in open_batches %}<tr data-href="{{ b.get_absolute_url }}"><td><a href="{{ b.get_absolute_url }}">{{ b.number }}</a></td><td>{{ b.date|date:"M j, Y" }}</td><td>{{ b.description }}</td><td class="num">{{ b.gifts }} gifts</td><td class="num">{{ b.amount|default:0|money }}</td></tr>
+  {% empty %}<tr><td class="empty-state"><i class="bi bi-inboxes"></i>No open batches. Start one when you count the next offering.</td></tr>{% endfor %}
+  </tbody></table>
+</div>
+{% else %}
+<div class="card"><div class="empty-state"><i class="bi bi-person-lock"></i>Your account doesn't have a role yet. Ask an administrator to give you access.</div></div>
+{% endif %}
+{% endblock %}

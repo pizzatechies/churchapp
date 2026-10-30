@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}{% if asset %}Edit {{ asset }}{% else %}Add asset{% endif %}{% endblock %}
+{% block page_title %}{% if asset %}Edit {{ asset }}{% else %}Add a fixed asset{% endif %}{% endblock %}
+{% block content %}
+<form method="post" class="card" style="max-width:960px" novalidate>{% csrf_token %}
+  <div class="card-body">
+    {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+    <div class="row">
+      {% include "includes/field.html" with field=form.name col="col-md-6" %}
+      {% include "includes/field.html" with field=form.category col="col-md-6" %}
+      {% include "includes/field.html" with field=form.tag_number col="col-md-4" %}
+      {% include "includes/field.html" with field=form.serial_number col="col-md-4" %}
+      {% include "includes/field.html" with field=form.location col="col-md-4" %}
+      {% include "includes/field.html" with field=form.acquisition_date col="col-md-4" %}
+      {% include "includes/field.html" with field=form.in_service_date col="col-md-4" %}
+      {% include "includes/field.html" with field=form.useful_life_years col="col-md-4" %}
+      {% include "includes/field.html" with field=form.cost col="col-md-6" %}
+      {% include "includes/field.html" with field=form.salvage_value col="col-md-6" %}
+      {% include "includes/field.html" with field=form.prior_depreciation col="col-md-6" %}
+      {% include "includes/field.html" with field=form.prior_depreciation_through col="col-md-6" %}
+      {% include "includes/field.html" with field=form.asset_account col="col-md-6" %}
+      {% include "includes/field.html" with field=form.fund col="col-md-6" %}
+      {% include "includes/field.html" with field=form.accumulated_account col="col-md-6" %}
+      {% include "includes/field.html" with field=form.expense_account col="col-md-6" %}
+      {% include "includes/field.html" with field=form.description col="col-12" %}
+      {% include "includes/field.html" with field=form.notes col="col-12" %}
+    </div>
+    <p class="small text-body-secondary mb-0">Typical useful lives: buildings 40 years, improvements 15, vehicles 5, furniture & equipment 7, sound/video 5, computers 3. Ask your accountant for your capitalization policy.</p>
+  </div>
+  <div class="card-footer bg-transparent d-flex gap-2"><button class="btn btn-primary">Save asset</button><a class="btn btn-outline-secondary" href="{% if asset %}{{ asset.get_absolute_url }}{% else %}{% url 'fixedassets:asset_list' %}{% endif %}">Cancel</a></div>
+</form>
+{% endblock %}

@@ -1,0 +1,44 @@
+{% extends "base.html" %}{% load finance %}
+{% block title %}Expenses & bills{% endblock %}
+{% block page_title %}Expenses &amp; bills{% endblock %}
+{% block page_subtitle %}<p class="text-body-secondary mb-0">Outstanding to pay: <strong>{{ outstanding|money }}</strong></p>{% endblock %}
+{% block actions %}
+  <a href="{% querystring export='csv' page=None %}" class="btn btn-outline-secondary"><i class="bi bi-filetype-csv"></i> Export</a>
+  {% if caps.manage_expenses %}<a href="{% url 'expenses:expense_create' %}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> New expense</a>{% endif %}
+{% endblock %}
+{% block content %}
+<ul class="nav nav-pills mb-3 flex-wrap">
+  {% for key, label in tabs %}
+  <li class="nav-item"><a class="nav-link {% if key == status %}active{% endif %}" href="?status={{ key }}">{{ label }}{% with n=counts|get_item:key %}{% if n and key %} <span class="badge {% if key == 'pending' %}text-bg-warning{% else %}text-bg-light border{% endif %}">{{ n }}</span>{% endif %}{% endwith %}</a></li>
+  {% endfor %}
+</ul>
+<form class="filter-bar row g-2 align-items-end" method="get">
+  <input type="hidden" name="status" value="{{ status }}">
+  <div class="col-md-3"><label class="form-label">Search</label><input class="form-control form-control-sm" name="q" value="{{ q }}" placeholder="Description, invoice # or EX number"></div>
+  <div class="col-md-3"><label class="form-label">Payee</label><select class="form-select form-select-sm" name="vendor" data-autosubmit><option value="">All payees</option>{% for v in vendors %}<option value="{{ v.pk }}" {% if v.pk|stringformat:"s" == vendor_id %}selected{% endif %}>{{ v.name }}</option>{% endfor %}</select></div>
+  <div class="col-6 col-md-2"><label class="form-label">From</label><input type="date" class="form-control form-control-sm" name="start" value="{{ start|date:'Y-m-d' }}"></div>
+  <div class="col-6 col-md-2"><label class="form-label">To</label><input type="date" class="form-control form-control-sm" name="end" value="{{ end|date:'Y-m-d' }}"></div>
+  <div class="col-md-2"><button class="btn btn-sm btn-outline-primary w-100">Filter</button></div>
+</form>
+<div class="card table-card">
+  <table class="table table-hover">
+    <thead><tr><th>Number</th><th>Date</th><th>Payee</th><th>Description</th><th>Due</th><th>Status</th><th class="num">Total</th><th class="num">Balance due</th></tr></thead>
+    <tbody>
+    {% for e in page_obj %}
+      <tr data-href="{{ e.get_absolute_url }}" class="{% if e.status == 'void' %}text-body-tertiary{% endif %}">
+        <td><a href="{{ e.get_absolute_url }}">{{ e.number }}</a></td>
+        <td class="text-nowrap">{{ e.date|date:"M j, Y" }}</td>
+        <td>{{ e.vendor.name }}{% if e.expense_type != 'bill' %}<div class="small text-body-secondary">{{ e.get_expense_type_display }}</div>{% endif %}</td>
+        <td>{{ e.description|truncatechars:60 }}{% if e.reference %} <span class="small text-body-secondary">#{{ e.reference }}</span>{% endif %}</td>
+        <td class="text-nowrap {% if e.is_overdue %}text-negative fw-semibold{% endif %}">{{ e.due_date|date:"M j"|default:"" }}{% if e.is_overdue %} <i class="bi bi-exclamation-circle" title="Overdue"></i>{% endif %}</td>
+        <td>{% status_badge e.status e.get_status_display %}</td>
+        <td class="num">{{ e.total|money }}</td>
+        <td class="num">{% if e.balance_due %}{{ e.balance_due|money }}{% endif %}</td>
+      </tr>
+    {% empty %}<tr><td colspan="8" class="empty-state"><i class="bi bi-receipt"></i>No expenses found.</td></tr>{% endfor %}
+    </tbody>
+    <tfoot><tr><td colspan="6">Total for filtered expenses</td><td class="num">{{ totals.total|money }}</td><td class="num"></td></tr></tfoot>
+  </table>
+</div>
+{% include "includes/pagination.html" %}
+{% endblock %}

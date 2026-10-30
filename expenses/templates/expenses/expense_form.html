@@ -1,0 +1,56 @@
+{% extends "base.html" %}{% load finance %}
+{% block title %}{% if expense %}Edit {{ expense.number }}{% else %}New expense{% endif %}{% endblock %}
+{% block page_title %}{% if expense %}Edit {{ expense.number }}{% else %}New expense{% endif %}{% endblock %}
+{% block page_subtitle %}<p class="text-body-secondary mb-0">Bills, reimbursement requests and check requests. Split across accounts and funds as needed.</p>{% endblock %}
+{% block content %}
+<form method="post" novalidate>{% csrf_token %}
+  {% if form.non_field_errors %}<div class="alert alert-danger">{% for e in form.non_field_errors %}{{ e }}{% endfor %}</div>{% endif %}
+  {% if formset.non_form_errors %}<div class="alert alert-danger">{% for e in formset.non_form_errors %}{{ e }}{% endfor %}</div>{% endif %}
+  <div class="card mb-3"><div class="card-body"><div class="row">
+    {% include "includes/field.html" with field=form.vendor col="col-md-5" %}
+    {% include "includes/field.html" with field=form.expense_type col="col-md-3" %}
+    {% include "includes/field.html" with field=form.reference col="col-md-4" %}
+    {% include "includes/field.html" with field=form.date col="col-md-3" %}
+    {% include "includes/field.html" with field=form.due_date col="col-md-3" %}
+    {% include "includes/field.html" with field=form.description col="col-md-6" %}
+  </div>
+  <div class="small"><a href="{% url 'expenses:vendor_create' %}" target="_blank">+ Add a new payee</a> (opens in a new tab; reload this page afterwards)</div>
+  </div></div>
+  <div class="card mb-3" data-formset="lines">
+    {{ formset.management_form }}
+    <div class="table-card" data-line-totals>
+      <table class="table line-table mb-0">
+        <thead><tr><th>Account</th><th>Fund</th><th>Description</th><th class="num amount-col">Amount</th><th></th></tr></thead>
+        <tbody data-formset-body>
+        {% for f in formset %}
+          <tr data-formset-row class="{% if f.DELETE.value %}is-deleted{% endif %}">
+            <td>{{ f.id }}{{ f.account }}{{ f.account.errors }}</td><td>{{ f.fund }}{{ f.fund.errors }}</td><td>{{ f.description }}</td><td>{{ f.amount }}{{ f.amount.errors }}</td>
+            <td class="text-end"><span class="d-none">{{ f.DELETE }}</span><button type="button" class="btn btn-sm btn-link text-danger" data-formset-remove><i class="bi bi-x-lg"></i></button></td>
+          </tr>
+        {% endfor %}
+        </tbody>
+        <tfoot><tr><td colspan="3"><button type="button" class="btn btn-sm btn-outline-secondary" data-formset-add><i class="bi bi-plus"></i> Add line</button></td><td class="num" data-total="amount"></td><td></td></tr></tfoot>
+      </table>
+      <template><tr data-formset-row><td>{{ formset.empty_form.id }}{{ formset.empty_form.account }}</td><td>{{ formset.empty_form.fund }}</td><td>{{ formset.empty_form.description }}</td><td>{{ formset.empty_form.amount }}</td>
+        <td class="text-end"><span class="d-none">{{ formset.empty_form.DELETE }}</span><button type="button" class="btn btn-sm btn-link text-danger" data-formset-remove><i class="bi bi-x-lg"></i></button></td></tr></template>
+    </div>
+  </div>
+  {% if paynow %}
+  <div class="card mb-3"><div class="card-body">
+    <div class="row align-items-end">
+      {% include "includes/field.html" with field=paynow.paid col="col-md-3" %}
+      {% include "includes/field.html" with field=paynow.pay_from col="col-md-3" %}
+      {% include "includes/field.html" with field=paynow.method col="col-md-3" %}
+      {% include "includes/field.html" with field=paynow.payment_reference col="col-md-3" %}
+    </div>
+    <div class="small text-body-secondary">For purchases already paid (e.g. with the church debit card). Only works for amounts up to {{ threshold|money }}; larger ones need approval first.</div>
+  </div></div>
+  {% endif %}
+  <div class="d-flex flex-wrap gap-2">
+    <button class="btn btn-primary" name="submit"><i class="bi bi-send"></i> Save &amp; submit</button>
+    <button class="btn btn-outline-secondary" name="draft">Save as draft</button>
+    <a class="btn btn-link" href="{% if expense %}{{ expense.get_absolute_url }}{% else %}{% url 'expenses:expense_list' %}{% endif %}">Cancel</a>
+  </div>
+  <p class="small text-body-secondary mt-2">After saving you can attach receipts and invoices.</p>
+</form>
+{% endblock %}

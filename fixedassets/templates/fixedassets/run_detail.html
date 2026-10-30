@@ -1,0 +1,15 @@
+{% extends "base.html" %}{% load finance %}
+{% block title %}{{ run }}{% endblock %}
+{% block breadcrumbs %}<nav><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{% url 'fixedassets:run_list' %}">Depreciation</a></li><li class="breadcrumb-item active">{{ run.through_date|date:"M Y" }}</li></ol></nav>{% endblock %}
+{% block page_title %}{{ run }}{% if run.is_void %} {% status_badge 'void' %}{% endif %}{% endblock %}
+{% block actions %}
+  {% if run.journal_entry %}<a href="{{ run.journal_entry.get_absolute_url }}" class="btn btn-outline-secondary"><i class="bi bi-journal-text"></i> {{ run.journal_entry.number }}</a>{% endif %}
+  {% if caps.manage_assets and not run.is_void %}<form method="post" action="{% url 'fixedassets:run_void' run.pk %}" data-confirm="Void this depreciation run?">{% csrf_token %}<button class="btn btn-outline-danger">Void</button></form>{% endif %}
+{% endblock %}
+{% block content %}
+<div class="card table-card"><table class="table">
+  <thead><tr><th>Asset</th><th>Period</th><th class="num">Months</th><th class="num">Amount</th></tr></thead>
+  <tbody>{% for e in entries %}<tr><td><a href="{{ e.asset.get_absolute_url }}">{{ e.asset }}</a></td><td>{{ e.period_start|date:"M Y" }} – {{ e.period_end|date:"M Y" }}</td><td class="num">{{ e.months }}</td><td class="num">{{ e.amount|money }}</td></tr>{% endfor %}</tbody>
+  <tfoot><tr><td colspan="3">Total</td><td class="num">{{ run.total|money }}</td></tr></tfoot>
+</table></div>
+{% endblock %}

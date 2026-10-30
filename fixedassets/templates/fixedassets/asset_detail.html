@@ -1,0 +1,42 @@
+{% extends "base.html" %}{% load finance %}
+{% block title %}{{ asset }}{% endblock %}
+{% block breadcrumbs %}<nav><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{% url 'fixedassets:asset_list' %}">Fixed assets</a></li><li class="breadcrumb-item active">{{ asset }}</li></ol></nav>{% endblock %}
+{% block page_title %}{{ asset.name }} {% status_badge asset.status asset.get_status_display %}{% endblock %}
+{% block page_subtitle %}<p class="text-body-secondary mb-0">{{ asset.get_category_display }}{% if asset.location %} · {{ asset.location }}{% endif %}{% if asset.tag_number %} · Tag {{ asset.tag_number }}{% endif %}</p>{% endblock %}
+{% block actions %}{% if caps.manage_assets and asset.status == 'active' %}
+  <a href="{% url 'fixedassets:asset_edit' asset.pk %}" class="btn btn-outline-secondary"><i class="bi bi-pencil"></i> Edit</a>
+  <a href="{% url 'fixedassets:asset_dispose' asset.pk %}" class="btn btn-outline-danger">Sell / dispose</a>{% endif %}{% endblock %}
+{% block content %}
+<div class="row g-3 mb-3">
+  <div class="col-sm-6 col-lg-3"><div class="card stat-card"><div class="card-body"><div class="stat-label">Cost</div><div class="stat-value">{{ asset.cost|money }}</div></div></div></div>
+  <div class="col-sm-6 col-lg-3"><div class="card stat-card"><div class="card-body"><div class="stat-label">Accumulated depreciation</div><div class="stat-value">{{ asset.accumulated_depreciation|money }}</div></div></div></div>
+  <div class="col-sm-6 col-lg-3"><div class="card stat-card"><div class="card-body"><div class="stat-label">Book value</div><div class="stat-value">{{ asset.book_value|money }}</div></div></div></div>
+  <div class="col-sm-6 col-lg-3"><div class="card stat-card"><div class="card-body"><div class="stat-label">Monthly depreciation</div><div class="stat-value">{{ asset.monthly_depreciation|money }}</div><div class="stat-sub">{% if asset.fully_depreciated %}Fully depreciated{% elif asset.depreciated_through %}Recorded through {{ asset.depreciated_through|date:"M Y" }}{% else %}Not yet recorded{% endif %}</div></div></div></div>
+</div>
+<div class="row g-3">
+  <div class="col-xl-8">
+    <div class="card table-card"><div class="card-header">Depreciation history</div>
+      <table class="table table-sm">
+        <thead><tr><th>Period</th><th class="num">Months</th><th class="num">Amount</th><th>Entry</th></tr></thead>
+        <tbody>{% for e in entries %}<tr class="{% if e.run.is_void %}text-body-tertiary{% endif %}"><td>{{ e.period_start|date:"M Y" }} – {{ e.period_end|date:"M Y" }}</td><td class="num">{{ e.months }}</td><td class="num">{{ e.amount|money }}</td><td><a href="{{ e.run.get_absolute_url }}">{{ e.run }}</a>{% if e.run.is_void %} (void){% endif %}</td></tr>
+        {% empty %}<tr><td colspan="4" class="small text-body-secondary">None recorded.</td></tr>{% endfor %}</tbody>
+      </table>
+    </div>
+  </div>
+  <div class="col-xl-4">
+    <div class="card mb-3"><div class="card-body"><dl class="dl-grid">
+      <dt>Acquired</dt><dd>{{ asset.acquisition_date|date:"M j, Y" }}</dd>
+      <dt>In service</dt><dd>{{ asset.in_service_date|date:"M j, Y" }}</dd>
+      <dt>Useful life</dt><dd>{% if asset.useful_life_months %}{{ asset.useful_life_months }} months{% else %}Not depreciated{% endif %}</dd>
+      <dt>Salvage value</dt><dd>{{ asset.salvage_value|money }}</dd>
+      {% if asset.prior_depreciation %}<dt>Prior depreciation</dt><dd>{{ asset.prior_depreciation|money }} through {{ asset.prior_depreciation_through|date:"M Y" }}</dd>{% endif %}
+      <dt>Fund</dt><dd>{{ asset.fund }}</dd>
+      <dt>Asset account</dt><dd class="small">{{ asset.asset_account }}</dd>
+      {% if asset.serial_number %}<dt>Serial #</dt><dd>{{ asset.serial_number }}</dd>{% endif %}
+      {% if asset.disposal_date %}<dt>Disposed</dt><dd>{{ asset.disposal_date|date:"M j, Y" }} for {{ asset.disposal_proceeds|money }}{% if asset.disposal_entry %} · <a href="{{ asset.disposal_entry.get_absolute_url }}">{{ asset.disposal_entry.number }}</a>{% endif %}</dd>{% endif %}
+      {% if asset.description %}<dt>Description</dt><dd>{{ asset.description|linebreaksbr }}</dd>{% endif %}
+    </dl></div></div>
+    {% include "includes/documents.html" with object=asset %}
+  </div>
+</div>
+{% endblock %}

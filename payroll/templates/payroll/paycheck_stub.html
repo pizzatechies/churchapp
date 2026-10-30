@@ -1,0 +1,30 @@
+{% extends "base.html" %}{% load finance %}
+{% block title %}Pay stub · {{ paycheck.employee }}{% endblock %}
+{% block page_title %}Pay stub{% endblock %}
+{% block actions %}<button class="btn btn-primary" onclick="window.print()"><i class="bi bi-printer"></i> Print</button><a href="{{ paycheck.run.get_absolute_url }}" class="btn btn-outline-secondary">Back to payroll</a>{% endblock %}
+{% block content %}
+<div class="card" style="max-width:820px"><div class="card-body p-4">
+  <div class="d-flex justify-content-between flex-wrap mb-3">
+    <div><div class="h5 mb-0">{{ church.name }}</div><div class="small">{{ church.address|linebreaksbr }}</div></div>
+    <div class="text-end small">
+      <div><strong>Pay date:</strong> {{ paycheck.run.pay_date|date:"M j, Y" }}</div>
+      <div><strong>Period:</strong> {{ paycheck.run.period_start|date:"M j" }} – {{ paycheck.run.period_end|date:"M j, Y" }}</div>
+      {% if paycheck.check_number %}<div><strong>Check #:</strong> {{ paycheck.check_number }}</div>{% endif %}
+    </div>
+  </div>
+  <div class="mb-3"><div class="fw-semibold">{{ paycheck.employee }}</div><div class="small">{{ paycheck.employee.title }}{% if paycheck.employee.tax_id_last4 %} · ID ending {{ paycheck.employee.tax_id_last4 }}{% endif %}</div>{% if paycheck.hours %}<div class="small">Hours: {{ paycheck.hours }}</div>{% endif %}</div>
+  {% for label, rows in sections %}
+  {% if rows %}
+  <table class="table table-sm mb-3">
+    <thead><tr><th>{{ label }}</th><th class="num">This period</th><th class="num">Year to date</th></tr></thead>
+    <tbody>{% for line, ytd in rows %}<tr><td>{{ line.item.name }}</td><td class="num">{{ line.amount|money }}</td><td class="num">{{ ytd|money }}</td></tr>{% endfor %}</tbody>
+  </table>
+  {% endif %}
+  {% endfor %}
+  <div class="d-flex justify-content-end gap-4 fs-5">
+    <div>Gross <strong>{{ paycheck.gross|money }}</strong></div>
+    <div>Net pay <strong>{{ paycheck.net|money }}</strong></div>
+  </div>
+  {% if paycheck.run.status != 'posted' %}<p class="small text-warning mt-2 mb-0">This payroll has not been posted; year-to-date figures include posted payrolls only.</p>{% endif %}
+</div></div>
+{% endblock %}

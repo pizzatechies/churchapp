@@ -1,0 +1,12 @@
+{% extends "base.html" %}{% load finance %}
+{% block title %}Depreciation{% endblock %}
+{% block breadcrumbs %}<nav><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{% url 'fixedassets:asset_list' %}">Fixed assets</a></li><li class="breadcrumb-item active">Depreciation</li></ol></nav>{% endblock %}
+{% block page_title %}Depreciation runs{% endblock %}
+{% block actions %}{% if caps.manage_assets %}<a href="{% url 'fixedassets:run_create' %}" class="btn btn-primary">Record depreciation</a>{% endif %}{% endblock %}
+{% block content %}
+<div class="card table-card"><table class="table table-hover">
+  <thead><tr><th>Through</th><th>Recorded</th><th>Entry</th><th class="num">Amount</th><th>Status</th></tr></thead>
+  <tbody>{% for r in runs %}<tr data-href="{{ r.get_absolute_url }}" class="{% if r.is_void %}text-body-tertiary{% endif %}"><td><a href="{{ r.get_absolute_url }}">{{ r.through_date|date:"F Y" }}</a></td><td class="small">{{ r.created_at|date:"M j, Y" }} by {{ r.created_by|default:"—" }}</td><td>{% if r.journal_entry %}{{ r.journal_entry.number }}{% endif %}</td><td class="num">{{ r.total|money }}</td><td>{% if r.is_void %}{% status_badge 'void' %}{% else %}{% status_badge 'posted' %}{% endif %}</td></tr>
+  {% empty %}<tr><td colspan="5" class="empty-state">No depreciation recorded yet.</td></tr>{% endfor %}</tbody>
+</table></div>
+{% endblock %}

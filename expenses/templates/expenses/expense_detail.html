@@ -1,0 +1,86 @@
+{% extends "base.html" %}{% load finance %}
+{% block title %}{{ expense.number }}{% endblock %}
+{% block breadcrumbs %}<nav><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{% url 'expenses:expense_list' %}">Expenses</a></li><li class="breadcrumb-item active">{{ expense.number }}</li></ol></nav>{% endblock %}
+{% block page_title %}{{ expense.number }} · {{ expense.vendor }} {% status_badge expense.status expense.get_status_display %}{% endblock %}
+{% block page_subtitle %}<p class="text-body-secondary mb-0">{{ expense.description }}</p>{% endblock %}
+{% block actions %}
+  {% if can_manage %}
+    {% if expense.is_editable %}
+      <a href="{% url 'expenses:expense_edit' expense.pk %}" class="btn btn-outline-secondary"><i class="bi bi-pencil"></i> Edit</a>
+      {% if expense.status != 'pending' %}<form method="post" action="{% url 'expenses:expense_submit' expense.pk %}">{% csrf_token %}<button class="btn btn-primary"><i class="bi bi-send"></i> Submit</button></form>{% endif %}
+      {% if expense.status != 'pending' %}<form method="post" action="{% url 'expenses:expense_delete' expense.pk %}" data-confirm="Delete this expense?">{% csrf_token %}<button class="btn btn-outline-danger"><i class="bi bi-trash"></i></button></form>{% endif %}
+    {% endif %}
+    <form method="post" action="{% url 'expenses:expense_duplicate' expense.pk %}">{% csrf_token %}<button class="btn btn-outline-secondary" title="Copy to a new draft (e.g. monthly bills)"><i class="bi bi-copy"></i> Duplicate</button></form>
+  {% endif %}
+  {% if can_pay and expense.balance_due > 0 %}<a href="{% url 'expenses:payment_create' expense.pk %}" class="btn btn-success"><i class="bi bi-cash-coin"></i> Record payment</a>{% endif %}
+  {% if can_manage and expense.status != 'void' and expense.status != 'draft' and expense.status != 'rejected' and expense.status != 'pending' %}<button class="btn btn-outline-danger" data-bs-toggle="collapse" data-bs-target="#voidBox">Void</button>{% endif %}
+{% endblock %}
+{% block content %}
+<div class="collapse mb-3" id="voidBox">
+  <form method="post" action="{% url 'expenses:expense_void' expense.pk %}" class="card card-body border-danger" data-confirm="Void this expense? Its accounting entry will be reversed.">{% csrf_token %}
+    <div class="row g-2 align-items-end"><div class="col-md-8"><label class="form-label">Reason</label><input name="reason" class="form-control" required></div><div class="col-md-4"><button class="btn btn-danger w-100">Void expense</button></div></div>
+    <div class="small text-body-secondary mt-1">Void any payments first.</div>
+  </form>
+</div>
+{% if expense.status == 'pending' %}
+<div class="card border-warning mb-3"><div class="card-body">
+  <div class="fw-semibold mb-2"><i class="bi bi-hourglass-split text-warning"></i> Awaiting approval</div>
+  {% if can_approve %}
+  <form method="post" class="row g-2 align-items-center">{% csrf_token %}
+    <div class="col-md-6"><input name="note" class="form-control form-control-sm" placeholder="Note (required to reject)"></div>
+    <div class="col-auto"><button class="btn btn-sm btn-success" formaction="{% url 'expenses:expense_approve' expense.pk %}"><i class="bi bi-check2"></i> Approve</button></div>
+    <div class="col-auto"><button class="btn btn-sm btn-outline-danger" formaction="{% url 'expenses:expense_reject' expense.pk %}"><i class="bi bi-x"></i> Reject</button></div>
+  </form>
+  {% elif approve_block_reason %}<div class="small">{{ approve_block_reason }}</div>
+  {% else %}<div class="small text-body-secondary">A treasurer, finance committee member or administrator needs to approve it.</div>{% endif %}
+</div></div>
+{% endif %}
+{% if expense.status == 'rejected' %}<div class="alert alert-danger"><i class="bi bi-x-circle"></i> Rejected by {{ expense.reviewed_by|default:"—" }} on {{ expense.reviewed_at|date:"M j, Y" }}: “{{ expense.review_note }}”. Edit and resubmit, or delete it.</div>{% endif %}
+<div class="row g-3">
+  <div class="col-xl-8">
+    <div class="row g-3 mb-3">
+      <div class="col-sm-4"><div class="card stat-card"><div class="card-body"><div class="stat-label">Total</div><div class="stat-value">{{ expense.total|money }}</div></div></div></div>
+      <div class="col-sm-4"><div class="card stat-card"><div class="card-body"><div class="stat-label">Paid</div><div class="stat-value">{{ expense.amount_paid|money }}</div></div></div></div>
+      <div class="col-sm-4"><div class="card stat-card"><div class="card-body"><div class="stat-label">Balance due</div><div class="stat-value {% if expense.is_overdue %}text-negative{% endif %}">{{ expense.balance_due|money }}</div>{% if expense.due_date %}<div class="stat-sub">Due {{ expense.due_date|date:"M j, Y" }}{% if expense.is_overdue %} · overdue{% endif %}</div>{% endif %}</div></div></div>
+    </div>
+    <div class="card table-card mb-3">
+      <div class="card-header">Charged to</div>
+      <table class="table">
+        <thead><tr><th>Account</th><th>Fund</th><th>Description</th><th class="num">Amount</th></tr></thead>
+        <tbody>{% for l in lines %}<tr><td><a href="{{ l.account.get_absolute_url }}">{{ l.account }}</a></td><td><span class="badge text-bg-light border">{{ l.fund.code }}</span> {{ l.fund.name }}</td><td class="small">{{ l.description }}</td><td class="num">{{ l.amount|money }}</td></tr>{% endfor %}</tbody>
+        <tfoot><tr><td colspan="3">Total</td><td class="num">{{ expense.total|money }}</td></tr></tfoot>
+      </table>
+    </div>
+    <div class="card table-card">
+      <div class="card-header">Payments</div>
+      <table class="table">
+        <thead><tr><th>Date</th><th>From</th><th>Method</th><th>Reference</th><th class="num">Amount</th><th></th></tr></thead>
+        <tbody>
+        {% for p in payments %}
+          <tr class="{% if p.is_void %}text-body-tertiary{% endif %}">
+            <td>{{ p.date|date:"M j, Y" }}</td><td>{{ p.pay_from.name }}</td><td>{{ p.get_method_display }}</td>
+            <td>{{ p.reference }}{% if p.journal_entry %} <a class="small" href="{{ p.journal_entry.get_absolute_url }}">{{ p.journal_entry.number }}</a>{% endif %}</td>
+            <td class="num">{% if p.is_void %}<del>{{ p.amount|money }}</del> <span class="badge text-bg-dark">void</span>{% else %}{{ p.amount|money }}{% endif %}</td>
+            <td class="text-end">{% if can_pay and not p.is_void %}<form method="post" action="{% url 'expenses:payment_void' p.pk %}" data-confirm="Void this payment (e.g. a lost or stopped check)?">{% csrf_token %}<input type="hidden" name="reason" value="Payment voided"><button class="btn btn-sm btn-link text-danger">Void</button></form>{% endif %}</td>
+          </tr>
+        {% empty %}<tr><td colspan="6" class="text-body-secondary small">No payments yet.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="col-xl-4">
+    <div class="card mb-3"><div class="card-body">
+      <dl class="dl-grid">
+        <dt>Payee</dt><dd><a href="{{ expense.vendor.get_absolute_url }}">{{ expense.vendor }}</a></dd>
+        <dt>Type</dt><dd>{{ expense.get_expense_type_display }}</dd>
+        <dt>Date</dt><dd>{{ expense.date|date:"M j, Y" }}</dd>
+        {% if expense.reference %}<dt>Invoice #</dt><dd>{{ expense.reference }}</dd>{% endif %}
+        <dt>Requested</dt><dd>{{ expense.requested_by|default:"—" }}{% if expense.submitted_at %}<br><span class="small text-body-secondary">{{ expense.submitted_at|date:"M j, Y" }}</span>{% endif %}</dd>
+        {% if expense.reviewed_at %}<dt>{% if expense.status == 'rejected' %}Rejected{% else %}Approved{% endif %}</dt><dd>{{ expense.reviewed_by|default:"Automatic" }}<br><span class="small text-body-secondary">{{ expense.reviewed_at|date:"M j, Y" }}{% if expense.review_note %} · {{ expense.review_note }}{% endif %}</span></dd>{% endif %}
+        {% if expense.journal_entry %}<dt>Ledger</dt><dd><a href="{{ expense.journal_entry.get_absolute_url }}">{{ expense.journal_entry.number }}</a></dd>{% endif %}
+      </dl>
+    </div></div>
+    {% include "includes/documents.html" with object=expense %}
+  </div>
+</div>
+{% endblock %}

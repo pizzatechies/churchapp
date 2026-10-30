@@ -15,8 +15,9 @@ def depreciation_due(asset, through):
     if asset.in_service_date > through:
         return 0, ZERO, None
     start = asset.in_service_date.replace(day=1)
-    if asset.depreciated_through:
-        start = add_months(asset.depreciated_through.replace(day=1), 1)
+    recorded_through = asset.depreciated_through or asset.prior_depreciation_through
+    if recorded_through:
+        start = max(start, add_months(recorded_through.replace(day=1), 1))
     if start > through:
         return 0, ZERO, None
     months = months_between(start, through)

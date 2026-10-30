@@ -1,0 +1,24 @@
+{% extends "base.html" %}{% load finance %}
+{% block title %}Staff{% endblock %}
+{% block page_title %}Staff on payroll{% endblock %}
+{% block actions %}
+  <a href="?{% if not show_all %}all=1{% endif %}" class="btn btn-outline-secondary">{% if show_all %}Active only{% else %}Include former staff{% endif %}</a>
+  {% if caps.manage_payroll %}<a href="{% url 'payroll:employee_create' %}" class="btn btn-primary"><i class="bi bi-person-plus"></i> Add staff member</a>{% endif %}
+{% endblock %}
+{% block content %}
+<div class="card table-card">
+  <table class="table table-hover">
+    <thead><tr><th>Name</th><th>Position</th><th>Type</th><th>Pay</th><th>Paid from</th><th class="num">Annual compensation</th></tr></thead>
+    <tbody>
+    {% for e in employees %}
+      <tr data-href="{{ e.get_absolute_url }}" class="{% if not e.is_active %}text-body-tertiary{% endif %}">
+        <td><a href="{{ e.get_absolute_url }}">{{ e }}</a></td><td>{{ e.title }}</td><td class="small">{{ e.get_employee_type_display }}</td>
+        <td class="small">{{ e.get_pay_type_display }}, {{ e.get_pay_frequency_display|lower }}{% if e.pay_type == 'hourly' %} · {{ e.hourly_rate|money }}/hr{% endif %}</td>
+        <td class="small">{{ e.fund.name }}</td>
+        <td class="num">{{ e.annual_compensation|money }}{% if e.annual_housing_allowance %}<div class="small text-body-secondary">incl. housing {{ e.annual_housing_allowance|money }}</div>{% endif %}</td>
+      </tr>
+    {% empty %}<tr><td colspan="6" class="empty-state"><i class="bi bi-person-badge"></i>No staff set up yet.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

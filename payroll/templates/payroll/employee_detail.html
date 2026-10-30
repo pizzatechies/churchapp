@@ -1,0 +1,42 @@
+{% extends "base.html" %}{% load finance %}
+{% block title %}{{ employee }}{% endblock %}
+{% block breadcrumbs %}<nav><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{% url 'payroll:employee_list' %}">Staff</a></li><li class="breadcrumb-item active">{{ employee }}</li></ol></nav>{% endblock %}
+{% block page_title %}{{ employee }}{% if not employee.is_active %} <span class="badge text-bg-secondary">Inactive</span>{% endif %}{% endblock %}
+{% block page_subtitle %}<p class="text-body-secondary mb-0">{{ employee.title }} · {{ employee.get_employee_type_display }}{% if employee.hire_date %} · since {{ employee.hire_date|date:"M Y" }}{% endif %}</p>{% endblock %}
+{% block actions %}
+  <form method="get" class="d-flex gap-1"><select name="year" class="form-select" data-autosubmit>{% for y in years %}<option {% if y == year %}selected{% endif %}>{{ y }}</option>{% endfor %}</select></form>
+  {% if caps.manage_payroll %}<a href="{% url 'payroll:employee_edit' employee.pk %}" class="btn btn-outline-primary"><i class="bi bi-pencil"></i> Edit</a>{% endif %}
+{% endblock %}
+{% block content %}
+<div class="row g-3">
+  <div class="col-xl-8">
+    <div class="row g-3 mb-3">
+      <div class="col-sm-4"><div class="card stat-card"><div class="card-body"><div class="stat-label">{{ year }} gross</div><div class="stat-value">{{ gross|money }}</div></div></div></div>
+      <div class="col-sm-4"><div class="card stat-card"><div class="card-body"><div class="stat-label">{{ year }} net</div><div class="stat-value">{{ net|money }}</div></div></div></div>
+      <div class="col-sm-4"><div class="card stat-card"><div class="card-body"><div class="stat-label">Annual compensation</div><div class="stat-value">{{ employee.annual_compensation|money }}</div></div></div></div>
+    </div>
+    <div class="card table-card mb-3"><div class="card-header">{{ year }} totals by item <span class="small text-body-secondary">— for year-end tax forms (W-2, P60, tax certificates)</span></div>
+      <table class="table table-sm">{% for item, amt in ytd %}<tr><td>{{ item.name }}</td><td class="small text-body-secondary">{{ item.get_kind_display }}</td><td class="num">{{ amt|money }}</td></tr>{% empty %}<tr><td class="text-body-secondary small">No posted pay in {{ year }}.</td></tr>{% endfor %}</table>
+    </div>
+    <div class="card table-card"><div class="card-header">Paychecks</div>
+      <table class="table table-sm table-hover">
+        <thead><tr><th>Pay date</th><th class="num">Gross</th><th class="num">Deductions</th><th class="num">Net</th><th></th></tr></thead>
+        <tbody>{% for p in paychecks %}<tr><td>{{ p.run.pay_date|date:"M j, Y" }}</td><td class="num">{{ p.gross|money }}</td><td class="num">{{ p.deductions|money }}</td><td class="num">{{ p.net|money }}</td><td class="text-end"><a href="{% url 'payroll:paycheck_stub' p.pk %}">Stub</a></td></tr>
+        {% empty %}<tr><td colspan="5" class="text-body-secondary small">None.</td></tr>{% endfor %}</tbody>
+      </table>
+    </div>
+  </div>
+  <div class="col-xl-4">
+    <div class="card mb-3"><div class="card-header">Pay setup</div><div class="card-body"><dl class="dl-grid">
+      <dt>Pay</dt><dd>{{ employee.get_pay_type_display }}, {{ employee.get_pay_frequency_display|lower }}</dd>
+      {% if employee.pay_type == 'salary' %}<dt>Salary</dt><dd>{{ employee.annual_salary|money }}/yr</dd>{% else %}<dt>Rate</dt><dd>{{ employee.hourly_rate|money }}/hr · {{ employee.default_hours }} hrs/period</dd>{% endif %}
+      {% if employee.annual_housing_allowance %}<dt>Housing</dt><dd>{{ employee.annual_housing_allowance|money }}/yr</dd>{% endif %}
+      <dt>Charged to</dt><dd>{{ employee.wage_account }}<br><span class="small">{{ employee.fund }}</span></dd>
+    </dl>
+    <hr><div class="small fw-semibold mb-1">Deductions &amp; contributions</div>
+    <ul class="list-unstyled small mb-0">{% for a in items %}<li class="d-flex justify-content-between"><span>{{ a.item.name }}</span><span>{% if a.item.calculation == 'percent' %}{{ a.amount|floatformat:"-4" }}%{% else %}{{ a.amount|money }}{% endif %}</span></li>{% empty %}<li class="text-body-secondary">None</li>{% endfor %}</ul>
+    </div></div>
+    {% include "includes/documents.html" with object=employee %}
+  </div>
+</div>
+{% endblock %}

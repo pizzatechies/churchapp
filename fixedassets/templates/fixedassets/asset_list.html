@@ -1,0 +1,40 @@
+{% extends "base.html" %}{% load finance %}
+{% block title %}Fixed assets{% endblock %}
+{% block page_title %}Fixed assets{% endblock %}
+{% block page_subtitle %}<p class="text-body-secondary mb-0">Property, buildings, vehicles and equipment.{% if last_run %} Depreciation recorded through {{ last_run.through_date|date:"F Y" }}.{% endif %}</p>{% endblock %}
+{% block actions %}
+  <a href="{% querystring export='csv' %}" class="btn btn-outline-secondary"><i class="bi bi-filetype-csv"></i> Export</a>
+  <a href="{% url 'fixedassets:run_list' %}" class="btn btn-outline-secondary"><i class="bi bi-graph-down"></i> Depreciation</a>
+  {% if caps.manage_assets %}<a href="{% url 'fixedassets:run_create' %}" class="btn btn-outline-primary">Record depreciation</a>
+  <a href="{% url 'fixedassets:asset_create' %}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Add asset</a>{% endif %}
+{% endblock %}
+{% block content %}
+<ul class="nav nav-pills mb-3">
+  <li class="nav-item"><a class="nav-link {% if show == 'active' %}active{% endif %}" href="?show=active">In service</a></li>
+  <li class="nav-item"><a class="nav-link {% if show == 'disposed' %}active{% endif %}" href="?show=disposed">Disposed</a></li>
+  <li class="nav-item"><a class="nav-link {% if show == 'all' %}active{% endif %}" href="?show=all">All</a></li>
+</ul>
+<div class="card table-card">
+  <table class="table table-hover">
+    <thead><tr><th>Asset</th><th>Tag / location</th><th>Acquired</th><th>Life</th><th class="num">Cost</th><th class="num">Accumulated depreciation</th><th class="num">Book value</th></tr></thead>
+    {% for label, rows in groups.items %}
+    <tbody>
+      <tr class="table-light"><th colspan="7" class="small text-uppercase">{{ label }}</th></tr>
+      {% for r in rows %}
+      <tr data-href="{{ r.asset.get_absolute_url }}" class="{% if r.asset.status == 'disposed' %}text-body-tertiary{% endif %}">
+        <td><a href="{{ r.asset.get_absolute_url }}">{{ r.asset.name }}</a>{% if r.asset.status == 'disposed' %} <span class="badge text-bg-secondary">disposed</span>{% endif %}</td>
+        <td class="small">{{ r.asset.tag_number }}{% if r.asset.location %}<div class="text-body-secondary">{{ r.asset.location }}</div>{% endif %}</td>
+        <td class="small">{{ r.asset.acquisition_date|date:"M j, Y" }}</td>
+        <td class="small">{% if r.asset.useful_life_months %}{% widthratio r.asset.useful_life_months 12 1 %} yrs{% else %}Not depreciated{% endif %}</td>
+        <td class="num">{{ r.asset.cost|money }}</td><td class="num">{{ r.accumulated|acct }}</td><td class="num fw-semibold">{{ r.book|money }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+    {% empty %}
+    <tbody><tr><td colspan="7" class="empty-state"><i class="bi bi-building"></i>No assets recorded. Add buildings, vehicles and major equipment to track their value and depreciation.</td></tr></tbody>
+    {% endfor %}
+    <tfoot><tr><td colspan="4">Total</td><td class="num">{{ totals.cost|money }}</td><td class="num">{{ totals.accumulated|acct }}</td><td class="num">{{ totals.book|money }}</td></tr></tfoot>
+  </table>
+</div>
+<p class="small text-body-secondary mt-2">Adding an asset here doesn't record its purchase. Record the purchase as an expense (or journal entry) charged to the asset account, so the cash and asset balances stay in step.</p>
+{% endblock %}

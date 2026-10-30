@@ -56,6 +56,14 @@ class FixedAsset(models.Model):
     disposal_date = models.DateField(null=True, blank=True)
     disposal_proceeds = money_field()
     disposal_entry = models.ForeignKey(JournalEntry, null=True, blank=True, on_delete=models.SET_NULL, related_name="+")
+    prior_depreciation = money_field(
+        verbose_name="Depreciation before this system",
+        help_text="For assets you already owned: accumulated depreciation recorded in your old books.",
+    )
+    prior_depreciation_through = models.DateField(
+        "Prior depreciation recorded through", null=True, blank=True,
+        help_text="Month-end the prior depreciation covers. Depreciation here starts the month after.",
+    )
     depreciated_through = models.DateField(null=True, blank=True, editable=False)
     notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -81,7 +89,8 @@ class FixedAsset(models.Model):
 
     @property
     def accumulated_depreciation(self):
-        return self.depreciation_entries.filter(run__is_void=False).aggregate(t=MoneySum("amount"))["t"] or ZERO
+        recorded = self.depreciation_entries.filter(run__is_void=False).aggregate(t=MoneySum("amount"))["t"] or ZERO
+        return self.prior_depreciation + recorded
 
     @property
     def book_value(self):

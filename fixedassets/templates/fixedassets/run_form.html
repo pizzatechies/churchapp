@@ -1,0 +1,21 @@
+{% extends "base.html" %}{% load finance %}
+{% block title %}Record depreciation{% endblock %}
+{% block page_title %}Record depreciation{% endblock %}
+{% block page_subtitle %}<p class="text-body-secondary mb-0">Straight-line depreciation for every month not yet recorded, up to the month you choose. Most churches do this monthly or at year end.</p>{% endblock %}
+{% block content %}
+<form method="get" class="card mb-3" style="max-width:640px"><div class="card-body">
+  {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+  <div class="row align-items-end">{% include "includes/field.html" with field=form.through col="col-md-8" %}<div class="col-md-4 mb-3"><button class="btn btn-outline-primary w-100">Preview</button></div></div>
+</div></form>
+{% if form.is_bound %}
+<div class="card table-card mb-3">
+  <table class="table">
+    <thead><tr><th>Asset</th><th>From</th><th class="num">Months</th><th class="num">Amount</th></tr></thead>
+    <tbody>{% for asset, months, amount, start in preview %}<tr><td>{{ asset }}</td><td>{{ start|date:"M Y" }}</td><td class="num">{{ months }}</td><td class="num">{{ amount|money }}</td></tr>
+    {% empty %}<tr><td colspan="4" class="empty-state">Nothing to record through that month.</td></tr>{% endfor %}</tbody>
+    <tfoot><tr><td colspan="3">Total</td><td class="num">{{ preview_total|money }}</td></tr></tfoot>
+  </table>
+</div>
+{% if preview %}<form method="post">{% csrf_token %}<input type="hidden" name="through" value="{{ form.cleaned_data.through|date:'Y-m-d' }}"><button class="btn btn-primary">Post depreciation of {{ preview_total|money }}</button></form>{% endif %}
+{% endif %}
+{% endblock %}

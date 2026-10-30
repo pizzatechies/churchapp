@@ -1,0 +1,53 @@
+{% extends "base.html" %}{% load finance %}
+{% block title %}{{ report.title }}{% endblock %}
+{% block breadcrumbs %}<nav class="d-print-none"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{% url 'reports:index' %}">Reports</a></li><li class="breadcrumb-item active">{{ report.title }}</li></ol></nav>{% endblock %}
+{% block page_title %}{{ report.title }}{% endblock %}
+{% block page_subtitle %}<p class="report-meta mb-0">{{ church.name }} · {{ report.subtitle }}</p>{% endblock %}
+{% block actions %}
+  <a href="{% querystring export='csv' %}" class="btn btn-outline-secondary"><i class="bi bi-filetype-csv"></i> Export CSV</a>
+  <button class="btn btn-outline-secondary" onclick="window.print()"><i class="bi bi-printer"></i> Print / PDF</button>
+{% endblock %}
+{% block content %}
+{% if controls %}
+<form class="filter-bar row g-2 align-items-end" method="get">
+  {% for c in controls %}
+  <div class="{% if c.type == 'date' or c.type == 'number' %}col-6 col-md-2{% else %}col-sm-6 col-md-3{% endif %}">
+    <label class="form-label" for="f_{{ c.name }}">{{ c.label }}</label>
+    {% if c.type == 'date' %}<input type="date" id="f_{{ c.name }}" class="form-control form-control-sm" name="{{ c.name }}" value="{{ c.value|date:'Y-m-d' }}">
+    {% elif c.type == 'number' %}<input type="number" step="0.01" id="f_{{ c.name }}" class="form-control form-control-sm" name="{{ c.name }}" value="{{ c.value }}">
+    {% else %}<select id="f_{{ c.name }}" class="form-select form-select-sm" name="{{ c.name }}" {% if c.type == 'period' %}data-period-select{% else %}data-autosubmit{% endif %}>
+      {% for k, v in c.options %}<option value="{{ k }}" {% if k == c.value %}selected{% endif %}>{{ v }}</option>{% endfor %}
+    </select>{% endif %}
+  </div>
+  {% endfor %}
+  <div class="col-md-auto"><button class="btn btn-sm btn-primary">Run report</button></div>
+</form>
+{% endif %}
+{% for w in report.warnings %}<div class="alert alert-warning"><i class="bi bi-exclamation-triangle"></i> {{ w }}</div>{% endfor %}
+<div class="print-only mb-3"><h2 class="h4 mb-0">{{ church.name }}</h2><div>{{ report.title }}</div><div class="small">{{ report.subtitle }}</div></div>
+<div class="card">
+  <div class="table-card">
+    <table class="table table-sm report-table {% if report.wide %}small{% endif %}">
+      <thead><tr>{% for col in report.columns %}<th class="{% if col.kind == 'money' or col.kind == 'number' or col.kind == 'percent' %}num{% endif %}">{{ col.label }}</th>{% endfor %}</tr></thead>
+      <tbody>
+      {% for row in report.rows %}
+        <tr class="r-{{ row.kind }}">
+          {% for cell in row.cells %}{% with col=report.columns|get_item:forloop.counter0 %}
+            {% if forloop.first %}
+              <td class="{% if row.level %}indent-{{ row.level }}{% endif %}">{% if row.url %}<a href="{{ row.url }}" class="text-reset text-decoration-none">{% endif %}{% if col.kind == 'date' and cell %}{{ cell|date:"M j, Y" }}{% else %}{{ cell|default_if_none:"" }}{% endif %}{% if row.url %}</a>{% endif %}</td>
+            {% elif col.kind == 'money' %}<td class="num">{% if cell is not None and row.kind != 'section' and row.kind != 'group' %}{{ cell|acct }}{% endif %}</td>
+            {% elif col.kind == 'percent' %}<td class="num">{% if cell is not None %}{{ cell|pct:1 }}{% endif %}</td>
+            {% elif col.kind == 'number' %}<td class="num">{% if cell is not None %}{{ cell }}{% endif %}</td>
+            {% elif col.kind == 'date' %}<td class="text-nowrap">{{ cell|date:"M j, Y" }}</td>
+            {% else %}<td>{% if row.url and forloop.counter0 == 1 %}<a href="{{ row.url }}">{{ cell|default_if_none:"" }}</a>{% else %}{{ cell|default_if_none:"" }}{% endif %}</td>
+            {% endif %}
+          {% endwith %}{% endfor %}
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% for n in report.notes %}<p class="small text-body-secondary mt-2 mb-0"><i class="bi bi-info-circle"></i> {{ n }}</p>{% endfor %}
+<p class="small text-body-secondary mt-3 print-only">Prepared {% now "F j, Y" %}{% if church.treasurer_name %} · {{ church.treasurer_name }}, Treasurer{% endif %}</p>
+{% endblock %}

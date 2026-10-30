@@ -1,0 +1,38 @@
+{% extends "base.html" %}{% load finance %}
+{% block title %}{{ vendor }}{% endblock %}
+{% block breadcrumbs %}<nav><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{% url 'expenses:vendor_list' %}">Vendors &amp; payees</a></li><li class="breadcrumb-item active">{{ vendor }}</li></ol></nav>{% endblock %}
+{% block page_title %}{{ vendor.name }}{% endblock %}
+{% block actions %}
+  <a href="{% url 'expenses:expense_create' %}?vendor={{ vendor.pk }}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> New expense</a>
+  <a href="{% url 'expenses:vendor_edit' vendor.pk %}" class="btn btn-outline-secondary"><i class="bi bi-pencil"></i> Edit</a>
+{% endblock %}
+{% block content %}
+<div class="row g-3 mb-3">
+  <div class="col-sm-4"><div class="card stat-card"><div class="card-body"><div class="stat-label">Owed now</div><div class="stat-value">{{ open_balance|money }}</div></div></div></div>
+  <div class="col-sm-4"><div class="card stat-card"><div class="card-body"><div class="stat-label">Paid this year</div><div class="stat-value">{{ paid_this_year|money }}</div></div></div></div>
+  <div class="col-sm-4"><div class="card stat-card"><div class="card-body"><div class="stat-label">Paid last year</div><div class="stat-value">{{ paid_last_year|money }}</div>{% if vendor.is_1099 %}<div class="stat-sub">Year-end tax form required</div>{% endif %}</div></div></div>
+</div>
+<div class="row g-3">
+  <div class="col-xl-8">
+    <div class="card table-card">
+      <table class="table table-hover">
+        <thead><tr><th>Number</th><th>Date</th><th>Description</th><th>Status</th><th class="num">Total</th><th class="num">Balance</th></tr></thead>
+        <tbody>{% for e in expenses %}<tr data-href="{{ e.get_absolute_url }}"><td><a href="{{ e.get_absolute_url }}">{{ e.number }}</a></td><td>{{ e.date|date:"M j, Y" }}</td><td>{{ e.description|truncatechars:60 }}</td><td>{% status_badge e.status e.get_status_display %}</td><td class="num">{{ e.total|money }}</td><td class="num">{% if e.balance_due %}{{ e.balance_due|money }}{% endif %}</td></tr>
+        {% empty %}<tr><td colspan="6" class="empty-state">No expenses for this payee.</td></tr>{% endfor %}</tbody>
+      </table>
+    </div>
+  </div>
+  <div class="col-xl-4">
+    <div class="card mb-3"><div class="card-body"><dl class="dl-grid">
+      {% if vendor.contact_name %}<dt>Contact</dt><dd>{{ vendor.contact_name }}</dd>{% endif %}
+      {% if vendor.email %}<dt>Email</dt><dd>{{ vendor.email }}</dd>{% endif %}
+      {% if vendor.phone %}<dt>Phone</dt><dd>{{ vendor.phone }}</dd>{% endif %}
+      {% if vendor.address %}<dt>Address</dt><dd>{{ vendor.address|linebreaksbr }}</dd>{% endif %}
+      {% if vendor.tax_id %}<dt>Tax ID</dt><dd>{{ vendor.tax_id }}</dd>{% endif %}
+      {% if vendor.default_account %}<dt>Default account</dt><dd>{{ vendor.default_account }}</dd>{% endif %}
+      {% if vendor.notes %}<dt>Notes</dt><dd>{{ vendor.notes|linebreaksbr }}</dd>{% endif %}
+    </dl></div></div>
+    {% include "includes/documents.html" with object=vendor %}
+  </div>
+</div>
+{% endblock %}

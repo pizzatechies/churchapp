@@ -1,0 +1,146 @@
+{% extends "base.html" %}{% load static finance %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block page_subtitle %}<p class="text-body-secondary mb-0">{{ today|date:"l, F j, Y" }} · {{ fy_label }}</p>{% endblock %}
+{% block actions %}
+  {% if caps.manage_giving %}<a href="{% url 'giving:batch_create' %}" class="btn btn-outline-primary"><i class="bi bi-inboxes"></i> Record offering</a>{% endif %}
+  {% if caps.manage_expenses %}<a href="{% url 'expenses:expense_create' %}" class="btn btn-outline-primary"><i class="bi bi-receipt"></i> New expense</a>{% endif %}
+  <a href="{% url 'reports:index' %}" class="btn btn-primary"><i class="bi bi-file-earmark-bar-graph"></i> Reports</a>
+{% endblock %}
+{% block content %}
+{% if pending_approvals and caps.approve_expenses %}
+<div class="alert alert-warning d-flex justify-content-between align-items-center"><span><i class="bi bi-hourglass-split"></i> {{ pending_approvals }} expense{{ pending_approvals|pluralize }} waiting for approval.</span><a href="{% url 'expenses:approvals' %}" class="btn btn-sm btn-warning">Review</a></div>
+{% endif %}
+
+<div class="row g-3 mb-3">
+  <div class="col-sm-6 col-xl-3"><div class="card stat-card"><div class="card-body">
+    <div class="d-flex justify-content-between"><div class="stat-label">Cash in the bank</div><span class="stat-icon"><i class="bi bi-bank"></i></span></div>
+    <div class="stat-value">{{ cash_total|money }}</div><div class="stat-sub">All bank and cash accounts</div>
+  </div></div></div>
+  <div class="col-sm-6 col-xl-3"><div class="card stat-card"><div class="card-body">
+    <div class="d-flex justify-content-between"><div class="stat-label">Giving this month</div><span class="stat-icon"><i class="bi bi-heart"></i></span></div>
+    <div class="stat-value">{{ giving_month|money }}</div>
+    <div class="stat-sub">{% if giving_change is not None %}<span class="{% if giving_change >= 0 %}text-positive{% else %}text-negative{% endif %}"><i class="bi {% if giving_change >= 0 %}bi-arrow-up-right{% else %}bi-arrow-down-right{% endif %}"></i> {{ giving_change|floatformat:0 }}%</span> vs same point last year ({{ giving_month_ly|money }}){% else %}{{ giving_fytd|money }} this fiscal year{% endif %}</div>
+  </div></div></div>
+  <div class="col-sm-6 col-xl-3"><div class="card stat-card"><div class="card-body">
+    <div class="d-flex justify-content-between"><div class="stat-label">{{ fy_label }} surplus</div><span class="stat-icon"><i class="bi bi-graph-up"></i></span></div>
+    <div class="stat-value {% if surplus < 0 %}text-negative{% endif %}">{{ surplus|money }}</div>
+    <div class="stat-sub">Income {{ income|money }} · Expenses {{ expense|money }}</div>
+  </div></div></div>
+  <div class="col-sm-6 col-xl-3"><div class="card stat-card"><div class="card-body">
+    <div class="d-flex justify-content-between"><div class="stat-label">Unpaid bills</div><span class="stat-icon"><i class="bi bi-receipt"></i></span></div>
+    <div class="stat-value">{{ outstanding|money }}</div>
+    <div class="stat-sub">{% if overdue %}<span class="text-negative"><i class="bi bi-exclamation-circle"></i> {{ overdue }} overdue</span>{% else %}Nothing overdue{% endif %}</div>
+  </div></div></div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-xl-7">
+    <div class="card h-100">
+      <div class="card-header d-flex justify-content-between flex-wrap gap-2">
+        <span>Income and expenses, last 12 months</span>
+        <span class="small fw-normal text-body-secondary"><span class="legend-key" style="background:var(--series-1)"></span>Income <span class="legend-key ms-2" style="background:var(--series-2)"></span>Expenses</span>
+      </div>
+      <div class="card-body"><div class="chart-box"><canvas id="chartMonths" role="img" aria-label="Monthly income and expenses for the last 12 months"></canvas></div>
+        <details class="mt-2 small"><summary class="text-body-secondary">Show as table</summary>
+          <table class="table table-sm mt-2">{% for l in chart_months.labels %}<tr><td>{{ l }}</td><td class="num">{{ chart_months.income|get_item:forloop.counter0|money }}</td><td class="num">{{ chart_months.expense|get_item:forloop.counter0|money }}</td></tr>{% endfor %}</table>
+        </details>
+      </div>
+    </div>
+  </div>
+  <div class="col-xl-5">
+    <div class="card h-100">
+      <div class="card-header d-flex justify-content-between flex-wrap gap-2">
+        <span>Giving by month</span>
+        <span class="small fw-normal text-body-secondary"><span class="legend-line" style="background:var(--series-1)"></span>{{ chart_giving.current_label }} <span class="legend-line ms-2" style="background:var(--series-muted)"></span>{{ chart_giving.previous_label }}</span>
+      </div>
+      <div class="card-body"><div class="chart-box"><canvas id="chartGiving" role="img" aria-label="Giving by month this fiscal year compared with last"></canvas></div></div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-lg-6 col-xl-4">
+    <div class="card h-100">
+      <div class="card-header d-flex justify-content-between"><span>Budget, year to date{% if budget.funds %} <span class="small fw-normal text-body-secondary">· {{ budget.funds }}</span>{% endif %}</span><a class="small fw-normal" href="{% url 'reports:budget_vs_actual' %}">Details</a></div>
+      <div class="card-body">
+        {% if budget.income or budget.expense %}
+        <div class="mb-3">
+          <div class="d-flex justify-content-between small"><span>Income received</span><span class="num">{{ budget.actual_income|money }} of {{ budget.income|money }}</span></div>
+          <div class="progress mt-1" role="progressbar" aria-label="Income vs budget" aria-valuenow="{{ budget.income_pct|floatformat:0 }}" aria-valuemin="0" aria-valuemax="100"><div class="progress-bar" style="width: {{ budget.income_pct|floatformat:0 }}%; background: var(--series-1)"></div></div>
+          <div class="small text-body-secondary mt-1">{{ budget.income_pct|floatformat:0 }}% of year-to-date budget</div>
+        </div>
+        <div>
+          <div class="d-flex justify-content-between small"><span>Spending</span><span class="num">{{ budget.actual_expense|money }} of {{ budget.expense|money }}</span></div>
+          <div class="progress mt-1" role="progressbar" aria-label="Spending vs budget" aria-valuenow="{{ budget.expense_pct|floatformat:0 }}" aria-valuemin="0" aria-valuemax="100"><div class="progress-bar {% if budget.expense_pct > 100 %}bg-danger{% endif %}" style="width: {{ budget.expense_pct|floatformat:0 }}%; {% if budget.expense_pct <= 100 %}background: var(--series-2){% endif %}"></div></div>
+          <div class="small text-body-secondary mt-1">{{ budget.expense_pct|floatformat:0 }}% of year-to-date budget{% if budget.expense_pct > 100 %} <span class="text-negative"><i class="bi bi-exclamation-triangle"></i> over budget</span>{% endif %}</div>
+        </div>
+        {% else %}
+        <div class="empty-state py-3"><i class="bi bi-clipboard-data"></i>No budget for {{ fy_label }} yet.{% if caps.manage_budget %}<div class="mt-2"><a href="{% url 'ledger:budget_create' %}" class="btn btn-sm btn-outline-primary">Create a budget</a></div>{% endif %}</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6 col-xl-4">
+    <div class="card h-100">
+      <div class="card-header d-flex justify-content-between"><span>Fund balances</span><a class="small fw-normal" href="{% url 'ledger:fund_list' %}">All funds</a></div>
+      <ul class="list-group list-group-flush">
+        {% for f, bal in funds %}<li class="list-group-item d-flex justify-content-between"><a href="{{ f.get_absolute_url }}" class="text-decoration-none">{{ f.name }}</a><span class="num {% if bal < 0 %}text-negative{% endif %}">{{ bal|money }}</span></li>{% endfor %}
+      </ul>
+    </div>
+  </div>
+  <div class="col-lg-12 col-xl-4">
+    <div class="card h-100">
+      <div class="card-header d-flex justify-content-between"><span>Bank accounts</span><a class="small fw-normal" href="{% url 'ledger:banking' %}">Banking</a></div>
+      <ul class="list-group list-group-flush">
+        {% for a, bal, rec in bank_rows %}
+        <li class="list-group-item"><div class="d-flex justify-content-between"><a href="{{ a.get_absolute_url }}" class="text-decoration-none">{{ a.name }}</a><span class="num">{{ bal|money }}</span></div>
+          <div class="small text-body-secondary">{% if rec %}Reconciled through {{ rec.statement_date|date:"M j, Y" }}{% else %}Not yet reconciled{% endif %}</div></li>
+        {% empty %}<li class="list-group-item small text-body-secondary">No bank accounts.</li>{% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-xl-6">
+    <div class="card h-100 table-card">
+      <div class="card-header d-flex justify-content-between"><span>Bills due in the next two weeks</span><a class="small fw-normal" href="{% url 'expenses:expense_list' %}?status=unpaid">All unpaid</a></div>
+      <table class="table table-sm table-hover">
+        <tbody>
+        {% for e in due_soon %}
+          <tr data-href="{{ e.get_absolute_url }}"><td><a href="{{ e.get_absolute_url }}">{{ e.vendor }}</a><div class="small text-body-secondary">{{ e.description|truncatechars:50 }}</div></td>
+            <td class="small text-nowrap {% if e.is_overdue %}text-negative fw-semibold{% endif %}">{% if e.is_overdue %}Overdue · {% endif %}{{ e.due_date|date:"M j" }}</td><td class="num">{{ e.balance_due|money }}</td></tr>
+        {% empty %}<tr><td class="text-body-secondary small p-3">Nothing due soon.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="col-xl-6">
+    <div class="card h-100 table-card">
+      <div class="card-header d-flex justify-content-between"><span>Recent transactions</span><a class="small fw-normal" href="{% url 'ledger:entry_list' %}">Journal</a></div>
+      <table class="table table-sm table-hover">
+        <tbody>
+        {% for e in recent %}
+          <tr data-href="{{ e.get_absolute_url }}"><td class="small text-nowrap">{{ e.date|date:"M j" }}</td><td><a href="{{ e.get_absolute_url }}">{{ e.memo|truncatechars:55 }}</a><div class="small text-body-secondary">{{ e.get_source_type_display }}</div></td><td class="num">{{ e.amount|money }}</td></tr>
+        {% empty %}<tr><td class="text-body-secondary small p-3">No transactions yet.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% if open_batches %}
+<div class="card mt-3 table-card">
+  <div class="card-header">Open offering batches</div>
+  <table class="table table-sm table-hover"><tbody>
+    {% for b in open_batches %}<tr data-href="{{ b.get_absolute_url }}"><td><a href="{{ b.get_absolute_url }}">{{ b.number }}</a></td><td>{{ b.date|date:"M j, Y" }}</td><td>{{ b.description }}</td><td class="num">{{ b.gifts }} gifts</td><td class="num">{{ b.amount|default:0|money }}</td></tr>{% endfor %}
+  </tbody></table>
+</div>
+{% endif %}
+{{ chart_months|json_script:"data-months" }}
+{{ chart_giving|json_script:"data-giving" }}
+{% endblock %}
+{% block scripts %}
+<script src="{% static 'vendor/chartjs/chart.umd.min.js' %}"></script>
+<script src="{% static 'js/dashboard.js' %}"></script>
+{% endblock %}

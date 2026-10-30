@@ -258,7 +258,7 @@ def record_income(request):
 
 @require_cap("view_finance")
 def entry_list(request):
-    entries = JournalEntry.objects.annotate(amount=MoneySum("lines__debit")).select_related("created_by")
+    entries = JournalEntry.objects.annotate(amount=MoneySum("lines__debit")).select_related("created_by").order_by("-date", "-id")
     q = request.GET.get("q", "").strip()
     source = request.GET.get("source", "")
     status = request.GET.get("status", "")
