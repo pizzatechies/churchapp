@@ -16,7 +16,7 @@ CHURCH_COUNTRY='KE'                     # KE = Kenya (KSh, Kenyan payroll). Two-
 ADMIN_USERNAME='admin'
 # Change this! At least 8 characters: letters, numbers and . _ ! @ % + = , : - (no spaces).
 ADMIN_PASSWORD='Choose-A-Long-Password'
-ADMIN_EMAIL=''
+ADMIN_EMAIL='pizzatechies@gmail.com'
 # Your own web addresses, if you have them (point both at the server's IP first).
 # Leave empty to use free addresses made from the server's IP, e.g. admin.203-0-113-5.sslip.io
 ADMIN_DOMAIN=''
