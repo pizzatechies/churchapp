@@ -35,7 +35,7 @@ services:
       db:
         condition: service_healthy
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"  # reached through the HTTPS proxy, not directly
     volumes:
       - media:/app/media
 
@@ -50,7 +50,7 @@ services:
       admin:
         condition: service_started
     ports:
-      - "8001:8000"
+      - "127.0.0.1:8001:8000"
     volumes:
       - media:/app/media  # sermons uploaded in the admin app are served from here
 

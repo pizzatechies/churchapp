@@ -164,6 +164,10 @@ members.yourchurch.org {
 
 The admin container applies database migrations and creates the default accounts, funds, roles and payroll items on every start (it only fills in what is missing). Uploaded receipts and sermons live in the shared `media` volume.
 
+### Free hosting on Oracle Cloud
+
+Oracle Cloud's Always Free plan includes a server large enough for Ecclesia. [deploy/ORACLE.md](deploy/ORACLE.md) walks through it: paste [`deploy/install.sh`](deploy/install.sh) in while creating the server and it installs both apps, the database, HTTPS (with free addresses if you have no domain) and nightly backups.
+
 ### Option B — managed cloud (Render)
 
 `render.yaml` is a blueprint for [Render](https://render.com): a managed PostgreSQL database plus the two apps as separate services. Because separate services don't share a disk, set the `S3_*` variables so uploads go to an S3-compatible bucket (Cloudflare R2, AWS S3, DigitalOcean Spaces, Backblaze B2). Files stay private: the apps hand out signed links that expire after an hour.

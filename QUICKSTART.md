@@ -7,6 +7,8 @@ This puts both Ecclesia web apps online for one church, on one server, in about 
 
 The Android, iPhone and Windows apps connect to these two addresses.
 
+**Shortcut:** on a fresh Ubuntu 24.04 server, [`deploy/install.sh`](deploy/install.sh) does steps 2 to 4 for you, including HTTPS and nightly backups. For a free server, follow [deploy/ORACLE.md](deploy/ORACLE.md).
+
 ## 1. What you need
 
 - A Linux server (VPS) with 2 GB RAM running Ubuntu 24.04, from any hosting provider.
