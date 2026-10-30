@@ -81,7 +81,7 @@
       <button class="btn btn-link text-body d-lg-none px-1" type="button" data-toggle-sidebar aria-label="Toggle navigation"><i class="bi bi-list fs-4"></i></button>
       <div class="topbar-title text-truncate">{% block topbar %}{% endblock %}</div>
       <div class="ms-auto d-flex align-items-center gap-2">
-        {% if church.lock_date %}<span class="badge text-bg-light border d-none d-md-inline" title="Books closed through"><i class="bi bi-lock"></i> Closed through {{ church.lock_date|date:"M j, Y" }}</span>{% endif %}
+        {% if church.lock_date %}<span class="badge bg-body-tertiary text-body border d-none d-md-inline" title="Books closed through"><i class="bi bi-lock"></i> Closed through {{ church.lock_date|date:"M j, Y" }}</span>{% endif %}
         <button class="btn btn-sm btn-outline-secondary" type="button" data-theme-toggle aria-label="Toggle dark mode"><i class="bi bi-moon-stars"></i></button>
         <div class="dropdown">
           <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">

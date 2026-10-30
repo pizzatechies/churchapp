@@ -72,12 +72,23 @@ def _by_account(afb):
     return result
 
 
+GROUP_LABELS = {
+    "bank": "Cash in bank", "cash": "Cash on hand", "receivable": "Receivables", "other_current_asset": "Other current assets",
+    "investment": "Investments", "fixed_asset": "Property & equipment", "accumulated_depreciation": "Accumulated depreciation",
+    "other_asset": "Other assets", "payable": "Accounts payable", "credit_card": "Credit cards",
+    "payroll_liability": "Payroll liabilities", "other_current_liability": "Other current liabilities",
+    "long_term_liability": "Long-term debt", "contributions": "Contributions", "program_income": "Program & ministry income",
+    "other_income": "Other income", "personnel": "Personnel", "facilities": "Facilities", "ministry": "Ministries & programs",
+    "missions": "Missions & benevolence", "administration": "Administration", "other_expense": "Other expenses",
+}
+
+
 def _subtype_groups(type_, accounts):
     order = [code for code, _ in Account.SUBTYPES[type_]]
     groups = defaultdict(list)
     for a in accounts:
         groups[a.subtype].append(a)
-    return [(Account.SUBTYPE_LABELS[s], groups[s]) for s in order if groups.get(s)]
+    return [(GROUP_LABELS.get(s, Account.SUBTYPE_LABELS[s]), groups[s]) for s in order if groups.get(s)]
 
 
 # ---------------------------------------------------------------- statements

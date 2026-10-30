@@ -2,7 +2,14 @@ from django.shortcuts import render
 
 from core.permissions import require_cap
 from core.utils import (
-    PERIOD_CHOICES, fiscal_months, fiscal_year_choices, fiscal_year_of, period_from_request, parse_date, to_decimal, today,
+    PERIOD_CHOICES,
+    fiscal_months,
+    fiscal_year_choices,
+    fiscal_year_of,
+    parse_date,
+    period_from_request,
+    to_decimal,
+    today,
 )
 from ledger.models import Account, Fund
 

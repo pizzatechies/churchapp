@@ -8,6 +8,7 @@ in development mode against a local SQLite database.
 
 import os
 import sys
+import warnings
 from pathlib import Path
 
 import dj_database_url
@@ -138,6 +139,12 @@ STORAGES = {
     },
 }
 
+if DEBUG or TESTING:
+    # Serve static files straight from the source folders; `collectstatic` is only needed in production.
+    WHITENOISE_USE_FINDERS = True
+    WHITENOISE_AUTOREFRESH = True
+    warnings.filterwarnings("ignore", message="No directory at", module="whitenoise.base")
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 LOGIN_URL = "login"
@@ -165,4 +172,6 @@ LOGGING = {
     "disable_existing_loggers": False,
     "handlers": {"console": {"class": "logging.StreamHandler"}},
     "root": {"handlers": ["console"], "level": os.environ.get("LOG_LEVEL", "INFO")},
+    # Permission tests deliberately trigger 403s; keep the test output readable.
+    "loggers": {"django.request": {"level": "ERROR" if TESTING else "WARNING"}},
 }
