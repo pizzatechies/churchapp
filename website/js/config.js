@@ -9,9 +9,9 @@ window.ECCLESIA_SITE = {
 
   // How people reach you from the "Get started" form. Leave a value empty to hide it.
   contact: {
-    email: "",      // e.g. "sales@example.com"
+    email: "info@pizzatechnologies.co.ke",
     whatsapp: "",   // international format without "+", e.g. "254700000000"
-    phone: "",      // shown as written, e.g. "+254 700 000 000"
+    phone: "+254 747 354 677",
   },
 
   // A public demo server (ECCLESIA_DEMO_MODE=1, see the main README). Empty hides the buttons.

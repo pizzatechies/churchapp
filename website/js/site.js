@@ -243,6 +243,8 @@
   var sendEmail = $("[data-send=email]", form);
   sendWhatsapp.hidden = !contact.whatsapp;
   sendEmail.hidden = !contact.email;
+  // When email is the only way to send, it gets the main button style.
+  if (!contact.whatsapp) sendEmail.className = "btn btn-gold";
   var note = $("[data-form-note]", form);
   if (!contact.whatsapp && !contact.email) {
     $("[data-contact-actions]", form).hidden = true;
@@ -274,6 +276,8 @@
         + "&body=" + encodeURIComponent(text);
     }
     note.hidden = false;
-    note.textContent = "Thank you! Your message is ready to send in " + (via === "whatsapp" ? "WhatsApp" : "your email app") + ".";
+    // The app may not open (for example inside some in-app browsers), so always give the address too.
+    note.textContent = (via === "whatsapp" ? "WhatsApp" : "Your email app") + " should open with your message ready to send. If it doesn't, contact us at "
+      + (via === "whatsapp" ? "+" + contact.whatsapp : contact.email) + ".";
   });
 })();
