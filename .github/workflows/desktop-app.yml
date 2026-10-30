@@ -46,6 +46,23 @@ jobs:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      - name: Smoke test on Windows (install silently, start the app)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $installer = Get-ChildItem dist -Filter *.exe | Where-Object Name -like '*x64*' | Select-Object -First 1
+          if (-not $installer) { $installer = Get-ChildItem dist -Filter *.exe | Select-Object -First 1 }
+          Write-Host "Installing $($installer.Name)"
+          Start-Process $installer.FullName -ArgumentList '/S', '/currentuser' -Wait
+          $exe = Join-Path $env:LOCALAPPDATA 'Programs\Ecclesia Admin\Ecclesia Admin.exe'
+          if (-not (Test-Path $exe)) { throw "Ecclesia Admin was not installed at $exe" }
+          $app = Start-Process $exe -PassThru
+          Start-Sleep -Seconds 20
+          if ($app.HasExited) { throw "Ecclesia Admin quit straight away (exit code $($app.ExitCode))" }
+          $title = (Get-Process -Name 'Ecclesia Admin' | Where-Object MainWindowTitle | Select-Object -First 1).MainWindowTitle
+          Write-Host "Window title: '$title'"
+          Stop-Process -Name 'Ecclesia Admin' -Force
+          if ($title -ne 'Ecclesia Admin') { throw "Expected the Ecclesia Admin window, found '$title'" }
       - uses: actions/upload-artifact@v4
         with:
           name: ecclesia-admin-${{ matrix.os }}
