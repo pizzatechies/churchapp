@@ -3,3 +3,6 @@ psycopg[binary]==3.2.12
 dj-database-url==3.1.2
 whitenoise==6.12.0
 gunicorn==26.2.0
+# Optional S3-compatible storage for uploads (used only when S3_BUCKET is set)
+django-storages==1.14.6
+boto3==1.43.122

@@ -10,7 +10,7 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument("--name", help="Church name, e.g. 'LifeSource Church'")
-        parser.add_argument("--country", help="Two-letter country code for local defaults (currency, payroll). Default KE (Kenya).")
+        parser.add_argument("--country", help="Two-letter country code for local defaults (currency, payroll) on first setup. Default KE (Kenya).")
         parser.add_argument("--currency-symbol", help="Override the country's symbol, e.g. KSh, USh, ₦, $")
         parser.add_argument("--currency-code", help="e.g. USD, ZMW, GBP")
         parser.add_argument("--fiscal-start-month", type=int, choices=range(1, 13), help="1 = January")

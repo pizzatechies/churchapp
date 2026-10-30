@@ -3,7 +3,14 @@
 import mimetypes
 import re
 
-from django.http import FileResponse, Http404, HttpResponse, StreamingHttpResponse
+from django.core.files.storage import FileSystemStorage
+from django.http import (
+    FileResponse,
+    Http404,
+    HttpResponse,
+    HttpResponseRedirect,
+    StreamingHttpResponse,
+)
 
 RANGE_RE = re.compile(r"bytes=(\d*)-(\d*)$")
 CHUNK = 64 * 1024
@@ -26,6 +33,9 @@ def _iter_range(handle, start, length):
 def ranged_file_response(request, field_file, download_name=None, as_attachment=False):
     if not field_file:
         raise Http404("No file.")
+    if not isinstance(field_file.storage, FileSystemStorage):
+        # Cloud storage: hand the browser a short-lived signed link; the bucket handles ranges itself.
+        return HttpResponseRedirect(field_file.url)
     try:
         size = field_file.size
         handle = field_file.open("rb")

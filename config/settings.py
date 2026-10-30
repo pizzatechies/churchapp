@@ -150,6 +150,26 @@ if DEBUG or TESTING:
     WHITENOISE_AUTOREFRESH = True
     warnings.filterwarnings("ignore", message="No directory at", module="whitenoise.base")
 
+# Uploaded files (receipts, sermons) live on the local disk by default. When the admin app and
+# the members app run on separate servers, point both at the same S3-compatible bucket instead
+# (AWS S3, Cloudflare R2, DigitalOcean Spaces, Backblaze B2...). Files stay private: links are
+# signed and expire after an hour.
+if os.environ.get("S3_BUCKET"):
+    STORAGES["default"] = {
+        "BACKEND": "storages.backends.s3.S3Storage",
+        "OPTIONS": {
+            "bucket_name": os.environ["S3_BUCKET"],
+            "endpoint_url": os.environ.get("S3_ENDPOINT_URL") or None,
+            "region_name": os.environ.get("S3_REGION") or None,
+            "access_key": os.environ.get("S3_ACCESS_KEY_ID"),
+            "secret_key": os.environ.get("S3_SECRET_ACCESS_KEY"),
+            "default_acl": None,
+            "querystring_auth": True,
+            "querystring_expire": 3600,
+            "file_overwrite": False,
+        },
+    }
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Product identity. The members app (config.settings_portal) overrides APP_NAME.

@@ -1,0 +1,59 @@
+# Full Ecclesia stack on one server: PostgreSQL + the admin app + the members app.
+#
+#   cp .env.example .env    # then edit the values
+#   docker compose up -d --build
+#
+# Admin app:   http://localhost:8000   (church staff)
+# Members app: http://localhost:8001   (congregation)
+# Put a reverse proxy with HTTPS (Caddy, Nginx, Traefik) in front for production,
+# e.g. admin.yourchurch.org -> :8000 and members.yourchurch.org -> :8001.
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-ecclesia}
+      POSTGRES_USER: ${POSTGRES_USER:-ecclesia}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ecclesia} -d ${POSTGRES_DB:-ecclesia}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  admin:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      APP: admin
+      DATABASE_URL: postgres://${POSTGRES_USER:-ecclesia}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-ecclesia}
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    volumes:
+      - media:/app/media
+
+  members:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      APP: members
+      DATABASE_URL: postgres://${POSTGRES_USER:-ecclesia}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-ecclesia}
+    depends_on:
+      admin:
+        condition: service_started
+    ports:
+      - "8001:8000"
+    volumes:
+      - media:/app/media  # sermons uploaded in the admin app are served from here
+
+volumes:
+  pgdata:
+  media:

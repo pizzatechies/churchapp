@@ -4,6 +4,7 @@ from . import dashboard, views
 
 urlpatterns = [
     path("", dashboard.dashboard, name="dashboard"),
+    path("healthz/", views.health, name="health"),
     path("settings/", views.settings_view, name="settings"),
     path("settings/close-books/", views.close_books, name="close_books"),
     path("settings/users/", views.user_list, name="user_list"),

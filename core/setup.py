@@ -180,8 +180,10 @@ def setup_church(church_name=None, currency_symbol=None, currency_code=None, fis
 
     profile = ChurchProfile.get()
     first_setup = not Account.objects.exists()
-    country = (country or profile.country or "KE").upper()
-    if first_setup or country != profile.country:
+    # The country preset is applied once, on first setup. Afterwards the church changes
+    # currency and other settings in Church settings, and re-running setup leaves them alone.
+    country = (country or profile.country or "KE").upper() if first_setup else profile.country
+    if first_setup:
         # Choosing a country sets sensible local defaults; everything stays editable in Church settings.
         profile.country = country
         profile.currency_code, profile.currency_symbol = CURRENCIES.get(country, CURRENCIES["XX"])

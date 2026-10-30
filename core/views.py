@@ -3,13 +3,22 @@ import mimetypes
 
 from django.apps import apps
 from django.contrib import messages
+from django.contrib.auth.decorators import login_not_required
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
 from django.core import management
 from django.core.exceptions import PermissionDenied
+from django.core.files.storage import FileSystemStorage
 from django.core.paginator import Paginator
+from django.db import connection
 from django.db.models import Q
-from django.http import FileResponse, Http404, HttpResponse
+from django.http import (
+    FileResponse,
+    Http404,
+    HttpResponse,
+    HttpResponseRedirect,
+    JsonResponse,
+)
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
@@ -67,6 +76,8 @@ def document_download(request, pk):
     view_cap, _ = _document_caps(doc.content_type)
     if not has_cap(request.user, view_cap):
         raise PermissionDenied
+    if not isinstance(doc.file.storage, FileSystemStorage):
+        return HttpResponseRedirect(doc.file.url)
     try:
         handle = doc.file.open("rb")
     except FileNotFoundError:
@@ -181,3 +192,11 @@ def backup(request):
         model = apps.get_model(label)
         counts.append((model._meta.verbose_name_plural.title(), model.objects.count()))
     return render(request, "core/backup.html", {"counts": counts})
+
+
+@login_not_required
+def health(request):
+    """For load balancers and uptime monitors: checks the app can reach the database."""
+    with connection.cursor() as cursor:
+        cursor.execute("SELECT 1")
+    return JsonResponse({"status": "ok"})
