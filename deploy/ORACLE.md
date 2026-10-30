@@ -41,7 +41,9 @@ In the Oracle Cloud console, open the menu (☰) → **Compute** → **Instances
 6. Open **Show advanced options** → **Management** → **Initialization script** → **Paste cloud-init script**, and paste the whole of your edited `install.sh`.
 7. Click **Create**.
 
-If Oracle says **"Out of capacity"**, try again later, choose another *availability domain* in the placement section, or use 1 OCPU and 6 GB memory.
+If Oracle says **"Out of capacity"**, Oracle has run out of free Ampere servers in your region for now. Try 1 OCPU and 6 GB memory, try again later, or upgrade the account to *Pay As You Go* (Always Free resources stay free; set a budget alert under *Billing → Budgets*).
+
+Still no luck? Use Oracle's other Always Free shape: **Change shape → Specialty and previous generation → VM.Standard.E2.1.Micro** (1 GB memory), with the image **Canonical Ubuntu 24.04** (not the aarch64 one). The setup script notices the small server and adds swap space and runs fewer workers, so Ecclesia fits. It is slower, and the first setup can take 30 minutes; move to an Ampere server when one is available.
 
 ## 4. Open the web ports
 

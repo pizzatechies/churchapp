@@ -41,6 +41,22 @@ if ! [[ "$ADMIN_PASSWORD" =~ ^[A-Za-z0-9._!@%+=,:-]{8,}$ ]]; then
   exit 1
 fi
 
+# Small servers (such as Oracle's free 1 GB VM.Standard.E2.1.Micro) get swap space
+# and one worker per app, so the database and both apps fit in memory.
+MEM_MB=$(awk '/^MemTotal/ {print int($2 / 1024)}' /proc/meminfo)
+WORKERS=3
+if [ "$MEM_MB" -lt 2000 ]; then
+  WORKERS=1
+  if ! swapon --show=NAME --noheadings | grep -q .; then
+    echo "--- Adding 2 GB of swap space (this server has ${MEM_MB} MB of memory)"
+    fallocate -l 2G /swapfile
+    chmod 600 /swapfile
+    mkswap /swapfile
+    swapon /swapfile
+    grep -q '^/swapfile ' /etc/fstab || echo '/swapfile none swap sw 0 0' >> /etc/fstab
+  fi
+fi
+
 echo "--- Installing Docker, Caddy and Git"
 $APT update
 $APT install ca-certificates curl git openssl caddy
@@ -97,7 +113,7 @@ ADMIN_PASSWORD=$ADMIN_PASSWORD
 ADMIN_EMAIL=$ADMIN_EMAIL
 TIME_ZONE=Africa/Nairobi
 SECURE_COOKIES=1
-WEB_CONCURRENCY=3
+WEB_CONCURRENCY=$WORKERS
 EOF
   if [ "$DEMO" = "yes" ]; then
     echo "ECCLESIA_DEMO_MODE=1" >> .env
