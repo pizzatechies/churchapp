@@ -1,0 +1,16 @@
+{% extends "portal/base.html" %}
+{% block title %}Groups & fellowships{% endblock %}
+{% block content %}
+<h1 class="h3 mb-1">Groups &amp; fellowships</h1>
+<p class="text-body-secondary">Find your people. Tap a group to see when it meets and to ask to join.</p>
+<div class="portal-chips mb-3">
+  <a href="?" class="{% if not kind %}active{% endif %}">All</a>
+  {% for k, v in types %}<a href="?type={{ k }}" class="{% if kind == k %}active{% endif %}">{{ v }}</a>{% endfor %}
+</div>
+{% for type, items in by_type.items %}
+<h2 class="h6 text-uppercase text-body-secondary fw-semibold mt-3 mb-2">{{ type }}</h2>
+<div class="row g-3">{% for g in items %}<div class="col-sm-6 col-lg-4">{% include "portal/_group_card.html" %}</div>{% endfor %}</div>
+{% empty %}
+<div class="card"><div class="empty-state"><i class="bi bi-people"></i>No groups to show.</div></div>
+{% endfor %}
+{% endblock %}

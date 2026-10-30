@@ -1,0 +1,39 @@
+{% extends "base.html" %}{% load finance %}
+{% block title %}Membership summary{% endblock %}
+{% block page_title %}Membership summary{% endblock %}
+{% block page_subtitle %}<p class="text-body-secondary mb-0">Current congregation (visitors, attenders and members) by gender and age.</p>{% endblock %}
+{% block actions %}<a href="?export=csv" class="btn btn-outline-secondary"><i class="bi bi-filetype-csv"></i> Export</a><button class="btn btn-outline-secondary" onclick="window.print()"><i class="bi bi-printer"></i> Print</button>{% endblock %}
+{% block content %}
+<div class="row g-3 mb-3">
+  <div class="col-6 col-lg-3"><div class="card stat-card"><div class="card-body"><div class="stat-label">Congregation</div><div class="stat-value">{{ stats.total }}</div><div class="stat-sub">{{ stats.by_status.member }} full members</div></div></div></div>
+  <div class="col-6 col-lg-3"><div class="card stat-card"><div class="card-body"><div class="stat-label">Women</div><div class="stat-value">{{ stats.by_gender.female }}</div><div class="stat-sub">{{ stats.by_gender_pct.female }}%</div></div></div></div>
+  <div class="col-6 col-lg-3"><div class="card stat-card"><div class="card-body"><div class="stat-label">Men</div><div class="stat-value">{{ stats.by_gender.male }}</div><div class="stat-sub">{{ stats.by_gender_pct.male }}%{% if stats.by_gender.unspecified %} · {{ stats.by_gender.unspecified }} not stated{% endif %}</div></div></div></div>
+  <div class="col-6 col-lg-3"><div class="card stat-card"><div class="card-body"><div class="stat-label">Baptized</div><div class="stat-value">{{ stats.baptized }}</div><div class="stat-sub">{{ stats.with_portal }} use the members app</div></div></div></div>
+</div>
+<div class="row g-3">
+  <div class="col-xl-6">
+    <div class="card table-card mb-3"><div class="card-header">By age group and gender</div>
+      <table class="table table-sm">
+        <thead><tr><th>Age group</th>{% for k, v in genders %}<th class="num">{{ v }}</th>{% endfor %}<th class="num">Total</th><th style="width:30%"></th></tr></thead>
+        <tbody>{% for r in stats.age_rows %}<tr><td><a href="{% url 'members:member_list' %}?age={{ r.key|default:'unknown' }}">{{ r.label }}</a></td><td class="num">{{ r.female }}</td><td class="num">{{ r.male }}</td><td class="num">{{ r.unspecified }}</td><td class="num fw-semibold">{{ r.total }}</td>
+          <td>{% if r.total %}<div class="split-bar"><span class="split-a" style="width: {% widthratio r.female r.total 100 %}%"></span><span class="split-b" style="width: {% widthratio r.male r.total 100 %}%"></span><span class="split-c" style="width: {% widthratio r.unspecified r.total 100 %}%"></span></div>{% endif %}</td></tr>{% endfor %}</tbody>
+      </table>
+    </div>
+    <div class="card table-card"><div class="card-header">By status</div>
+      <table class="table table-sm">{% for k, v in stats.by_status.items %}<tr><td><a href="{% url 'members:member_list' %}?status={{ k }}">{{ k|capfirst }}</a></td><td class="num">{{ v }}</td></tr>{% endfor %}</table>
+    </div>
+  </div>
+  <div class="col-xl-6">
+    <div class="card table-card mb-3"><div class="card-header">Groups &amp; fellowships</div>
+      <table class="table table-sm">
+        <thead><tr><th>Group</th><th>Open to</th><th class="num">Women</th><th class="num">Men</th><th class="num">Total</th></tr></thead>
+        <tbody>{% for g in stats.groups %}<tr><td><a href="{{ g.get_absolute_url }}">{{ g.name }}</a></td><td class="small">{{ g.audience }}</td><td class="num">{{ g.women }}</td><td class="num">{{ g.men }}</td><td class="num fw-semibold">{{ g.total }}</td></tr>{% endfor %}</tbody>
+      </table>
+    </div>
+    <div class="card table-card"><div class="card-header">Recent inductions</div>
+      <table class="table table-sm">{% for gm in recent %}<tr><td><a href="{{ gm.member.get_absolute_url }}">{{ gm.member }}</a></td><td class="small">{{ gm.group }}</td><td class="small text-nowrap">{{ gm.inducted_on|date:"M j, Y" }}</td></tr>{% empty %}<tr><td class="small text-body-secondary">None yet.</td></tr>{% endfor %}</table>
+    </div>
+  </div>
+</div>
+<p class="small text-body-secondary mt-2"><span class="legend-key" style="background:var(--series-1)"></span>Women <span class="legend-key ms-2" style="background:var(--series-2)"></span>Men <span class="legend-key ms-2" style="background:var(--series-muted)"></span>Not stated</p>
+{% endblock %}

@@ -10,7 +10,8 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument("--name", help="Church name, e.g. 'LifeSource Church'")
-        parser.add_argument("--currency-symbol", help="e.g. $, K, £, €, ₦")
+        parser.add_argument("--country", help="Two-letter country code for local defaults (currency, payroll). Default KE (Kenya).")
+        parser.add_argument("--currency-symbol", help="Override the country's symbol, e.g. KSh, USh, ₦, $")
         parser.add_argument("--currency-code", help="e.g. USD, ZMW, GBP")
         parser.add_argument("--fiscal-start-month", type=int, choices=range(1, 13), help="1 = January")
         parser.add_argument("--admin-username", help="Also create an administrator account with this username")
@@ -21,6 +22,7 @@ class Command(BaseCommand):
         profile = setup_church(
             church_name=opts["name"], currency_symbol=opts["currency_symbol"],
             currency_code=opts["currency_code"], fiscal_start_month=opts["fiscal_start_month"],
+            country=opts["country"],
         )
         self.stdout.write(self.style.SUCCESS(f"Default accounts, funds, roles and payroll items are ready for {profile.name}."))
         username = opts["admin_username"]

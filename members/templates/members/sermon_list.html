@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Sermons{% endblock %}
+{% block page_title %}Sermons{% endblock %}
+{% block page_subtitle %}<p class="text-body-secondary mb-0">Published sermons appear in {{ brand.product_name }} Connect, the members app.</p>{% endblock %}
+{% block actions %}<a href="{% url 'members:sermon_create' %}" class="btn btn-primary"><i class="bi bi-upload"></i> Upload sermon</a>{% endblock %}
+{% block content %}
+<form class="filter-bar row g-2" method="get"><div class="col-md-6"><input class="form-control form-control-sm" name="q" value="{{ q }}" placeholder="Search title, preacher, series or scripture"></div><div class="col-md-2"><button class="btn btn-sm btn-outline-primary w-100">Search</button></div></form>
+<div class="card table-card">
+  <table class="table table-hover">
+    <thead><tr><th>Date</th><th>Title</th><th>Preacher</th><th>Series</th><th>Media</th><th>Status</th></tr></thead>
+    <tbody>
+    {% for s in page_obj %}
+      <tr data-href="{% url 'members:sermon_edit' s.pk %}">
+        <td class="text-nowrap">{{ s.date|date:"M j, Y" }}</td>
+        <td><a href="{% url 'members:sermon_edit' s.pk %}">{{ s.title }}</a>{% if s.scripture %}<div class="small text-body-secondary">{{ s.scripture }}</div>{% endif %}</td>
+        <td>{{ s.preacher }}</td><td class="small">{{ s.series }}</td>
+        <td class="text-nowrap">{% if s.audio_file %}<i class="bi bi-music-note-beamed" title="Audio"></i> {% endif %}{% if s.video_file or s.video_url %}<i class="bi bi-camera-video" title="Video"></i> {% endif %}{% if s.notes_file %}<i class="bi bi-file-earmark-text" title="Notes"></i>{% endif %}</td>
+        <td>{% if s.is_published %}<span class="badge text-bg-success">Published</span>{% else %}<span class="badge text-bg-secondary">Draft</span>{% endif %}</td>
+      </tr>
+    {% empty %}<tr><td colspan="6" class="empty-state"><i class="bi bi-mic"></i>No sermons yet. Upload Sunday's message so members can listen again.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+</div>
+{% include "includes/pagination.html" %}
+{% endblock %}

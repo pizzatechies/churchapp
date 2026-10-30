@@ -1,0 +1,22 @@
+<div class="card h-100 group-card">
+  <div class="card-body d-flex flex-column">
+    <div class="d-flex gap-3 align-items-start">
+      <span class="group-icon"><i class="bi {{ g.icon }}"></i></span>
+      <div class="flex-grow-1">
+        <a href="{% url 'portal:group_detail' g.pk %}" class="h6 text-decoration-none d-block mb-0 stretched-link">{{ g.name }}</a>
+        <div class="small text-body-secondary">{{ g.get_group_type_display }} · {{ g.audience }}</div>
+      </div>
+    </div>
+    {% if g.description %}<p class="small mt-2 mb-2">{{ g.description|truncatechars:110 }}</p>{% endif %}
+    <div class="mt-auto small text-body-secondary">
+      {% if g.meeting_summary %}<div><i class="bi bi-calendar-event"></i> {{ g.meeting_summary }}</div>{% endif %}
+      {% if g.meeting_place %}<div><i class="bi bi-geo-alt"></i> {{ g.meeting_place }}</div>{% endif %}
+      <div><i class="bi bi-people"></i> {{ g.total }} member{{ g.total|pluralize }}</div>
+    </div>
+    <div class="mt-2">
+      {% if g.my_status == 'active' %}<span class="badge text-bg-success"><i class="bi bi-check2"></i> You're a {{ g.my_role|lower|default:"member" }}</span>
+      {% elif g.my_status == 'pending' %}<span class="badge text-bg-warning">Request sent</span>
+      {% elif not g.can_join %}<span class="small text-body-secondary">{{ g.join_reason }}</span>{% endif %}
+    </div>
+  </div>
+</div>

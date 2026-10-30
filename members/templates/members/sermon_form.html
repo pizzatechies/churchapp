@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}{% if sermon %}Edit sermon{% else %}Upload sermon{% endif %}{% endblock %}
+{% block breadcrumbs %}<nav><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{% url 'members:sermon_list' %}">Sermons</a></li><li class="breadcrumb-item active">{% if sermon %}{{ sermon.title }}{% else %}New{% endif %}</li></ol></nav>{% endblock %}
+{% block page_title %}{% if sermon %}Edit sermon{% else %}Upload a sermon{% endif %}{% endblock %}
+{% block content %}
+<form method="post" enctype="multipart/form-data" novalidate style="max-width:1000px">{% csrf_token %}
+  {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+  <div class="card mb-3"><div class="card-body"><div class="row">
+    {% include "includes/field.html" with field=form.title col="col-md-8" %}
+    {% include "includes/field.html" with field=form.date col="col-md-4" %}
+    {% include "includes/field.html" with field=form.preacher col="col-md-4" %}
+    {% include "includes/field.html" with field=form.series col="col-md-4" %}
+    {% include "includes/field.html" with field=form.scripture col="col-md-4" %}
+    {% include "includes/field.html" with field=form.summary col="col-12" %}
+  </div></div></div>
+  <div class="card mb-3"><div class="card-header">Media</div><div class="card-body"><div class="row">
+    {% include "includes/field.html" with field=form.video_url col="col-12" %}
+    {% include "includes/field.html" with field=form.audio_file col="col-md-4" %}
+    {% include "includes/field.html" with field=form.video_file col="col-md-4" %}
+    {% include "includes/field.html" with field=form.notes_file col="col-md-4" %}
+  </div>
+  {% if sermon.audio_file %}<audio controls preload="none" class="w-100 mt-1" src="{% url 'members:sermon_media' sermon.pk 'audio' %}"></audio>{% endif %}
+  </div></div>
+  <div class="card mb-3"><div class="card-body">{% include "includes/field.html" with field=form.is_published col="" %}</div></div>
+  <div class="d-flex gap-2">
+    <button class="btn btn-primary"><i class="bi bi-save"></i> Save sermon</button>
+    <a class="btn btn-outline-secondary" href="{% url 'members:sermon_list' %}">Cancel</a>
+    {% if sermon %}<button class="btn btn-outline-danger ms-auto" name="delete" formnovalidate onclick="return confirm('Delete this sermon and its files?')"><i class="bi bi-trash"></i> Delete</button>{% endif %}
+  </div>
+</form>
+{% endblock %}

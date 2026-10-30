@@ -34,6 +34,7 @@ CHART_OF_ACCOUNTS = [
     ("2110", "Income Tax Withholding Payable", "liability", "payroll_liability", "", None),
     ("2120", "Retirement Contributions Payable", "liability", "payroll_liability", "", None),
     ("2130", "Health Insurance Payable", "liability", "payroll_liability", "", None),
+    ("2140", "Other Payroll Deductions Payable", "liability", "payroll_liability", "", None),
     ("2300", "Accrued Expenses", "liability", "other_current_liability", "", None),
     ("2500", "Mortgage / Notes Payable", "liability", "long_term_liability", "", None),
     # Net assets
@@ -58,7 +59,7 @@ CHART_OF_ACCOUNTS = [
     # Personnel
     ("5000", "Pastoral Salaries", "expense", "personnel", "program", None),
     ("5010", "Staff Salaries & Wages", "expense", "personnel", "management", None),
-    ("5020", "Clergy Housing Allowance", "expense", "personnel", "program", None),
+    ("5020", "Housing Allowance", "expense", "personnel", "program", None),
     ("5030", "Employer Payroll Taxes", "expense", "personnel", "management", None),
     ("5040", "Employee Benefits", "expense", "personnel", "management", None),
     ("5050", "Contract Labor & Guest Speakers", "expense", "personnel", "program", None),
@@ -104,40 +105,101 @@ FUNDS = [
     ("YTH", "Youth Ministry Fund", "designated", "4020", False, "Board-designated savings for youth camps and trips."),
 ]
 
-# code, name, kind, calculation, default_amount, expense acct, liability acct, in_wage_base, sort
-PAYROLL_ITEMS = [
-    ("REGULAR", "Regular Pay", "earning", "fixed", "0", None, None, True, 10),
-    ("HOUSING", "Housing Allowance", "earning", "fixed", "0", "5020", None, False, 20),
-    (None, "Bonus / Other Pay", "earning", "fixed", "0", None, None, True, 30),
-    (None, "Income Tax Withholding", "deduction", "percent", "10", None, "2110", True, 40),
-    (None, "Social Security – Employee", "deduction", "percent", "7.65", None, "2100", True, 50),
-    (None, "Retirement – Employee", "deduction", "percent", "5", None, "2120", True, 60),
-    (None, "Health Insurance – Employee Share", "deduction", "fixed", "0", None, "2130", True, 70),
-    (None, "Social Security – Employer", "employer", "percent", "7.65", "5030", "2100", True, 80),
-    (None, "Retirement – Employer Match", "employer", "percent", "3", "5040", "2120", True, 90),
-]
+# Payroll presets by country. Each item: code, name, kind, calculation, rate/amount, expense account,
+# liability account, counts toward wages, sort order, extra options.
+KENYA_PAYE_BANDS = [[24000, 10], [32333, 25], [500000, 30], [800000, 32.5], [None, 35]]
+
+PAYROLL_PRESETS = {
+    "KE": {
+        "accounts": {
+            "2100": "NSSF Payable", "2110": "PAYE Payable", "2120": "SHIF Payable", "2130": "Housing Levy Payable",
+            "2140": "SACCO & Other Deductions Payable", "5020": "Housing Allowance",
+            "5030": "Employer Statutory Contributions", "5040": "Staff Medical & Welfare",
+        },
+        "items": [
+            ("REGULAR", "Basic Salary", "earning", "fixed", "0", None, None, True, 10, {}),
+            ("HOUSING", "Housing Allowance", "earning", "fixed", "0", "5020", None, True, 20, {}),
+            (None, "Other Allowances", "earning", "fixed", "0", None, None, True, 30, {}),
+            (None, "NSSF – Employee", "deduction", "percent", "6", None, "2100", True, 40,
+             {"max_amount": "4320", "reduces_taxable_pay": True}),
+            (None, "SHIF", "deduction", "percent", "2.75", None, "2120", True, 50,
+             {"min_amount": "300", "reduces_taxable_pay": True}),
+            (None, "Housing Levy – Employee", "deduction", "percent", "1.5", None, "2130", True, 60,
+             {"reduces_taxable_pay": True}),
+            (None, "PAYE", "deduction", "bands", "0", None, "2110", True, 70,
+             {"bands": KENYA_PAYE_BANDS, "relief": "2400"}),
+            (None, "SACCO / Welfare Deduction", "deduction", "fixed", "0", None, "2140", True, 80, {}),
+            (None, "NSSF – Employer", "employer", "percent", "6", "5030", "2100", True, 90, {"max_amount": "4320"}),
+            (None, "Housing Levy – Employer", "employer", "percent", "1.5", "5030", "2130", True, 100, {}),
+        ],
+    },
+    "US": {
+        "accounts": {"2100": "Payroll Taxes Payable", "2110": "Income Tax Withholding Payable",
+                     "2120": "Retirement Contributions Payable", "2130": "Health Insurance Payable",
+                     "5020": "Clergy Housing Allowance", "5030": "Employer Payroll Taxes"},
+        "items": [
+            ("REGULAR", "Regular Pay", "earning", "fixed", "0", None, None, True, 10, {}),
+            ("HOUSING", "Clergy Housing Allowance", "earning", "fixed", "0", "5020", None, False, 20, {}),
+            (None, "Bonus / Other Pay", "earning", "fixed", "0", None, None, True, 30, {}),
+            (None, "Federal Income Tax Withholding", "deduction", "percent", "10", None, "2110", True, 40, {}),
+            (None, "Social Security & Medicare – Employee", "deduction", "percent", "7.65", None, "2100", True, 50, {}),
+            (None, "Retirement – Employee", "deduction", "percent", "5", None, "2120", True, 60, {"reduces_taxable_pay": True}),
+            (None, "Health Insurance – Employee Share", "deduction", "fixed", "0", None, "2130", True, 70, {}),
+            (None, "Social Security & Medicare – Employer", "employer", "percent", "7.65", "5030", "2100", True, 80, {}),
+            (None, "Retirement – Employer Match", "employer", "percent", "3", "5040", "2120", True, 90, {}),
+        ],
+    },
+    "generic": {
+        "accounts": {},
+        "items": [
+            ("REGULAR", "Basic Salary", "earning", "fixed", "0", None, None, True, 10, {}),
+            ("HOUSING", "Housing Allowance", "earning", "fixed", "0", "5020", None, True, 20, {}),
+            (None, "Other Allowances", "earning", "fixed", "0", None, None, True, 30, {}),
+            (None, "Income Tax (PAYE)", "deduction", "percent", "10", None, "2110", True, 40, {}),
+            (None, "Social Security – Employee", "deduction", "percent", "5", None, "2100", True, 50, {"reduces_taxable_pay": True}),
+            (None, "Pension – Employee", "deduction", "percent", "5", None, "2120", True, 60, {"reduces_taxable_pay": True}),
+            (None, "Health Insurance – Employee Share", "deduction", "fixed", "0", None, "2130", True, 70, {}),
+            (None, "Social Security – Employer", "employer", "percent", "5", "5030", "2100", True, 80, {}),
+            (None, "Pension – Employer", "employer", "percent", "5", "5040", "2120", True, 90, {}),
+        ],
+    },
+}
 
 
 @transaction.atomic
-def setup_church(church_name=None, currency_symbol=None, currency_code=None, fiscal_start_month=None):
+def setup_church(church_name=None, currency_symbol=None, currency_code=None, fiscal_start_month=None, country=None):
     from ledger.models import Account, Fund
     from payroll.models import PayrollItem
 
+    from .models import (
+        APPROVAL_THRESHOLDS,
+        CURRENCIES,
+        DEFAULT_STATEMENT_FOOTER,
+        US_STATEMENT_FOOTER,
+    )
+
     profile = ChurchProfile.get()
-    changed = False
+    first_setup = not Account.objects.exists()
+    country = (country or profile.country or "KE").upper()
+    if first_setup or country != profile.country:
+        # Choosing a country sets sensible local defaults; everything stays editable in Church settings.
+        profile.country = country
+        profile.currency_code, profile.currency_symbol = CURRENCIES.get(country, CURRENCIES["XX"])
+        profile.statement_footer = US_STATEMENT_FOOTER if country == "US" else DEFAULT_STATEMENT_FOOTER
+        profile.expense_approval_threshold = Decimal(APPROVAL_THRESHOLDS.get(profile.currency_code, 500))
     for attr, value in [("name", church_name), ("currency_symbol", currency_symbol),
                         ("currency_code", currency_code), ("fiscal_year_start_month", fiscal_start_month)]:
         if value:
             setattr(profile, attr, value)
-            changed = True
-    if changed:
-        profile.save()
+    profile.save()
+    preset = PAYROLL_PRESETS.get(country, PAYROLL_PRESETS["generic"])
 
     for role in ROLES:
         Group.objects.get_or_create(name=role)
 
     accounts = {}
     for number, name, type_, subtype, function, system_code in CHART_OF_ACCOUNTS:
+        name = preset["accounts"].get(number, name)
         existing = Account.objects.filter(system_code=system_code).first() if system_code else None
         account = existing or Account.objects.filter(number=number).first()
         if account is None:
@@ -156,13 +218,18 @@ def setup_church(church_name=None, currency_symbol=None, currency_code=None, fis
                 default_income_account=accounts.get(income_number),
             )
 
-    for code, name, kind, calc, amount, expense, liability, in_base, sort in PAYROLL_ITEMS:
+    for code, name, kind, calc, amount, expense, liability, in_base, sort, extra in preset["items"]:
         lookup = {"code": code} if code else {"name": name}
-        if not PayrollItem.objects.filter(**lookup).exists():
-            PayrollItem.objects.create(
-                code=code, name=name, kind=kind, calculation=calc, default_amount=Decimal(amount),
-                expense_account=accounts.get(expense) if expense else None,
-                liability_account=accounts.get(liability) if liability else None,
-                in_wage_base=in_base, sort_order=sort,
-            )
+        if PayrollItem.objects.filter(**lookup).exists():
+            continue
+        options = dict(extra)
+        for key in ("min_amount", "max_amount", "relief"):
+            if key in options:
+                options[key] = Decimal(options[key])
+        PayrollItem.objects.create(
+            code=code, name=name, kind=kind, calculation=calc, default_amount=Decimal(amount),
+            expense_account=accounts.get(expense) if expense else None,
+            liability_account=accounts.get(liability) if liability else None,
+            in_wage_base=in_base, sort_order=sort, **options,
+        )
     return profile

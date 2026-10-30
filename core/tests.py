@@ -147,8 +147,15 @@ class SiteSmokeTest(TestCase):
         self.assertGreater(len(self.crawl("admin")), 80)
 
     def test_other_roles_never_hit_errors(self):
-        for username in ("treasurer", "bookkeeper", "committee", "counter", "pastor"):
+        for username in ("treasurer", "bookkeeper", "committee", "counter", "pastor", "secretary", "media"):
             self.crawl(username, limit_per_pattern=1)
+
+    def test_members_app_pages(self):
+        from members.models import Member
+
+        member = Member.objects.exclude(user=None).first()
+        with self.settings(ROOT_URLCONF="config.urls_portal", LOGIN_REDIRECT_URL="portal:home"):
+            self.assertGreater(len(self.crawl(member.user.username)), 8)
 
     def test_demo_books_balance(self):
         from core.utils import today

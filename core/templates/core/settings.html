@@ -20,9 +20,10 @@
         </div>
         <h6 class="mt-2 mb-3 text-body-secondary text-uppercase small fw-semibold">Accounting</h6>
         <div class="row">
-          {% include "includes/field.html" with field=form.currency_code col="col-md-3" %}
-          {% include "includes/field.html" with field=form.currency_symbol col="col-md-3" %}
+          {% include "includes/field.html" with field=form.country col="col-md-6" %}
           {% include "includes/field.html" with field=form.fiscal_year_start_month col="col-md-6" %}
+          {% include "includes/field.html" with field=form.currency_code col="col-md-6" %}
+          {% include "includes/field.html" with field=form.currency_symbol col="col-md-6" %}
         </div>
         <h6 class="mt-2 mb-3 text-body-secondary text-uppercase small fw-semibold">Expense controls</h6>
         <div class="row">

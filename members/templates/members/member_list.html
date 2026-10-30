@@ -1,0 +1,49 @@
+{% extends "base.html" %}{% load finance %}
+{% block title %}Members{% endblock %}
+{% block page_title %}Members{% endblock %}
+{% block page_subtitle %}<p class="text-body-secondary mb-0">{{ count }} {% if filters.status == 'current' %}current {% endif %}record{{ count|pluralize }}</p>{% endblock %}
+{% block actions %}
+  <a href="{% querystring export='csv' page=None %}" class="btn btn-outline-secondary"><i class="bi bi-filetype-csv"></i> Export</a>
+  {% if caps.manage_members %}
+  <a href="{% url 'members:member_import' %}" class="btn btn-outline-secondary"><i class="bi bi-upload"></i> Import</a>
+  <a href="{% url 'members:member_create' %}" class="btn btn-primary"><i class="bi bi-person-plus"></i> Add member</a>
+  {% endif %}
+{% endblock %}
+{% block content %}
+<form class="filter-bar row g-2 align-items-end" method="get">
+  <div class="col-md-3"><label class="form-label">Search</label><input class="form-control form-control-sm" name="q" value="{{ filters.q }}" placeholder="Name, phone, member no."></div>
+  <div class="col-6 col-md-2"><label class="form-label">Status</label>
+    <select class="form-select form-select-sm" name="status" data-autosubmit>
+      <option value="current" {% if filters.status == 'current' %}selected{% endif %}>Current (all)</option>
+      {% for k, v in statuses %}<option value="{{ k }}" {% if filters.status == k %}selected{% endif %}>{{ v }}</option>{% endfor %}
+      <option value="" {% if filters.status == '' %}selected{% endif %}>Everyone</option>
+    </select></div>
+  <div class="col-6 col-md-2"><label class="form-label">Gender</label>
+    <select class="form-select form-select-sm" name="gender" data-autosubmit><option value="">All</option>{% for k, v in genders %}<option value="{{ k }}" {% if filters.gender == k %}selected{% endif %}>{{ v }}</option>{% endfor %}</select></div>
+  <div class="col-6 col-md-2"><label class="form-label">Age group</label>
+    <select class="form-select form-select-sm" name="age" data-autosubmit><option value="">All ages</option>{% for k, label, lo, hi in age_groups %}<option value="{{ k }}" {% if filters.age == k %}selected{% endif %}>{{ label }}</option>{% endfor %}<option value="unknown" {% if filters.age == 'unknown' %}selected{% endif %}>Not recorded</option></select></div>
+  <div class="col-6 col-md-2"><label class="form-label">Group</label>
+    <select class="form-select form-select-sm" name="group" data-autosubmit><option value="">Any</option>{% for g in groups %}<option value="{{ g.pk }}" {% if filters.group == g.pk|stringformat:'s' %}selected{% endif %}>{{ g.name }}</option>{% endfor %}</select></div>
+  <div class="col-md-1"><button class="btn btn-sm btn-outline-primary w-100">Go</button></div>
+</form>
+<div class="card table-card">
+  <table class="table table-hover">
+    <thead><tr><th>Name</th><th>No.</th><th>Gender</th><th>Age group</th><th>Phone</th><th>Residence</th><th class="num">Groups</th><th>Status</th></tr></thead>
+    <tbody>
+    {% for m in page_obj %}
+      <tr data-href="{{ m.get_absolute_url }}">
+        <td><span class="avatar avatar-{{ m.gender }}">{{ m.initials }}</span> <a href="{{ m.get_absolute_url }}">{{ m.display_name }}</a></td>
+        <td class="small text-body-secondary">{{ m.member_number }}</td>
+        <td class="small">{{ m.get_gender_display }}</td>
+        <td class="small">{{ m.age_group_label }}</td>
+        <td class="small">{{ m.phone }}</td>
+        <td class="small">{{ m.residence }}</td>
+        <td class="num">{{ m.groups_count }}</td>
+        <td>{% if m.status == 'member' %}<span class="badge badge-gold">Member</span>{% else %}<span class="badge text-bg-light border">{{ m.get_status_display }}</span>{% endif %}</td>
+      </tr>
+    {% empty %}<tr><td colspan="8" class="empty-state"><i class="bi bi-person-vcard"></i>No members match. {% if caps.manage_members %}<a href="{% url 'members:member_create' %}">Add the first one</a>.{% endif %}</td></tr>{% endfor %}
+    </tbody>
+  </table>
+</div>
+{% include "includes/pagination.html" %}
+{% endblock %}

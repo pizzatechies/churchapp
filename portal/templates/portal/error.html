@@ -1,0 +1,4 @@
+{% extends "portal/base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}<div class="card"><div class="empty-state"><i class="bi bi-signpost-split"></i><h1 class="h5">{{ title }}</h1><p>{{ message }}</p><a href="{% url 'portal:home' %}" class="btn btn-outline-primary">Go home</a></div></div>{% endblock %}
+{% block anonymous %}<div class="container py-5"><h1 class="h4">{{ title }}</h1><p>{{ message }}</p><a href="{% url 'login' %}">Sign in</a></div>{% endblock %}

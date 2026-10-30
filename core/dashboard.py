@@ -48,6 +48,10 @@ def dashboard(request):
         .order_by("-date")[:8]
         if has_cap(user, "manage_giving") else []
     )
+    if has_cap(user, "view_members") or has_cap(user, "manage_sermons"):
+        from members.views import congregation_snapshot
+
+        context["congregation"] = congregation_snapshot()
     if not has_cap(user, "view_finance"):
         return render(request, "core/dashboard_limited.html", context)
 

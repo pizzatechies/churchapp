@@ -28,17 +28,40 @@ def default_earnings(employee, hours=None):
 
 
 def calculate_withholdings(employee, earnings):
-    """Apply the employee's deductions and employer contributions to the given earnings."""
+    """
+    Apply the employee's deductions and employer contributions to the given earnings.
+
+    Percentage items are calculated on wages (earnings that count toward the wage
+    base), then limited to their monthly minimum / cap. Tax-band items (PAYE and
+    similar) are calculated last on taxable pay: wages less the employee
+    deductions marked "deducted before income tax". Monthly bands, caps and
+    relief are pro-rated for weekly, fortnightly and twice-monthly pay.
+    """
+    months_per_period = Decimal(12) / Decimal(employee.periods_per_year)  # e.g. 0.5 when paid twice a month
     wage_base = sum((amt for item, amt in earnings.items() if item.in_wage_base), ZERO)
+    assignments = [a for a in employee.payroll_items.select_related("item").filter(item__is_active=True)
+                   if a.item.kind != PayrollItem.EARNING]
     result = {}
-    for assignment in employee.payroll_items.select_related("item").filter(item__is_active=True):
+    for assignment in assignments:
         item = assignment.item
-        if item.kind == PayrollItem.EARNING:
+        if item.calculation == PayrollItem.BANDS:
             continue
         if item.calculation == PayrollItem.PERCENT:
-            result[item] = q2(wage_base * assignment.amount / Decimal(100))
+            amount = wage_base * assignment.amount / Decimal(100)
+            if item.min_amount is not None and wage_base > 0:
+                amount = max(amount, item.min_amount * months_per_period)
+            if item.max_amount is not None:
+                amount = min(amount, item.max_amount * months_per_period)
         else:
-            result[item] = q2(assignment.amount)
+            amount = assignment.amount
+        result[item] = q2(amount)
+    pre_tax = sum((amt for item, amt in result.items() if item.kind == PayrollItem.DEDUCTION and item.reduces_taxable_pay), ZERO)
+    taxable = max(ZERO, wage_base - pre_tax)
+    for assignment in assignments:
+        item = assignment.item
+        if item.calculation == PayrollItem.BANDS:
+            # Bands and relief are monthly: convert this period's pay to a monthly figure and back.
+            result[item] = q2(item.band_tax(taxable / months_per_period) * months_per_period)
     return result
 
 

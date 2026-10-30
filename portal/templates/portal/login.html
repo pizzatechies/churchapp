@@ -1,0 +1,27 @@
+{% extends "portal/base.html" %}{% load static %}
+{% block title %}Sign in{% endblock %}
+{% block anonymous %}
+<div class="login-wrap">
+  <div class="card login-card shadow-lg">
+    <div class="card-body p-4 p-md-5">
+      <div class="text-center mb-4">
+        <img src="{% static 'brand/ecclesia-logo.svg' %}" alt="" width="72" height="72" class="mb-2">
+        <h1 class="h4 mb-0">{{ brand.app_name }}</h1>
+        <p class="text-body-secondary small mb-0">{{ church.name }} · {{ brand.app_tagline }}</p>
+      </div>
+      {% for message in messages %}<div class="alert alert-info small">{{ message }}</div>{% endfor %}
+      {% if form.non_field_errors %}<div class="alert alert-danger small">{% for e in form.non_field_errors %}{{ e }}{% endfor %}</div>{% endif %}
+      <form method="post" action="{% url 'login' %}">{% csrf_token %}
+        <div class="mb-3"><label class="form-label" for="id_username">Username</label>
+          <input type="text" name="username" id="id_username" class="form-control" autocomplete="username" required autofocus value="{{ form.username.value|default:'' }}"></div>
+        <div class="mb-3"><label class="form-label" for="id_password">Password</label>
+          <input type="password" name="password" id="id_password" class="form-control" autocomplete="current-password" required></div>
+        <input type="hidden" name="next" value="{{ next }}">
+        <button class="btn btn-primary w-100" type="submit">Sign in</button>
+      </form>
+      <p class="small text-body-secondary text-center mt-3 mb-0">No login yet? Ask the church office to set one up for you.</p>
+    </div>
+  </div>
+  <div class="login-footer"><span>A product of</span><img src="{% static 'brand/pizza-technologies.png' %}" alt="{{ brand.vendor_name }}"></div>
+</div>
+{% endblock %}

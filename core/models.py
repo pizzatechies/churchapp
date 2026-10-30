@@ -8,10 +8,34 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
 DEFAULT_STATEMENT_FOOTER = (
+    "Thank you for your faithful generosity and partnership in the work of the ministry. "
+    "Please keep this statement for your records."
+)
+US_STATEMENT_FOOTER = (
     "Thank you for your faithful generosity. No goods or services were provided in "
     "exchange for these contributions other than intangible religious benefits, "
     "unless otherwise noted. Please keep this statement for your tax records."
 )
+
+# Country presets: currency, statement wording and payroll defaults (see core/setup.py).
+COUNTRY_CHOICES = [
+    ("KE", "Kenya"), ("UG", "Uganda"), ("TZ", "Tanzania"), ("RW", "Rwanda"), ("ET", "Ethiopia"),
+    ("NG", "Nigeria"), ("GH", "Ghana"), ("ZA", "South Africa"), ("ZM", "Zambia"), ("ZW", "Zimbabwe"),
+    ("MW", "Malawi"), ("US", "United States"), ("CA", "Canada"), ("GB", "United Kingdom"),
+    ("IE", "Ireland"), ("AU", "Australia"), ("NZ", "New Zealand"), ("IN", "India"), ("PH", "Philippines"),
+    ("XX", "Other"),
+]
+CURRENCIES = {
+    "KE": ("KES", "KSh"), "UG": ("UGX", "USh"), "TZ": ("TZS", "TSh"), "RW": ("RWF", "FRw"), "ET": ("ETB", "Br"),
+    "NG": ("NGN", "₦"), "GH": ("GHS", "GH₵"), "ZA": ("ZAR", "R"), "ZM": ("ZMW", "K"), "ZW": ("USD", "$"),
+    "MW": ("MWK", "MK"), "US": ("USD", "$"), "CA": ("CAD", "$"), "GB": ("GBP", "£"), "IE": ("EUR", "€"),
+    "AU": ("AUD", "$"), "NZ": ("NZD", "$"), "IN": ("INR", "₹"), "PH": ("PHP", "₱"), "XX": ("USD", "$"),
+}
+# A sensible default "needs approval above" limit, roughly the same real value in each currency.
+APPROVAL_THRESHOLDS = {
+    "KES": 50000, "UGX": 1500000, "TZS": 1000000, "RWF": 500000, "ETB": 20000, "NGN": 500000, "GHS": 5000,
+    "ZAR": 7500, "ZMW": 10000, "MWK": 650000, "INR": 30000, "PHP": 20000,
+}
 
 MONTH_CHOICES = [
     (1, "January"), (2, "February"), (3, "March"), (4, "April"), (5, "May"), (6, "June"),
@@ -29,9 +53,10 @@ class ChurchProfile(models.Model):
     phone = models.CharField(max_length=40, blank=True)
     email = models.EmailField(blank=True)
     website = models.CharField(max_length=150, blank=True)
-    tax_id = models.CharField("Tax ID / EIN", max_length=40, blank=True)
-    currency_code = models.CharField(max_length=3, default="USD")
-    currency_symbol = models.CharField(max_length=5, default="$")
+    tax_id = models.CharField("Tax ID (e.g. KRA PIN, EIN)", max_length=40, blank=True)
+    country = models.CharField(max_length=2, choices=COUNTRY_CHOICES, default="KE")
+    currency_code = models.CharField(max_length=3, default="KES", help_text="ISO code, e.g. KES, UGX, NGN, USD.")
+    currency_symbol = models.CharField(max_length=5, default="KSh", help_text="Shown before amounts, e.g. KSh, USh, ₦, $.")
     fiscal_year_start_month = models.PositiveSmallIntegerField(
         choices=MONTH_CHOICES, default=1,
         validators=[MinValueValidator(1), MaxValueValidator(12)],
@@ -41,7 +66,7 @@ class ChurchProfile(models.Model):
         help_text="Transactions dated on or before this date can no longer be added, changed or voided.",
     )
     expense_approval_threshold = models.DecimalField(
-        max_digits=14, decimal_places=2, default=Decimal("500.00"),
+        max_digits=14, decimal_places=2, default=Decimal("50000.00"),
         help_text="Expenses above this amount need approval from the finance committee, "
                   "treasurer or an administrator. Smaller expenses are approved automatically when submitted.",
     )

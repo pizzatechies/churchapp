@@ -1,0 +1,41 @@
+{% extends "portal/base.html" %}
+{% block title %}{{ group.name }}{% endblock %}
+{% block content %}
+<a href="{% url 'portal:groups' %}" class="small text-decoration-none"><i class="bi bi-arrow-left"></i> All groups</a>
+<div class="d-flex gap-3 align-items-center mt-2 mb-3">
+  <span class="group-icon group-icon-lg"><i class="bi {{ group.icon }}"></i></span>
+  <div><h1 class="h3 mb-0">{{ group.name }}</h1><div class="text-body-secondary">{{ group.get_group_type_display }} · Open to {{ group.audience|lower }}</div></div>
+</div>
+<div class="row g-3">
+  <div class="col-lg-7">
+    {% if group.description %}<div class="card mb-3"><div class="card-body">{{ group.description|linebreaksbr }}</div></div>{% endif %}
+    <div class="card mb-3"><div class="card-body">
+      <dl class="dl-grid mb-0">
+        {% if group.meeting_summary %}<dt>Meets</dt><dd>{{ group.meeting_summary }}</dd>{% endif %}
+        {% if group.meeting_place %}<dt>Where</dt><dd>{{ group.meeting_place }}</dd>{% endif %}
+        <dt>Members</dt><dd>{{ group.total }}</dd>
+        {% if leaders %}<dt>Leaders</dt><dd>{% for l in leaders %}{{ l.member.display_name }} <span class="small text-body-secondary">({{ l.get_role_display|cut:" / chairperson" }})</span>{% if not forloop.last %}<br>{% endif %}{% endfor %}</dd>{% endif %}
+      </dl>
+    </div></div>
+    {% if is_member %}
+      <div class="alert alert-success"><i class="bi bi-check-circle"></i> You're a {{ group.my_role|lower }} of this group.</div>
+    {% elif group.my_status == 'pending' %}
+      <div class="alert alert-warning d-flex justify-content-between align-items-center"><span><i class="bi bi-hourglass-split"></i> Your request is waiting for approval.</span>
+        <form method="post" action="{% url 'portal:group_cancel' group.pk %}">{% csrf_token %}<button class="btn btn-sm btn-outline-secondary">Withdraw</button></form></div>
+    {% elif group.can_join %}
+      <form method="post" action="{% url 'portal:group_join' group.pk %}">{% csrf_token %}<button class="btn btn-gold btn-lg w-100"><i class="bi bi-person-plus"></i> Request to join</button></form>
+    {% else %}
+      <div class="alert alert-light border">{{ group.join_reason }}</div>
+    {% endif %}
+  </div>
+  <div class="col-lg-5">
+    {% if fellow_members is not None %}
+    <div class="card"><div class="card-header">Fellow members</div>
+      <ul class="list-group list-group-flush">{% for gm in fellow_members %}<li class="list-group-item d-flex align-items-center gap-2"><span class="avatar">{{ gm.member.initials }}</span> {{ gm.member.first_name }} {{ gm.member.last_name }}{% if gm.role != 'member' %} <span class="badge badge-gold ms-auto">{{ gm.get_role_display|cut:" / chairperson" }}</span>{% endif %}</li>{% endfor %}</ul>
+    </div>
+    {% else %}
+    <div class="card"><div class="card-body small text-body-secondary"><i class="bi bi-shield-lock"></i> The member list is visible to people in this group.</div></div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

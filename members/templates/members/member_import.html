@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Import members{% endblock %}
+{% block page_title %}Import members from a spreadsheet{% endblock %}
+{% block content %}
+<div class="row g-3">
+  <div class="col-lg-6">
+    <form method="post" enctype="multipart/form-data" class="card" novalidate>{% csrf_token %}
+      <div class="card-body">
+        {% include "includes/form_fields.html" with col="col-12" %}
+        <p class="small text-body-secondary">Gender may be written as F/Female or M/Male. People already on the register (same name and phone) are skipped. Dates as YYYY-MM-DD.</p>
+        <button class="btn btn-primary"><i class="bi bi-upload"></i> Import</button>
+      </div>
+    </form>
+    {% if result %}<div class="alert alert-success mt-3">Created {{ result.created }}, skipped {{ result.skipped }}.{% if result.errors %}<ul class="small mb-0 mt-2">{% for e in result.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+      <div class="mt-2"><a href="{% url 'members:member_list' %}">View members</a></div></div>{% endif %}
+  </div>
+  <div class="col-lg-6"><div class="card"><div class="card-header">Recognized columns</div>
+    <table class="table table-sm mb-0">{% for field, aliases in columns.items %}<tr><td class="small text-body-secondary">{{ field|cut:"_"|capfirst }}</td><td class="small">{{ aliases|join:", " }}</td></tr>{% endfor %}</table>
+  </div></div>
+</div>
+{% endblock %}

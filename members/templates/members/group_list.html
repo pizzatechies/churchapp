@@ -1,0 +1,35 @@
+{% extends "base.html" %}{% load finance %}
+{% block title %}Groups & fellowships{% endblock %}
+{% block page_title %}Groups &amp; fellowships{% endblock %}
+{% block page_subtitle %}{% if pending_total %}<p class="mb-0"><span class="badge text-bg-warning">{{ pending_total }}</span> request{{ pending_total|pluralize }} to join waiting for approval</p>{% endif %}{% endblock %}
+{% block actions %}
+  <a href="?show={% if show == 'active' %}all{% else %}active{% endif %}" class="btn btn-outline-secondary">{% if show == 'active' %}Include inactive{% else %}Active only{% endif %}</a>
+  {% if caps.manage_members %}<a href="{% url 'members:group_create' %}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> New group</a>{% endif %}
+{% endblock %}
+{% block content %}
+{% for type, groups in by_type.items %}
+<h2 class="h6 text-uppercase text-body-secondary fw-semibold mt-3 mb-2">{{ type }}</h2>
+<div class="row g-3 mb-2">
+  {% for g in groups %}
+  <div class="col-md-6 col-xl-4">
+    <div class="card h-100 group-card {% if not g.is_active %}opacity-50{% endif %}"><div class="card-body">
+      <div class="d-flex gap-3 align-items-start">
+        <span class="group-icon"><i class="bi {{ g.icon }}"></i></span>
+        <div class="flex-grow-1">
+          <a href="{{ g.get_absolute_url }}" class="h6 text-decoration-none d-block mb-0">{{ g.name }}</a>
+          <div class="small text-body-secondary">{{ g.audience }}{% if g.meeting_summary %} · {{ g.meeting_summary }}{% endif %}</div>
+        </div>
+        {% if g.pending %}<span class="badge text-bg-warning" title="Requests to join">{{ g.pending }}</span>{% endif %}
+      </div>
+      <div class="d-flex justify-content-between small mt-3 mb-1"><span><strong>{{ g.total }}</strong> member{{ g.total|pluralize }}</span><span class="text-body-secondary">{{ g.women }} women · {{ g.men }} men</span></div>
+      {% if g.total %}<div class="split-bar" role="img" aria-label="{{ g.women }} women, {{ g.men }} men"><span class="split-a" style="width: {% widthratio g.women g.total 100 %}%"></span><span class="split-b" style="width: {% widthratio g.men g.total 100 %}%"></span></div>{% endif %}
+      {% if g.leader_list %}<div class="small mt-2 text-body-secondary">{% for l in g.leader_list|slice:":2" %}{{ l.get_role_display|cut:" / chairperson" }}: {{ l.member }}{% if not forloop.last %} · {% endif %}{% endfor %}</div>{% endif %}
+    </div></div>
+  </div>
+  {% endfor %}
+</div>
+{% empty %}
+<div class="card"><div class="empty-state"><i class="bi bi-people"></i>No groups yet. Create fellowships (e.g. Women's, Men's, Youth), ministries and home cells.</div></div>
+{% endfor %}
+<p class="small text-body-secondary mt-2"><span class="legend-key" style="background:var(--series-1)"></span>Women <span class="legend-key ms-2" style="background:var(--series-2)"></span>Men</p>
+{% endblock %}

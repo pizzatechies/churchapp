@@ -78,7 +78,7 @@ class Expense(models.Model):
     TYPE_CHOICES = [
         (BILL, "Bill / invoice"),
         (REIMBURSEMENT, "Reimbursement request"),
-        (CHECK_REQUEST, "Check / payment request"),
+        (CHECK_REQUEST, "Cheque / payment request"),
     ]
 
     vendor = models.ForeignKey(Vendor, on_delete=models.PROTECT, related_name="expenses", verbose_name="Payee")
@@ -169,8 +169,8 @@ class ExpensePayment(models.Model):
     MOBILE_MONEY = "mobile_money"
     OTHER = "other"
     METHOD_CHOICES = [
-        (CHECK, "Check"), (BANK_TRANSFER, "Bank transfer / ACH"), (CARD, "Debit / credit card"),
-        (CASH, "Cash"), (MOBILE_MONEY, "Mobile money"), (OTHER, "Other"),
+        (CHECK, "Cheque"), (BANK_TRANSFER, "Bank transfer / EFT"), (CARD, "Debit / credit card"),
+        (CASH, "Cash"), (MOBILE_MONEY, "M-Pesa / mobile money"), (OTHER, "Other"),
     ]
 
     expense = models.ForeignKey(Expense, on_delete=models.PROTECT, related_name="payments")
@@ -178,7 +178,7 @@ class ExpensePayment(models.Model):
     amount = money_field(validators=[MinValueValidator(Decimal("0.01"))])
     pay_from = models.ForeignKey(Account, on_delete=models.PROTECT, related_name="+", verbose_name="Paid from")
     method = models.CharField(max_length=15, choices=METHOD_CHOICES, default=CHECK)
-    reference = models.CharField("Check # / reference", max_length=60, blank=True)
+    reference = models.CharField("Cheque / M-Pesa ref", max_length=60, blank=True)
     memo = models.CharField(max_length=255, blank=True)
     journal_entry = models.ForeignKey(JournalEntry, null=True, blank=True, on_delete=models.SET_NULL, related_name="+")
     is_void = models.BooleanField(default=False)

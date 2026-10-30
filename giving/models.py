@@ -230,8 +230,8 @@ class Contribution(models.Model):
     MOBILE_MONEY = "mobile_money"
     OTHER = "other"
     METHOD_CHOICES = [
-        (CASH, "Cash"), (CHECK, "Check"), (CARD, "Card"), (ONLINE, "Online giving"),
-        (BANK_TRANSFER, "Bank transfer / ACH"), (MOBILE_MONEY, "Mobile money"), (OTHER, "Other"),
+        (CASH, "Cash"), (CHECK, "Cheque"), (CARD, "Card"), (ONLINE, "Online giving"),
+        (BANK_TRANSFER, "Bank transfer / EFT"), (MOBILE_MONEY, "M-Pesa / mobile money"), (OTHER, "Other"),
     ]
 
     batch = models.ForeignKey(ContributionBatch, on_delete=models.CASCADE, related_name="contributions")
@@ -243,7 +243,7 @@ class Contribution(models.Model):
                                 limit_choices_to={"type": Account.INCOME}, verbose_name="Category")
     amount = money_field(validators=[MinValueValidator(Decimal("0.01"))])
     method = models.CharField(max_length=15, choices=METHOD_CHOICES, default=CHECK)
-    check_number = models.CharField("Check / reference #", max_length=40, blank=True)
+    check_number = models.CharField("Cheque / M-Pesa ref", max_length=40, blank=True)
     memo = models.CharField(max_length=255, blank=True)
     is_deductible = models.BooleanField(
         "Tax deductible", default=True,

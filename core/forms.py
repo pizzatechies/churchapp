@@ -1,5 +1,6 @@
 from django import forms
 from django.conf import settings
+from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.models import Group, User
 
 from .models import ChurchProfile, Document
@@ -47,7 +48,7 @@ class ChurchProfileForm(StyledModelForm):
     class Meta:
         model = ChurchProfile
         fields = [
-            "name", "address", "phone", "email", "website", "tax_id",
+            "name", "address", "phone", "email", "website", "tax_id", "country",
             "currency_code", "currency_symbol", "fiscal_year_start_month",
             "expense_approval_threshold", "require_separate_approver",
             "treasurer_name", "statement_footer",
@@ -125,3 +126,16 @@ class DocumentForm(StyledForm):
             size=f.size,
             uploaded_by=user,
         )
+
+
+class StaffAuthenticationForm(AuthenticationForm):
+    """The admin app is for church staff and volunteers with a role; members use the members app."""
+
+    def confirm_login_allowed(self, user):
+        super().confirm_login_allowed(user)
+        if not (user.is_superuser or user.groups.exists()):
+            raise forms.ValidationError(
+                f"This account is for {settings.PRODUCT_NAME} Connect, the members app. "
+                "Ask the church office if you need staff access.",
+                code="no_role",
+            )

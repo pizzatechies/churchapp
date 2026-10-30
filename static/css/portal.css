@@ -1,0 +1,60 @@
+/* Ecclesia Connect — the members app. Builds on app.css tokens. */
+body.portal { background: var(--app-body-bg); padding-bottom: env(safe-area-inset-bottom); }
+.portal-wrap { max-width: 1120px; margin: 0 auto; padding-left: 16px; padding-right: 16px; }
+
+.portal-top {
+  background: linear-gradient(90deg, var(--royal-900), var(--royal-700));
+  color: #fff; padding: 10px 0; position: sticky; top: 0; z-index: 1030;
+  border-bottom: 3px solid var(--gold-400);
+}
+.portal-brand { display: flex; align-items: center; gap: 10px; color: #fff; text-decoration: none; min-width: 0; }
+.portal-brand span { display: flex; flex-direction: column; line-height: 1.15; min-width: 0; }
+.portal-brand strong { font-size: 0.98rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.portal-brand small { color: var(--gold-300); font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 600; }
+.portal-nav { gap: 4px; }
+.portal-nav a { color: #d6def5; text-decoration: none; padding: 6px 12px; border-radius: 999px; font-size: 0.9rem; }
+.portal-nav a:hover { color: #fff; background: rgba(255, 255, 255, 0.08); }
+.portal-nav a.active { color: var(--royal-950); background: var(--gold-400); font-weight: 600; }
+.portal-icon-btn { color: #fff; border: 1px solid rgba(255, 255, 255, 0.25); }
+.portal-icon-btn:hover { color: var(--royal-950); background: var(--gold-400); border-color: var(--gold-400); }
+
+.portal-main { padding-top: 20px; padding-bottom: 96px; }
+@media (min-width: 768px) { .portal-main { padding-bottom: 32px; } }
+
+.portal-hero {
+  border-radius: 16px; padding: 22px 24px; margin-bottom: 20px; color: #fff;
+  background: radial-gradient(circle at 85% 20%, rgba(226, 180, 63, 0.35), transparent 40%),
+              linear-gradient(120deg, var(--royal-800), var(--royal-600));
+}
+.portal-hero-kicker { color: var(--gold-300); text-transform: uppercase; letter-spacing: 0.12em; font-size: 0.72rem; font-weight: 700; }
+.portal-hero p { color: #d6def5; }
+
+.portal-list-item { transition: border-color 0.15s ease, transform 0.15s ease; }
+.portal-list-item:hover { border-color: var(--gold-400); transform: translateY(-1px); }
+
+.group-icon-lg { width: 56px !important; height: 56px !important; font-size: 1.6rem !important; border-radius: 14px !important; }
+.sermon-date {
+  display: inline-flex; flex-direction: column; align-items: center; justify-content: center; width: 46px; height: 50px;
+  border-radius: 10px; background: var(--app-accent-soft); color: var(--royal-700); line-height: 1.05; flex: 0 0 46px;
+}
+[data-bs-theme="dark"] .sermon-date { color: #b7c9fa; }
+.sermon-date span { font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 700; }
+.sermon-date strong { font-size: 1.15rem; }
+
+.portal-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.portal-chips a { padding: 5px 12px; border-radius: 999px; border: 1px solid var(--app-border); background: var(--app-card-bg);
+  color: var(--bs-body-color); text-decoration: none; font-size: 0.85rem; }
+.portal-chips a.active { background: var(--royal-600); border-color: var(--royal-600); color: #fff; }
+
+.portal-tabs {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 1030; display: flex; justify-content: space-around;
+  background: var(--app-card-bg); border-top: 1px solid var(--app-border); padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
+}
+.portal-tabs a { display: flex; flex-direction: column; align-items: center; gap: 2px; color: var(--bs-secondary-color); text-decoration: none;
+  font-size: 0.7rem; padding: 4px 10px; border-radius: 10px; min-width: 64px; }
+.portal-tabs a i { font-size: 1.25rem; }
+.portal-tabs a.active { color: var(--royal-600); background: var(--app-gold-soft); font-weight: 600; }
+[data-bs-theme="dark"] .portal-tabs a.active { color: var(--gold-300); }
+
+.portal-footer { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 40px; color: var(--bs-secondary-color); font-size: 0.75rem; }
+.portal-footer img { height: 28px; width: auto; }

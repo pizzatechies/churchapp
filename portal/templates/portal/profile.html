@@ -1,0 +1,33 @@
+{% extends "portal/base.html" %}
+{% block title %}My profile{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center gap-3 mb-3">
+  <span class="avatar avatar-lg">{{ member.initials }}</span>
+  <div><h1 class="h3 mb-0">{{ member.display_name }}</h1><div class="text-body-secondary small">Member no. {{ member.member_number }} · {{ member.get_status_display }}{% if member.date_joined %} since {{ member.date_joined|date:"Y" }}{% endif %}</div></div>
+</div>
+<div class="row g-3">
+  <div class="col-lg-7">
+    <form method="post" class="card" novalidate>{% csrf_token %}
+      <div class="card-header">My contact details</div>
+      <div class="card-body"><div class="row">
+        {% include "includes/field.html" with field=form.phone col="col-md-6" %}
+        {% include "includes/field.html" with field=form.email col="col-md-6" %}
+        {% include "includes/field.html" with field=form.residence col="col-md-6" %}
+        {% include "includes/field.html" with field=form.town col="col-md-6" %}
+        {% include "includes/field.html" with field=form.county col="col-md-6" %}
+        {% include "includes/field.html" with field=form.postal_address col="col-md-6" %}
+        {% include "includes/field.html" with field=form.occupation col="col-12" %}
+        {% include "includes/field.html" with field=form.emergency_contact_name col="col-md-6" %}
+        {% include "includes/field.html" with field=form.emergency_contact_phone col="col-md-6" %}
+      </div>
+      <p class="small text-body-secondary mb-0">To correct your name, gender or date of birth, please contact the church office.</p></div>
+      <div class="card-footer bg-transparent d-flex gap-2"><button class="btn btn-primary">Save</button><a href="{% url 'portal:password' %}" class="btn btn-outline-secondary"><i class="bi bi-key"></i> Change password</a></div>
+    </form>
+  </div>
+  <div class="col-lg-5">
+    <div class="card"><div class="card-header">My groups</div>
+      <ul class="list-group list-group-flush">{% for gm in memberships %}<li class="list-group-item d-flex justify-content-between"><a href="{% url 'portal:group_detail' gm.group.pk %}">{{ gm.group }}</a><span class="small text-body-secondary">{{ gm.get_role_display|cut:" / chairperson" }}{% if gm.inducted_on %} · since {{ gm.inducted_on|date:"M Y" }}{% endif %}</span></li>{% empty %}<li class="list-group-item small text-body-secondary">None yet.</li>{% endfor %}</ul>
+    </div>
+  </div>
+</div>
+{% endblock %}

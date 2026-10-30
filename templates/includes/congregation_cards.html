@@ -1,0 +1,30 @@
+{% with c=congregation %}
+<div class="row g-3 mb-3">
+  {% if caps.view_members %}
+  <div class="col-lg-4">
+    <div class="card h-100 stat-card"><div class="card-header d-flex justify-content-between"><span><i class="bi bi-people-fill text-gold"></i> Congregation</span><a class="small fw-normal" href="{% url 'members:summary' %}">Summary</a></div>
+      <div class="card-body">
+        <div class="stat-value">{{ c.stats.total }}</div>
+        <div class="stat-sub mb-2">{{ c.stats.by_gender.female }} women · {{ c.stats.by_gender.male }} men{% if c.stats.by_gender.unspecified %} · {{ c.stats.by_gender.unspecified }} not stated{% endif %}</div>
+        {% if c.stats.total %}<div class="split-bar" role="img" aria-label="{{ c.stats.by_gender_pct.female }}% women, {{ c.stats.by_gender_pct.male }}% men"><span class="split-a" style="width: {{ c.stats.by_gender_pct.female }}%"></span><span class="split-b" style="width: {{ c.stats.by_gender_pct.male }}%"></span></div>{% endif %}
+        <div class="small text-body-secondary mt-2"><span class="legend-key" style="background:var(--series-1)"></span>Women <span class="legend-key ms-2" style="background:var(--series-2)"></span>Men · {{ c.new_inductions }} induction{{ c.new_inductions|pluralize }} this month</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card h-100 table-card"><div class="card-header d-flex justify-content-between"><span>Requests to join groups</span><a class="small fw-normal" href="{% url 'members:group_list' %}">Groups</a></div>
+      <table class="table table-sm">{% for gm in c.pending_requests %}<tr data-href="{{ gm.group.get_absolute_url }}"><td><a href="{{ gm.member.get_absolute_url }}">{{ gm.member }}</a><div class="small text-body-secondary">{{ gm.group }}</div></td><td class="small text-nowrap text-body-secondary">{{ gm.requested_at|timesince }} ago</td></tr>
+      {% empty %}<tr><td class="small text-body-secondary p-3">No requests waiting.</td></tr>{% endfor %}</table>
+    </div>
+  </div>
+  {% endif %}
+  {% if caps.manage_sermons %}
+  <div class="col-lg-4">
+    <div class="card h-100 table-card"><div class="card-header d-flex justify-content-between"><span><i class="bi bi-mic text-gold"></i> Recent sermons</span><a class="small fw-normal" href="{% url 'members:sermon_create' %}">Upload</a></div>
+      <table class="table table-sm">{% for s in c.latest_sermons %}<tr data-href="{% url 'members:sermon_edit' s.pk %}"><td><a href="{% url 'members:sermon_edit' s.pk %}">{{ s.title }}</a><div class="small text-body-secondary">{{ s.preacher }}</div></td><td class="small text-nowrap">{{ s.date|date:"M j" }}{% if not s.is_published %} <span class="badge text-bg-secondary">Draft</span>{% endif %}</td></tr>
+      {% empty %}<tr><td class="small text-body-secondary p-3">None yet.</td></tr>{% endfor %}</table>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endwith %}

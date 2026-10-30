@@ -30,7 +30,12 @@ class PayrollItem(models.Model):
     ]
     FIXED = "fixed"
     PERCENT = "percent"
-    CALC_CHOICES = [(FIXED, "Fixed amount per paycheck"), (PERCENT, "Percent of wages")]
+    BANDS = "bands"
+    CALC_CHOICES = [
+        (FIXED, "Fixed amount per paycheck"),
+        (PERCENT, "Percent of wages"),
+        (BANDS, "Progressive tax bands (e.g. PAYE)"),
+    ]
 
     REGULAR = "REGULAR"
     HOUSING = "HOUSING"
@@ -55,7 +60,27 @@ class PayrollItem(models.Model):
     )
     in_wage_base = models.BooleanField(
         "Counts toward wages for percentage items", default=True,
-        help_text="Untick for a clergy housing allowance, which is usually excluded from income tax wages.",
+        help_text="Earnings only. Untick for pay that is exempt from deductions (e.g. a US clergy housing allowance).",
+    )
+    min_amount = models.DecimalField(
+        "Minimum per month", max_digits=14, decimal_places=2, null=True, blank=True,
+        help_text="e.g. SHIF minimum of 300. Monthly figure; pro-rated for other pay frequencies.",
+    )
+    max_amount = models.DecimalField(
+        "Maximum per month (cap)", max_digits=14, decimal_places=2, null=True, blank=True,
+        help_text="e.g. NSSF maximum contribution. Monthly figure; pro-rated for other pay frequencies.",
+    )
+    reduces_taxable_pay = models.BooleanField(
+        "Deducted before income tax", default=False,
+        help_text="Employee deductions that lower taxable pay before tax bands are applied (e.g. NSSF, SHIF, Housing Levy, pension).",
+    )
+    bands = models.JSONField(
+        "Tax bands", default=list, blank=True,
+        help_text="Monthly bands as [upper limit, rate %] pairs; the last band has no limit.",
+    )
+    relief = models.DecimalField(
+        "Monthly relief", max_digits=14, decimal_places=2, default=0,
+        help_text="Subtracted from the tax calculated with the bands (e.g. personal relief).",
     )
     is_active = models.BooleanField(default=True)
     sort_order = models.PositiveIntegerField(default=100)
@@ -67,12 +92,41 @@ class PayrollItem(models.Model):
         return self.name
 
     def clean(self):
+        if self.calculation == self.BANDS and not self.bands:
+            raise ValidationError({"bands": "Enter at least one tax band."})
+        if self.calculation == self.BANDS and self.kind != self.DEDUCTION:
+            raise ValidationError({"calculation": "Tax bands are for employee deductions such as income tax."})
         if self.kind in (self.DEDUCTION, self.EMPLOYER) and not self.liability_account:
             raise ValidationError({"liability_account": "Deductions and employer contributions need a liability account."})
         if self.kind == self.EMPLOYER and not self.expense_account:
             raise ValidationError({"expense_account": "Employer contributions need an expense account."})
-        if self.kind == self.EARNING and self.calculation == self.PERCENT:
+        if self.kind == self.EARNING and self.calculation != self.FIXED:
             raise ValidationError({"calculation": "Earnings must be fixed amounts."})
+
+    def band_tax(self, monthly_taxable):
+        """Progressive tax on a monthly amount using this item's bands, less relief (never negative)."""
+        tax, lower = Decimal("0"), Decimal("0")
+        for limit, rate in self.bands:
+            upper = Decimal(str(limit)) if limit not in (None, "") else None
+            if monthly_taxable <= lower:
+                break
+            portion = (min(monthly_taxable, upper) if upper is not None else monthly_taxable) - lower
+            tax += portion * Decimal(str(rate)) / 100
+            if upper is None:
+                break
+            lower = upper
+        return max(Decimal("0"), tax - self.relief)
+
+    @property
+    def bands_display(self):
+        rows, lower = [], Decimal("0")
+        for limit, rate in self.bands or []:
+            if limit in (None, ""):
+                rows.append(f"above {lower:,.0f}: {rate}%")
+            else:
+                rows.append(f"{lower:,.0f}–{Decimal(str(limit)):,.0f}: {rate}%")
+                lower = Decimal(str(limit))
+        return rows
 
 
 class Employee(models.Model):
@@ -198,7 +252,7 @@ class Paycheck(models.Model):
     deductions = money_field()
     net = money_field()
     employer_cost = money_field(help_text="Employer contributions and taxes on top of gross pay.")
-    check_number = models.CharField("Check # / reference", max_length=40, blank=True)
+    check_number = models.CharField("Cheque / M-Pesa ref", max_length=40, blank=True)
 
     class Meta:
         ordering = ["employee__last_name", "employee__first_name"]

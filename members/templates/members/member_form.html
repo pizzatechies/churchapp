@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}{% if member %}Edit {{ member }}{% else %}Add member{% endif %}{% endblock %}
+{% block page_title %}{% if member %}Edit {{ member }}{% else %}Add a member{% endif %}{% endblock %}
+{% block content %}
+<form method="post" novalidate style="max-width:1000px">{% csrf_token %}
+  {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+  <div class="card mb-3"><div class="card-header">Personal details</div><div class="card-body"><div class="row">
+    {% include "includes/field.html" with field=form.title col="col-md-2" %}
+    {% include "includes/field.html" with field=form.first_name col="col-md-4" %}
+    {% include "includes/field.html" with field=form.middle_name col="col-md-3" %}
+    {% include "includes/field.html" with field=form.last_name col="col-md-3" %}
+    {% include "includes/field.html" with field=form.gender col="col-md-4" %}
+    {% include "includes/field.html" with field=form.date_of_birth col="col-md-4" %}
+    {% include "includes/field.html" with field=form.marital_status col="col-md-4" %}
+    {% include "includes/field.html" with field=form.occupation col="col-md-6" %}
+    {% include "includes/field.html" with field=form.national_id col="col-md-6" %}
+  </div></div></div>
+  <div class="card mb-3"><div class="card-header">Contact</div><div class="card-body"><div class="row">
+    {% include "includes/field.html" with field=form.phone col="col-md-6" %}
+    {% include "includes/field.html" with field=form.email col="col-md-6" %}
+    {% include "includes/field.html" with field=form.residence col="col-md-6" %}
+    {% include "includes/field.html" with field=form.town col="col-md-6" %}
+    {% include "includes/field.html" with field=form.county col="col-md-4" %}
+    {% include "includes/field.html" with field=form.country col="col-md-4" %}
+    {% include "includes/field.html" with field=form.postal_address col="col-md-4" %}
+    {% include "includes/field.html" with field=form.emergency_contact_name col="col-md-6" %}
+    {% include "includes/field.html" with field=form.emergency_contact_phone col="col-md-6" %}
+  </div></div></div>
+  <div class="card mb-3"><div class="card-header">Membership</div><div class="card-body"><div class="row">
+    {% include "includes/field.html" with field=form.status col="col-md-4" %}
+    {% include "includes/field.html" with field=form.date_joined col="col-md-4" %}
+    {% include "includes/field.html" with field=form.baptized col="col-md-2" %}
+    {% include "includes/field.html" with field=form.baptism_date col="col-md-2" %}
+    {% include "includes/field.html" with field=form.notes col="col-12" %}
+  </div></div></div>
+  <div class="d-flex gap-2"><button class="btn btn-primary">Save member</button><a class="btn btn-outline-secondary" href="{% if member %}{{ member.get_absolute_url }}{% else %}{% url 'members:member_list' %}{% endif %}">Cancel</a></div>
+</form>
+{% endblock %}

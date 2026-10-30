@@ -56,6 +56,8 @@ INSTALLED_APPS = [
     "payroll",
     "fixedassets",
     "reports",
+    "members",
+    "portal",
 ]
 
 MIDDLEWARE = [
@@ -114,7 +116,7 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 LANGUAGE_CODE = "en-us"
-TIME_ZONE = os.environ.get("TIME_ZONE", "UTC")
+TIME_ZONE = os.environ.get("TIME_ZONE", "Africa/Nairobi")
 USE_I18N = True
 USE_TZ = True
 
@@ -127,6 +129,9 @@ STATICFILES_DIRS = [BASE_DIR / "static"]
 MEDIA_ROOT = Path(os.environ.get("MEDIA_ROOT", BASE_DIR / "media"))
 MEDIA_URL = "/media/"
 MAX_UPLOAD_SIZE = int(os.environ.get("MAX_UPLOAD_MB", "15")) * 1024 * 1024
+SERMON_MAX_UPLOAD_SIZE = int(os.environ.get("SERMON_MAX_UPLOAD_MB", "300")) * 1024 * 1024
+# Large sermon uploads are streamed to a temporary file rather than held in memory.
+FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
 
 STORAGES = {
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
@@ -146,6 +151,12 @@ if DEBUG or TESTING:
     warnings.filterwarnings("ignore", message="No directory at", module="whitenoise.base")
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# Product identity. The members app (config.settings_portal) overrides APP_NAME.
+PRODUCT_NAME = "Ecclesia"
+APP_NAME = "Ecclesia Admin"
+APP_TAGLINE = "Church management & finance"
+VENDOR_NAME = "Pizza Technologies"
 
 LOGIN_URL = "login"
 LOGIN_REDIRECT_URL = "dashboard"

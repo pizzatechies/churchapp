@@ -20,6 +20,11 @@ class ChurchTestCase(TestCase):
         from ledger.models import Account, Fund
 
         setup_church()
+        from core.models import ChurchProfile
+
+        profile = ChurchProfile.get()
+        profile.expense_approval_threshold = D("500")  # small round numbers in tests
+        profile.save()
         cls.users = {}
         for role in ROLES:
             username = role.split()[0].lower().strip("/")
@@ -30,7 +35,7 @@ class ChurchTestCase(TestCase):
         cls.treasurer = cls.users["Treasurer"]
         cls.bookkeeper = cls.users["Bookkeeper"]
         cls.counter = cls.users["Offering Counter"]
-        cls.viewer = cls.users["Pastor / Viewer"]
+        cls.viewer = cls.users["Pastor"]
         cls.committee = cls.users["Finance Committee"]
 
         A = lambda n: Account.objects.get(number=n)  # noqa: E731

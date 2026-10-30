@@ -74,7 +74,7 @@ class PayNowForm(StyledForm):
     paid = forms.BooleanField(required=False, label="This has already been paid")
     pay_from = forms.ModelChoiceField(queryset=Account.objects.none(), required=False, label="Paid from")
     method = forms.ChoiceField(choices=ExpensePayment.METHOD_CHOICES, required=False)
-    payment_reference = forms.CharField(max_length=60, required=False, label="Check # / reference")
+    payment_reference = forms.CharField(max_length=60, required=False, label="Cheque / M-Pesa ref")
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

@@ -45,7 +45,7 @@ class EmployeePayrollItemForm(StyledModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["item"].queryset = PayrollItem.objects.filter(is_active=True).exclude(kind=PayrollItem.EARNING)
-        self.fields["item"].label_from_instance = lambda i: f"{i.name} ({'%' if i.calculation == PayrollItem.PERCENT else 'fixed'})"
+        self.fields["item"].label_from_instance = lambda i: f"{i.name} ({ {'percent': '%', 'bands': 'tax bands'}.get(i.calculation, 'fixed') })"
 
 
 EmployeeItemFormSet = inlineformset_factory(
@@ -53,10 +53,46 @@ EmployeeItemFormSet = inlineformset_factory(
 )
 
 
+class BandsField(forms.CharField):
+    """Edit tax bands as text: one 'upper limit, rate' per line; leave the limit blank for the top band."""
+
+    widget = forms.Textarea(attrs={"rows": 5, "placeholder": "24000, 10\n32333, 25\n500000, 30\n800000, 32.5\n, 35"})
+
+    def prepare_value(self, value):
+        if isinstance(value, list):
+            return "\n".join(f"{'' if limit in (None, '') else limit}, {rate}" for limit, rate in value)
+        return value
+
+    def to_python(self, value):
+        bands = []
+        for n, line in enumerate((value or "").splitlines(), start=1):
+            line = line.strip()
+            if not line:
+                continue
+            parts = [p.strip().replace(",", "") for p in line.replace("\t", ",").rsplit(",", 1)] if "," in line else line.split()
+            if len(parts) != 2:
+                raise forms.ValidationError(f"Line {n}: write 'upper limit, rate' (e.g. 24000, 10).")
+            limit, rate = parts
+            try:
+                rate = float(rate.rstrip("%"))
+                limit = float(limit) if limit not in ("", "above", "-") else None
+            except ValueError:
+                raise forms.ValidationError(f"Line {n}: numbers only, e.g. 24000, 10.")
+            bands.append([limit, rate])
+        limits = [b[0] for b in bands if b[0] is not None]
+        if limits != sorted(limits):
+            raise forms.ValidationError("List the bands from lowest to highest.")
+        return bands
+
+
 class PayrollItemForm(StyledModelForm):
+    bands = BandsField(required=False, label="Tax bands (monthly)",
+                       help_text="One band per line: upper limit, rate %. Leave the limit empty on the last line for 'and above'.")
+
     class Meta:
         model = PayrollItem
-        fields = ["name", "kind", "calculation", "default_amount", "expense_account", "liability_account", "in_wage_base", "sort_order", "is_active"]
+        fields = ["name", "kind", "calculation", "default_amount", "min_amount", "max_amount", "bands", "relief",
+                  "reduces_taxable_pay", "expense_account", "liability_account", "in_wage_base", "sort_order", "is_active"]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -107,7 +143,7 @@ class PaycheckForm(StyledForm):
     """Built dynamically: one amount field per payroll item."""
 
     hours = forms.DecimalField(max_digits=7, decimal_places=2, required=False)
-    check_number = forms.CharField(max_length=40, required=False, label="Check # / reference")
+    check_number = forms.CharField(max_length=40, required=False, label="Cheque / M-Pesa ref")
 
     def __init__(self, *args, paycheck=None, **kwargs):
         super().__init__(*args, **kwargs)

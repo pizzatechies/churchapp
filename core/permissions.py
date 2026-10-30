@@ -15,9 +15,11 @@ TREASURER = "Treasurer"
 BOOKKEEPER = "Bookkeeper"
 FINANCE_COMMITTEE = "Finance Committee"
 OFFERING_COUNTER = "Offering Counter"
-VIEWER = "Pastor / Viewer"
+VIEWER = "Pastor"
+SECRETARY = "Church Secretary"
+MEDIA_TEAM = "Media Team"
 
-ROLES = [ADMINISTRATOR, TREASURER, BOOKKEEPER, FINANCE_COMMITTEE, OFFERING_COUNTER, VIEWER]
+ROLES = [ADMINISTRATOR, TREASURER, BOOKKEEPER, FINANCE_COMMITTEE, OFFERING_COUNTER, VIEWER, SECRETARY, MEDIA_TEAM]
 
 ROLE_DESCRIPTIONS = {
     ADMINISTRATOR: "Full access, including users, settings, backups and closing the books.",
@@ -25,7 +27,9 @@ ROLE_DESCRIPTIONS = {
     BOOKKEEPER: "Day-to-day entry: giving, expenses, payments, journal entries and reconciliations.",
     FINANCE_COMMITTEE: "Reviews reports, approves expenses and sets budgets.",
     OFFERING_COUNTER: "Counts and records offerings and maintains donor records. No access to reports.",
-    VIEWER: "Read-only access to financial reports and the dashboard (no individual giving or payroll).",
+    VIEWER: "Sees financial reports and the members directory, and uploads sermons. No individual giving or payroll.",
+    SECRETARY: "Keeps the membership register, groups and fellowships, inductions and sermons. No finances.",
+    MEDIA_TEAM: "Uploads and publishes sermons only.",
 }
 
 _FULL = [ADMINISTRATOR, TREASURER]
@@ -49,6 +53,10 @@ CAPABILITIES = {
     "manage_settings": _FULL,
     "manage_users": [ADMINISTRATOR],
     "view_audit": _FULL,
+    # Congregation (not financial)
+    "view_members": [ADMINISTRATOR, VIEWER, SECRETARY],
+    "manage_members": [ADMINISTRATOR, SECRETARY],
+    "manage_sermons": [ADMINISTRATOR, VIEWER, SECRETARY, MEDIA_TEAM],
 }
 
 

@@ -1,0 +1,26 @@
+{% extends "portal/base.html" %}
+{% block title %}Sermons{% endblock %}
+{% block content %}
+<h1 class="h3 mb-1">Sermons</h1>
+<p class="text-body-secondary">Listen again, watch, or download the notes.</p>
+<form method="get" class="row g-2 mb-3">
+  <div class="col-sm-7"><input class="form-control" name="q" value="{{ q }}" placeholder="Search by title, preacher or scripture" aria-label="Search sermons"></div>
+  <div class="col-sm-3"><select class="form-select" name="series" data-autosubmit aria-label="Series"><option value="">All series</option>{% for s in all_series %}<option {% if s == series %}selected{% endif %}>{{ s }}</option>{% endfor %}</select></div>
+  <div class="col-sm-2"><button class="btn btn-outline-primary w-100">Search</button></div>
+</form>
+<div class="row g-3">
+  {% for s in page_obj %}
+  <div class="col-sm-6 col-lg-4">
+    <a href="{% url 'portal:sermon_detail' s.pk %}" class="card h-100 text-decoration-none portal-list-item">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start"><span class="sermon-date"><span>{{ s.date|date:"M" }}</span><strong>{{ s.date|date:"j" }}</strong></span>{% if s.has_media %}<i class="bi bi-play-circle-fill fs-3 text-gold"></i>{% endif %}</div>
+        <div class="fw-semibold text-body mt-2">{{ s.title }}</div>
+        <div class="small text-body-secondary">{{ s.preacher }}{% if s.scripture %} · {{ s.scripture }}{% endif %}</div>
+        {% if s.series %}<span class="badge badge-gold mt-2">{{ s.series }}</span>{% endif %}
+      </div>
+    </a>
+  </div>
+  {% empty %}<div class="col-12"><div class="card"><div class="empty-state"><i class="bi bi-mic"></i>No sermons found.</div></div></div>{% endfor %}
+</div>
+{% include "includes/pagination.html" %}
+{% endblock %}

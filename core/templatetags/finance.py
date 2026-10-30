@@ -20,6 +20,8 @@ def _to_decimal(value):
 
 def _format(amount, symbol=True):
     sym = ChurchProfile.cached().currency_symbol if symbol else ""
+    if sym and sym[-1].isalpha():
+        sym += "\u00a0"  # "KSh 1,250.00", "R 90.00" — but "$1,250.00"
     return f"{sym}{abs(amount):,.2f}"
 
 

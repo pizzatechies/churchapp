@@ -9,7 +9,7 @@
     <div class="text-end small">
       <div><strong>Pay date:</strong> {{ paycheck.run.pay_date|date:"M j, Y" }}</div>
       <div><strong>Period:</strong> {{ paycheck.run.period_start|date:"M j" }} – {{ paycheck.run.period_end|date:"M j, Y" }}</div>
-      {% if paycheck.check_number %}<div><strong>Check #:</strong> {{ paycheck.check_number }}</div>{% endif %}
+      {% if paycheck.check_number %}<div><strong>Reference:</strong> {{ paycheck.check_number }}</div>{% endif %}
     </div>
   </div>
   <div class="mb-3"><div class="fw-semibold">{{ paycheck.employee }}</div><div class="small">{{ paycheck.employee.title }}{% if paycheck.employee.tax_id_last4 %} · ID ending {{ paycheck.employee.tax_id_last4 }}{% endif %}</div>{% if paycheck.hours %}<div class="small">Hours: {{ paycheck.hours }}</div>{% endif %}</div>

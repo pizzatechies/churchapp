@@ -1,0 +1,61 @@
+{% load static %}<!doctype html>
+<html lang="en" data-bs-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>{% block title %}Home{% endblock %} · {{ brand.app_name }}</title>
+  <link rel="icon" type="image/svg+xml" href="{% static 'brand/favicon.svg' %}">
+  <meta name="theme-color" content="#0b1d51">
+  <script>
+    (function () { try { var t = localStorage.getItem("theme") || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"); document.documentElement.setAttribute("data-bs-theme", t); } catch (e) {} })();
+  </script>
+  <link rel="stylesheet" href="{% static 'vendor/bootstrap/bootstrap.min.css' %}">
+  <link rel="stylesheet" href="{% static 'vendor/bootstrap-icons/bootstrap-icons.min.css' %}">
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+  <link rel="stylesheet" href="{% static 'css/portal.css' %}">
+</head>
+<body class="portal">
+{% include "includes/splash.html" %}
+{% if user.is_authenticated %}
+<header class="portal-top">
+  <div class="portal-wrap d-flex align-items-center gap-3">
+    <a href="{% url 'portal:home' %}" class="portal-brand">
+      <img src="{% static 'brand/ecclesia-logo.svg' %}" alt="" width="36" height="36">
+      <span><strong>{{ church.name }}</strong><small>{{ brand.app_name }}</small></span>
+    </a>
+    {% with path=request.path %}
+    <nav class="portal-nav d-none d-md-flex ms-auto" aria-label="Main">
+      <a href="{% url 'portal:home' %}" class="{% if path == '/' %}active{% endif %}">Home</a>
+      <a href="{% url 'portal:groups' %}" class="{% if '/groups' in path %}active{% endif %}">Groups &amp; fellowships</a>
+      <a href="{% url 'portal:sermons' %}" class="{% if '/sermons' in path %}active{% endif %}">Sermons</a>
+      <a href="{% url 'portal:profile' %}" class="{% if '/profile' in path %}active{% endif %}">My profile</a>
+    </nav>
+    {% endwith %}
+    <div class="ms-auto ms-md-0 d-flex align-items-center gap-2">
+      <button class="btn btn-sm portal-icon-btn" type="button" data-theme-toggle aria-label="Toggle dark mode"><i class="bi bi-moon-stars"></i></button>
+      <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="btn btn-sm portal-icon-btn" title="Sign out" aria-label="Sign out"><i class="bi bi-box-arrow-right"></i></button></form>
+    </div>
+  </div>
+</header>
+<main class="portal-wrap portal-main">
+  {% for message in messages %}
+  <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags|default:'info' }}{% endif %} alert-dismissible fade show" role="alert">{{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>
+  {% endfor %}
+  {% block content %}{% endblock %}
+  <footer class="portal-footer"><img src="{% static 'brand/pizza-technologies.png' %}" alt="{{ brand.vendor_name }}"> <span>{{ brand.product_name }} by {{ brand.vendor_name }}</span></footer>
+</main>
+{% with path=request.path %}
+<nav class="portal-tabs d-md-none" aria-label="Main">
+  <a href="{% url 'portal:home' %}" class="{% if path == '/' %}active{% endif %}"><i class="bi bi-house-door"></i><span>Home</span></a>
+  <a href="{% url 'portal:groups' %}" class="{% if '/groups' in path %}active{% endif %}"><i class="bi bi-people"></i><span>Groups</span></a>
+  <a href="{% url 'portal:sermons' %}" class="{% if '/sermons' in path %}active{% endif %}"><i class="bi bi-play-circle"></i><span>Sermons</span></a>
+  <a href="{% url 'portal:profile' %}" class="{% if '/profile' in path %}active{% endif %}"><i class="bi bi-person-circle"></i><span>Me</span></a>
+</nav>
+{% endwith %}
+{% else %}
+  {% block anonymous %}{% endblock %}
+{% endif %}
+<script src="{% static 'vendor/bootstrap/bootstrap.bundle.min.js' %}"></script>
+<script src="{% static 'js/app.js' %}"></script>
+</body>
+</html>

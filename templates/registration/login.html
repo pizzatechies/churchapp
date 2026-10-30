@@ -5,11 +5,11 @@
   <div class="card login-card shadow-lg">
     <div class="card-body p-4 p-md-5">
       <div class="text-center mb-4">
-        <span class="brand-mark mb-2" style="width:52px;height:52px;font-size:1.6rem"><i class="bi bi-droplet-half"></i></span>
-        <h1 class="h4 mb-0">{{ church.name }}</h1>
-        <p class="text-body-secondary small">Finance &amp; accounting</p>
+        <img src="{% static 'brand/ecclesia-logo.svg' %}" alt="" width="72" height="72" class="mb-2">
+        <h1 class="h4 mb-0">{{ brand.app_name }}</h1>
+        <p class="text-body-secondary small mb-0">{{ church.name }} · {{ brand.app_tagline }}</p>
       </div>
-      {% if form.errors %}<div class="alert alert-danger small">Your username and password didn't match. Please try again.</div>{% endif %}
+      {% if form.non_field_errors %}<div class="alert alert-danger small">{% for e in form.non_field_errors %}{{ e }}{% endfor %}</div>{% endif %}
       <form method="post" action="{% url 'login' %}">
         {% csrf_token %}
         <div class="mb-3">
@@ -25,5 +25,6 @@
       </form>
     </div>
   </div>
+  <div class="login-footer"><span>A product of</span><img src="{% static 'brand/pizza-technologies.png' %}" alt="{{ brand.vendor_name }}"></div>
 </div>
 {% endblock %}

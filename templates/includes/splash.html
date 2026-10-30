@@ -1,0 +1,30 @@
+{% load static %}
+<div class="splash" id="splash" role="status" aria-label="{{ brand.app_name }} is loading" data-splash-key="{{ brand.app_name|slugify }}">
+  <img class="splash-logo" src="{% static 'brand/ecclesia-logo.svg' %}" alt="">
+  <div class="splash-name">{{ brand.app_name }}</div>
+  <div class="splash-tag">{{ brand.app_tagline }}</div>
+  <div class="splash-bar" aria-hidden="true"></div>
+  <div class="splash-maker">
+    <span>A product of</span>
+    <img src="{% static 'brand/pizza-technologies.png' %}" alt="{{ brand.vendor_name }}">
+  </div>
+</div>
+<script>
+  (function () {
+    var el = document.getElementById("splash");
+    var key = "splash-seen-" + el.getAttribute("data-splash-key");
+    var seen = false;
+    try { seen = sessionStorage.getItem(key) === "1"; } catch (e) {}
+    if (seen) { el.remove(); return; }
+    function hide() {
+      if (!el.parentNode) return;
+      el.classList.add("is-hidden");
+      try { sessionStorage.setItem(key, "1"); } catch (e) {}
+      setTimeout(function () { if (el.parentNode) el.remove(); }, 500);
+    }
+    el.addEventListener("click", hide);
+    window.addEventListener("load", function () { setTimeout(hide, 1400); });
+    setTimeout(hide, 4000);
+  })();
+</script>
+<noscript><style>.splash { display: none; }</style></noscript>

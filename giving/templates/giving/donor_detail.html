@@ -21,7 +21,7 @@
     <div class="card table-card mb-3">
       <div class="card-header">Giving history{% if count > 100 %} <span class="small text-body-secondary">(latest 100)</span>{% endif %}</div>
       <table class="table table-sm table-hover">
-        <thead><tr><th>Date</th><th>Fund</th><th>Method</th><th>Check / ref</th><th>Batch</th><th class="num">Amount</th></tr></thead>
+        <thead><tr><th>Date</th><th>Fund</th><th>Method</th><th>Cheque / ref</th><th>Batch</th><th class="num">Amount</th></tr></thead>
         <tbody>
         {% for c in contributions %}
           <tr><td>{{ c.date|date:"M j, Y" }}</td><td>{{ c.fund.name }}</td><td class="small">{{ c.get_method_display }}</td><td class="small">{{ c.check_number }}</td>
