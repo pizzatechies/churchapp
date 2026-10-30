@@ -35,10 +35,17 @@ jobs:
           cache-dependency-path: apps/desktop/package-lock.json
       - run: npm ci
       - name: Build installers
-        run: npm run dist -- --publish never
+        shell: bash
+        run: |
+          # Pass on only the signing settings that are set: an empty CSC_LINK makes
+          # electron-builder look for a certificate file and fail.
+          for v in CSC_LINK CSC_KEY_PASSWORD WIN_CSC_LINK WIN_CSC_KEY_PASSWORD APPLE_ID APPLE_APP_SPECIFIC_PASSWORD APPLE_TEAM_ID; do
+            [ -n "${!v}" ] || unset "$v"
+          done
+          [ -n "${CSC_LINK:-}" ] || export CSC_IDENTITY_AUTO_DISCOVERY=false
+          npm run dist -- --publish never
         env:
           ECCLESIA_ADMIN_URL: ${{ vars.ECCLESIA_ADMIN_URL }}
-          CSC_IDENTITY_AUTO_DISCOVERY: ${{ secrets.CSC_LINK != '' }}
           CSC_LINK: ${{ secrets.CSC_LINK }}
           CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
           WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
