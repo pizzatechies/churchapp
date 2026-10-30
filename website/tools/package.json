@@ -1,0 +1,11 @@
+{
+  "name": "ecclesia-website-tools",
+  "private": true,
+  "description": "Regenerates the interactive demo screenshots for the Ecclesia website.",
+  "scripts": {
+    "capture": "node capture-demo.cjs"
+  },
+  "devDependencies": {
+    "playwright": "1.63.0"
+  }
+}

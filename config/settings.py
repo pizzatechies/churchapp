@@ -32,6 +32,9 @@ SECRET_KEY = os.environ.get("SECRET_KEY", "")
 # Development mode is the default only when no secret key has been configured.
 DEBUG = env_bool("DEBUG", default=not SECRET_KEY)
 TESTING = len(sys.argv) > 1 and sys.argv[1] == "test"
+# A public demo server: shows demo logins and blocks password/login changes (see core/demo.py).
+DEMO_MODE = env_bool("ECCLESIA_DEMO_MODE")
+DEMO_PASSWORD = os.environ.get("ECCLESIA_DEMO_PASSWORD", "ChurchDemo-2026")
 
 if not SECRET_KEY:
     if not DEBUG:
@@ -71,6 +74,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "core.middleware.CurrentUserMiddleware",
+    "core.demo.DemoModeMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"

@@ -15,6 +15,10 @@ else
         ${ADMIN_USERNAME:+--admin-username "$ADMIN_USERNAME"} \
         ${ADMIN_PASSWORD:+--admin-password "$ADMIN_PASSWORD"} \
         ${ADMIN_EMAIL:+--admin-email "$ADMIN_EMAIL"}
+    # A public demo server starts with the sample church (reset it nightly with "manage.py reset_demo").
+    case "$ECCLESIA_DEMO_MODE" in
+        1|true|yes|on) python manage.py load_demo_data --if-empty --password "${ECCLESIA_DEMO_PASSWORD:-ChurchDemo-2026}" ;;
+    esac
 fi
 
 exec gunicorn "$WSGI" \

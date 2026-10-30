@@ -1,4 +1,4 @@
-{% extends "base.html" %}{% load static %}
+{% extends "base.html" %}{% load static demo %}
 {% block title %}Sign in{% endblock %}
 {% block anonymous %}
 <div class="login-wrap">
@@ -23,6 +23,7 @@
         <input type="hidden" name="next" value="{{ next }}">
         <button class="btn btn-primary w-100" type="submit">Sign in</button>
       </form>
+      {% demo_logins "staff" %}
     </div>
   </div>
   <div class="login-footer"><span>A product of</span><img src="{% static 'brand/pizza-technologies.png' %}" alt="{{ brand.vendor_name }}"></div>

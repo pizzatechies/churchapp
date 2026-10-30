@@ -166,9 +166,13 @@ body {
 .card-header .small { font-weight: 400; }
 .card-body { padding: 1.1rem; }
 
-.stat-card { height: 100%; }
+.stat-card { height: 100%; container-type: inline-size; }
 .stat-card .stat-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--bs-secondary-color); font-weight: 600; }
 .stat-card .stat-value { font-size: 1.6rem; font-weight: 650; letter-spacing: -0.02em; margin-top: 0.15rem; font-variant-numeric: tabular-nums; }
+/* Large amounts (KSh 32,091,551.75) shrink to fit the card instead of wrapping mid-number. */
+@supports (container-type: inline-size) {
+  .stat-card .stat-value { font-size: min(1.6rem, 8cqi); white-space: nowrap; }
+}
 .stat-card .stat-sub { font-size: 0.8rem; color: var(--bs-secondary-color); }
 .stat-icon {
   width: 40px; height: 40px; border-radius: 10px;
@@ -238,6 +242,18 @@ tr.row-link { cursor: pointer; }
 .login-card { border-top: 4px solid var(--gold-400); }
 .login-footer { color: #c3cdea; font-size: 0.8rem; margin-top: 1.25rem; display: flex; align-items: center; gap: 0.5rem; }
 .login-footer img { height: 34px; width: auto; }
+
+/* ---------- public demo ---------- */
+.demo-banner { background: var(--app-gold-soft); color: var(--app-gold-ink); border-bottom: 1px solid var(--app-border);
+  font-size: 0.82rem; font-weight: 500; padding: 0.4rem 1rem; text-align: center; }
+.demo-logins { margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px dashed var(--app-border); }
+.demo-logins-title { font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--app-gold-ink); margin-bottom: 0.6rem; }
+.demo-logins-list { display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; }
+.demo-login { display: flex; flex-direction: column; align-items: flex-start; text-align: left; min-width: 0; padding: 0.45rem 0.6rem;
+  border: 1px solid var(--app-border); border-radius: 0.5rem; background: var(--app-card-bg); color: var(--bs-body-color); font-size: 0.85rem; }
+.demo-login:hover, .demo-login:focus-visible { border-color: var(--app-accent); background: var(--app-accent-soft); }
+.demo-login span { font-size: 0.72rem; color: var(--bs-secondary-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.demo-logins-note { font-size: 0.75rem; color: var(--bs-secondary-color); margin-top: 0.6rem; }
 
 /* ---------- splash screen ---------- */
 .splash {

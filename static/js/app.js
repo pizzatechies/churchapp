@@ -21,6 +21,16 @@
   window.appFormat = fmt;
   window.appParse = parseAmount;
 
+  // Public demo: one-click sign in.
+  document.querySelectorAll("[data-demo-login]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var form = document.getElementById("id_username").form;
+      form.elements.username.value = btn.getAttribute("data-demo-login");
+      form.elements.password.value = btn.getAttribute("data-demo-password");
+      form.submit();
+    });
+  });
+
   // Sidebar on small screens
   document.querySelectorAll("[data-toggle-sidebar]").forEach(function (btn) {
     btn.addEventListener("click", function () {

@@ -74,11 +74,15 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument("--password", default="ChurchDemo-2026", help="Password for every demo login")
         parser.add_argument("--force", action="store_true", help="Load even if transactions already exist")
+        parser.add_argument("--if-empty", action="store_true", help="Do nothing (instead of failing) if transactions already exist")
         parser.add_argument("--seed", type=int, default=2026)
 
     def handle(self, *args, **opts):
         from ledger.models import JournalEntry
 
+        if JournalEntry.objects.exists() and opts["if_empty"]:
+            self.stdout.write("Demo data already loaded.")
+            return
         if JournalEntry.objects.exists() and not opts["force"]:
             raise CommandError("The database already has transactions. Use a fresh database (or --force) to load demo data.")
         self.rng = random.Random(opts["seed"])

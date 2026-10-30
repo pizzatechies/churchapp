@@ -1,0 +1,36 @@
+// The words shown at each stop of the interactive demo. Screenshots and highlight
+// positions come from js/tour-shots.js (made by tools/capture-demo.cjs).
+window.ECCLESIA_TOUR = {
+  admin: [
+    { id: "dashboard", title: "Your church at a glance",
+      text: "Cash in every bank and cash account, this month's giving against last year, the year's surplus and unpaid bills. Join requests and new sermons are right there too." },
+    { id: "offering", title: "Count Sunday's offering in minutes",
+      text: "Counters enter cash, M-Pesa, cheques and transfers by envelope number. Ecclesia checks the total against the count sheet and splits it by method and fund before it is banked." },
+    { id: "approvals", title: "No bill is paid without approval",
+      text: "Spending above your church's limit waits for the treasurer or finance committee. Every approval, rejection and payment is recorded with who did it and when." },
+    { id: "payroll", title: "Kenyan payroll, worked out for you",
+      text: "PAYE with personal relief, NSSF, SHIF and the Housing Levy are calculated automatically, with year-to-date totals on every payslip. Rules for other countries can be set up too." },
+    { id: "budget", title: "Budgets the council can follow",
+      text: "Compare actual giving and spending with the approved budget, fund by fund, and see what is left for the rest of the year." },
+    { id: "reports", title: "Reports ready for the AGM and auditors",
+      text: "Statement of financial position, statement of activities, fund activity, giving summaries, unpaid bills and more. Print them or export them to a spreadsheet." },
+    { id: "congregation", title: "Know your congregation",
+      text: "See your church by age group and gender, including people who prefer not to say, and how every group and fellowship is made up." },
+    { id: "groups", title: "Induct members into fellowships",
+      text: "Add people to groups and fellowships in bulk and give them roles. Women's, men's and age-based groups only offer the people who qualify." },
+    { id: "sermons", title: "Upload sermons for everyone",
+      text: "The media team uploads audio, video or notes, or links a YouTube service, and it appears in every member's app." },
+  ],
+  connect: [
+    { id: "home", title: "Each member sees their own groups",
+      text: "Ecclesia Connect opens on the member's groups and fellowships and the latest sermons. There is nothing financial in this app at all." },
+    { id: "groups", title: "Find a fellowship and ask to join",
+      text: "Members browse the church's groups, see when and where they meet and who leads them, and ask to join. Leaders approve requests in Ecclesia Admin." },
+    { id: "group", title: "A home for every fellowship",
+      text: "Meeting times, leaders and fellow members, visible only to the people in the group." },
+    { id: "sermon", title: "Listen again, anywhere",
+      text: "Members stream last Sunday's sermon on their phone, watch the video or download the notes." },
+    { id: "profile", title: "Members keep their details current",
+      text: "People update their own phone number and email. Everything else stays with the church office." },
+  ],
+};

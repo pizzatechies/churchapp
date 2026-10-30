@@ -1,4 +1,4 @@
-{% extends "portal/base.html" %}{% load static %}
+{% extends "portal/base.html" %}{% load static demo %}
 {% block title %}Sign in{% endblock %}
 {% block anonymous %}
 <div class="login-wrap">
@@ -19,6 +19,7 @@
         <input type="hidden" name="next" value="{{ next }}">
         <button class="btn btn-primary w-100" type="submit">Sign in</button>
       </form>
+      {% demo_logins "members" %}
       <p class="small text-body-secondary text-center mt-3 mb-0">No login yet? Ask the church office to set one up for you.</p>
     </div>
   </div>

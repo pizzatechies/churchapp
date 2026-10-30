@@ -46,6 +46,15 @@ class MembershipRuleTests(ChurchTestCase):
         no_dob = make_member("Ann", "Juma", Member.FEMALE, None)
         services.induct(no_dob, self.youth)  # unknown age isn't blocked
 
+    def test_induct_list_only_offers_eligible_people(self):
+        from .forms import BulkInductForm
+
+        child = make_member("Ann", "Barasa", Member.FEMALE, 8)
+        no_dob = make_member("Purity", "Juma", Member.FEMALE, None)
+        offered = set(BulkInductForm(group=self.youth).fields["members"].queryset)
+        self.assertEqual(offered, {self.john, no_dob})
+        self.assertNotIn(child, BulkInductForm(group=self.women).fields["members"].queryset)
+
     def test_inactive_people_cannot_be_inducted(self):
         self.mary.status = Member.TRANSFERRED
         self.mary.save()

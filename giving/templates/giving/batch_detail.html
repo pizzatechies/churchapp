@@ -21,8 +21,8 @@
     {% if difference is not None %}<div class="stat-sub {% if difference == 0 %}text-positive{% else %}text-negative{% endif %}">{% if difference == 0 %}<i class="bi bi-check-circle"></i> Matches{% else %}Difference {{ difference|money }}{% endif %}</div>{% endif %}</div></div></div>
   <div class="col-lg-6"><div class="card stat-card"><div class="card-body py-2">
     <div class="row">
-      <div class="col-6"><div class="stat-label mb-1">By method</div>{% for label, n, t in batch.totals_by_method %}<div class="d-flex justify-content-between small"><span>{{ label }} ({{ n }})</span><span class="num">{{ t|money }}</span></div>{% empty %}<span class="small text-body-secondary">—</span>{% endfor %}</div>
-      <div class="col-6"><div class="stat-label mb-1">By fund</div>{% for label, n, t in batch.totals_by_fund %}<div class="d-flex justify-content-between small"><span>{{ label }}</span><span class="num">{{ t|money }}</span></div>{% empty %}<span class="small text-body-secondary">—</span>{% endfor %}</div>
+      <div class="col-6"><div class="stat-label mb-1">By method</div>{% for label, n, t in batch.totals_by_method %}<div class="d-flex justify-content-between gap-2 small"><span>{{ label }} ({{ n }})</span><span class="num text-nowrap">{{ t|money }}</span></div>{% empty %}<span class="small text-body-secondary">—</span>{% endfor %}</div>
+      <div class="col-6"><div class="stat-label mb-1">By fund</div>{% for label, n, t in batch.totals_by_fund %}<div class="d-flex justify-content-between gap-2 small"><span>{{ label }}</span><span class="num text-nowrap">{{ t|money }}</span></div>{% empty %}<span class="small text-body-secondary">—</span>{% endfor %}</div>
     </div>
   </div></div></div>
 </div>

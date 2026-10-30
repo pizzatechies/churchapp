@@ -1,0 +1,13 @@
+{% if logins %}
+<div class="demo-logins">
+  <div class="demo-logins-title"><i class="bi bi-stars"></i> Demo church — sign in as</div>
+  <div class="demo-logins-list">
+    {% for login in logins %}
+    <button type="button" class="demo-login" data-demo-login="{{ login.username }}" data-demo-password="{{ password }}">
+      <strong>{{ login.username }}</strong><span>{{ login.role }}</span>
+    </button>
+    {% endfor %}
+  </div>
+  <div class="demo-logins-note">Password for every demo login: <code>{{ password }}</code></div>
+</div>
+{% endif %}

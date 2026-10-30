@@ -187,3 +187,30 @@ class SiteSmokeTest(TestCase):
         self.assertEqual(balance_sheet(today(), "fund").warnings, [])
         tb = trial_balance(today()).rows[-1].cells
         self.assertEqual(tb[1], tb[2])
+
+
+@override_settings(DEMO_MODE=True, DEMO_PASSWORD="demo-pass-123")
+class DemoModeTests(ChurchTestCase):
+    def test_login_page_offers_demo_logins(self):
+        response = self.client.get(reverse("login"))
+        self.assertContains(response, 'data-demo-login="treasurer"')
+        self.assertContains(response, "demo-pass-123")
+
+    def test_logins_cannot_be_changed(self):
+        self.client.force_login(self.admin)
+        response = self.client.post(reverse("password_change"), {
+            "old_password": "test-pass-123", "new_password1": "Another-pass-456", "new_password2": "Another-pass-456",
+        })
+        self.assertEqual(response.status_code, 302)
+        self.admin.refresh_from_db()
+        self.assertTrue(self.admin.check_password("test-pass-123"))
+        self.client.post(reverse("user_edit", args=[self.treasurer.pk]), {"username": "hacked"})
+        self.treasurer.refresh_from_db()
+        self.assertEqual(self.treasurer.username, "treasurer")
+        self.assertContains(self.client.get(reverse("dashboard")), "demo church")
+
+    def test_reset_requires_demo_mode(self):
+        from django.core.management.base import CommandError
+
+        with self.settings(DEMO_MODE=False), self.assertRaises(CommandError):
+            call_command("reset_demo")

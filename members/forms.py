@@ -1,5 +1,6 @@
 from django import forms
 from django.conf import settings
+from django.db.models import Q
 
 from core.forms import StyledForm, StyledModelForm
 from core.utils import today
@@ -52,6 +53,14 @@ class InductForm(StyledForm):
     inducted_on = forms.DateField(initial=today, label="Inducted on")
 
 
+def _years_ago(years):
+    t = today()
+    try:
+        return t.replace(year=t.year - years)
+    except ValueError:  # 29 February
+        return t.replace(year=t.year - years, day=28)
+
+
 class BulkInductForm(StyledForm):
     """Induct several members into one group (from the group's page)."""
 
@@ -65,6 +74,11 @@ class BulkInductForm(StyledForm):
         qs = Member.objects.filter(status__in=Member.CURRENT).exclude(pk__in=current)
         if group and group.gender_restriction != Group.ANYONE:
             qs = qs.filter(gender=group.gender_restriction)
+        # Age limits, matching Group.eligibility(): people with no date of birth stay eligible.
+        if group and group.min_age is not None:
+            qs = qs.filter(Q(date_of_birth__isnull=True) | Q(date_of_birth__lte=_years_ago(group.min_age)))
+        if group and group.max_age is not None:
+            qs = qs.filter(Q(date_of_birth__isnull=True) | Q(date_of_birth__gt=_years_ago(group.max_age + 1)))
         self.fields["members"].queryset = qs
         self.fields["members"].label_from_instance = lambda m: f"{m.last_name}, {m.first_name} · {m.get_gender_display()}{f' · {m.age}' if m.age is not None else ''}"
         self.fields["members"].help_text = "Hold Ctrl (or Cmd) to choose several. Only people eligible for this group are listed."
