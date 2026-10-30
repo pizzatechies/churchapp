@@ -76,4 +76,4 @@ Open the Admin address and sign in with the username and password from the scrip
 - **See what the setup did:** log in with your SSH key (`ssh -i <your key file> ubuntu@<server IP>`), then run `sudo tail -50 /var/log/ecclesia-install.log`. A wrong password format, for example, is reported there.
 - **Run the setup again** (it keeps an existing database and settings): `sudo bash /var/lib/cloud/instance/user-data.txt`
 
-Need help? pizzatechies@gmail.com · +254 747 354 677 (call or WhatsApp)
+Need help? info@pizzatechnologies.co.ke · +254 747 354 677 (call or WhatsApp)

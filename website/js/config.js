@@ -9,7 +9,7 @@ window.ECCLESIA_SITE = {
 
   // How people reach you from the "Get started" form. Leave a value empty to hide it.
   contact: {
-    email: "pizzatechies@gmail.com",
+    email: "info@pizzatechnologies.co.ke",
     whatsapp: "254747354677",   // international format without "+"
     phone: "+254 747 354 677",
   },
