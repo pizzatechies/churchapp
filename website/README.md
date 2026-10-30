@@ -55,4 +55,6 @@ docker compose exec -T admin python manage.py reset_demo
 
 ## Publishing
 
-The **Website** GitHub Actions workflow publishes this folder to GitHub Pages whenever it changes on the main branch. Turn it on once under *Settings → Pages → Source: GitHub Actions*. To use your own domain, add it there too.
+The site is live at https://pizzatechies.github.io/churchapp/website/. Whenever this folder changes on the main branch, the **Website** GitHub Actions workflow copies it to the `gh-pages` branch.
+
+To serve it at the shorter https://pizzatechies.github.io/churchapp/, set *Settings → Pages → Build and deployment* to *Deploy from a branch*, branch `gh-pages`, folder `/ (root)`. To use your own domain, add it on the same page.

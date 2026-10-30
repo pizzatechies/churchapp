@@ -185,7 +185,7 @@ Both web apps are also Progressive Web Apps: open either address in Chrome, Edge
 
 ## Website and public demo
 
-[`website/`](website/README.md) is the Ecclesia marketing website: features, an interactive tour of both apps built from real screens of the sample church, app downloads, pricing (Seed KSh 10,000, Harvest KSh 20,000 and Kingdom KSh 30,000 a month, with yearly billing) and a "Get started" form that sends enquiries by WhatsApp or email. It is a static site; set prices, contacts and links in `website/js/config.js`. The **Website** GitHub Actions workflow publishes it to GitHub Pages.
+[`website/`](website/README.md) is the Ecclesia marketing website: features, an interactive tour of both apps built from real screens of the sample church, app downloads, pricing (Seed KSh 10,000, Harvest KSh 20,000 and Kingdom KSh 30,000 a month, with yearly billing) and a "Get started" form that sends enquiries by WhatsApp or email. It is a static site; set prices, contacts and links in `website/js/config.js`. It is live at https://pizzatechies.github.io/churchapp/website/, and the **Website** GitHub Actions workflow keeps the `gh-pages` branch up to date for GitHub Pages.
 
 To let people try Ecclesia themselves, run a separate server with `ECCLESIA_DEMO_MODE=1`. It loads the sample church on first start, adds one-click demo logins and a banner to both apps, and blocks password and login changes. `python manage.py reset_demo` restores the sample church (run it nightly); it refuses to run unless demo mode is on, so it can never wipe a real church.
 

@@ -1,5 +1,5 @@
-# Publishes the Ecclesia website (website/) to GitHub Pages.
-# Turn on once: Settings -> Pages -> Source: GitHub Actions.
+# Publishes the Ecclesia website (website/) to the gh-pages branch, which GitHub Pages serves.
+# GitHub Pages setting: Settings -> Pages -> Deploy from a branch -> gh-pages, / (root).
 name: Website
 
 on:
@@ -9,27 +9,27 @@ on:
     paths: ["website/**", ".github/workflows/website.yml"]
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
 concurrency:
-  group: pages
+  group: website
   cancel-in-progress: true
 
 jobs:
-  deploy:
+  publish:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
-      - name: Leave the screenshot tool out of the site
-        run: rm -rf website/tools
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: website
-      - id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Copy the site to the gh-pages branch
+        env:
+          TOKEN: ${{ github.token }}
+        run: |
+          rm -rf website/tools
+          touch website/.nojekyll
+          cd website
+          git init -q -b gh-pages
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Publish the website from ${GITHUB_SHA::7}"
+          git push -f "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git" gh-pages
