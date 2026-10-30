@@ -101,4 +101,4 @@ The apps check that the address is the right Ecclesia app before connecting, and
 - **A demo server:** add `ECCLESIA_DEMO_MODE=1` to `.env` on a separate server to load the sample church with one-click demo logins. Never use demo mode for a real church.
 - **More detail:** `README.md` covers configuration, cloud storage, roles, accounting and payroll.
 
-Support: info@pizzatechnologies.co.ke · +254 747 354 677 (call or WhatsApp)
+Support: pizzatechies@gmail.com · +254 747 354 677 (call or WhatsApp)
