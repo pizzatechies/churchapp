@@ -1,0 +1,35 @@
+{% extends "base.html" %}{% load finance %}
+{% block title %}Journal entries{% endblock %}
+{% block page_title %}Journal entries{% endblock %}
+{% block page_subtitle %}<p class="text-body-secondary mb-0">Every transaction in the general ledger, including those created by giving, expenses, payroll and depreciation.</p>{% endblock %}
+{% block actions %}{% if caps.manage_ledger %}<a href="{% url 'ledger:entry_create' %}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> New journal entry</a>{% endif %}{% endblock %}
+{% block content %}
+<form class="filter-bar row g-2 align-items-end" method="get">
+  <div class="col-md-3"><label class="form-label">Search</label><input class="form-control form-control-sm" name="q" value="{{ q }}" placeholder="Memo, reference or JE number"></div>
+  <div class="col-md-2"><label class="form-label">Type</label><select class="form-select form-select-sm" name="source" data-autosubmit><option value="">All</option>{% for k, v in sources %}<option value="{{ k }}" {% if k == source %}selected{% endif %}>{{ v }}</option>{% endfor %}</select></div>
+  <div class="col-md-2"><label class="form-label">Status</label><select class="form-select form-select-sm" name="status" data-autosubmit><option value="">All</option>{% for k, v in statuses %}<option value="{{ k }}" {% if k == status %}selected{% endif %}>{{ v }}</option>{% endfor %}</select></div>
+  <div class="col-6 col-md-2"><label class="form-label">From</label><input type="date" class="form-control form-control-sm" name="start" value="{{ start|date:'Y-m-d' }}"></div>
+  <div class="col-6 col-md-2"><label class="form-label">To</label><input type="date" class="form-control form-control-sm" name="end" value="{{ end|date:'Y-m-d' }}"></div>
+  <div class="col-md-1"><button class="btn btn-sm btn-outline-primary w-100">Filter</button></div>
+</form>
+<div class="card table-card">
+  <table class="table table-hover">
+    <thead><tr><th>Number</th><th>Date</th><th>Memo</th><th>Type</th><th>Status</th><th class="num">Amount</th></tr></thead>
+    <tbody>
+    {% for e in page_obj %}
+      <tr data-href="{{ e.get_absolute_url }}" class="{% if e.status == 'void' %}text-body-tertiary{% endif %}">
+        <td class="text-nowrap"><a href="{{ e.get_absolute_url }}">{{ e.number }}</a></td>
+        <td class="text-nowrap">{{ e.date|date:"M j, Y" }}</td>
+        <td>{% if e.status == 'void' %}<del>{{ e.memo }}</del>{% else %}{{ e.memo }}{% endif %}{% if e.reference %} <span class="small text-body-secondary">#{{ e.reference }}</span>{% endif %}</td>
+        <td class="small">{{ e.get_source_type_display }}</td>
+        <td>{% status_badge e.status %}</td>
+        <td class="num">{{ e.amount|money }}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="6" class="empty-state"><i class="bi bi-journal-text"></i>No journal entries match.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% include "includes/pagination.html" %}
+{% endblock %}

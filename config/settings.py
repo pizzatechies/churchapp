@@ -90,12 +90,20 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
+# PostgreSQL is the supported database. Point DATABASE_URL at your server, e.g.
+#   postgres://USER:PASSWORD@HOST:5432/DBNAME
 DATABASES = {
     "default": dj_database_url.config(
-        default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
+        default="postgres://church:church@localhost:5432/church_finance",
         conn_max_age=int(os.environ.get("DB_CONN_MAX_AGE", "60")),
+        conn_health_checks=True,
+        ssl_require=env_bool("DB_SSL_REQUIRE", False),
     )
 }
+if not DATABASES["default"]["ENGINE"].endswith("postgresql"):
+    raise ImproperlyConfigured("DATABASE_URL must point to a PostgreSQL database (postgres://...).")
+# Every request runs in one transaction: a failure part-way never leaves half-posted books.
+DATABASES["default"]["ATOMIC_REQUESTS"] = True
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},

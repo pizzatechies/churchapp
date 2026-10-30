@@ -1,0 +1,10 @@
+{% if form.non_field_errors %}<div class="alert alert-danger">{% for e in form.non_field_errors %}<div>{{ e }}</div>{% endfor %}</div>{% endif %}
+<div class="row">
+{% for field in form %}
+  {% if field.widget_type == 'textarea' or field.widget_type == 'checkboxselectmultiple' %}
+    {% include "includes/field.html" with col="col-12" %}
+  {% else %}
+    {% include "includes/field.html" with col=col %}
+  {% endif %}
+{% endfor %}
+</div>

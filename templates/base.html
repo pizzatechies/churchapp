@@ -1,0 +1,135 @@
+{% load static finance %}<!doctype html>
+<html lang="en" data-bs-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Finance{% endblock %} · {{ church.name }}</title>
+  <script>
+    (function () {
+      try {
+        var t = localStorage.getItem("theme");
+        if (!t) t = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+        document.documentElement.setAttribute("data-bs-theme", t);
+      } catch (e) {}
+    })();
+  </script>
+  <link rel="stylesheet" href="{% static 'vendor/bootstrap/bootstrap.min.css' %}">
+  <link rel="stylesheet" href="{% static 'vendor/bootstrap-icons/bootstrap-icons.min.css' %}">
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+  {% block extra_head %}{% endblock %}
+</head>
+<body class="{% block body_class %}{% endblock %}">
+{% if user.is_authenticated %}
+<div class="app-shell">
+  <nav class="sidebar d-print-none" id="sidebar" aria-label="Main navigation">
+    <a class="sidebar-brand" href="{% url 'dashboard' %}">
+      <span class="brand-mark"><i class="bi bi-droplet-half"></i></span>
+      <span class="brand-text">{{ church.name }}<small>Finance</small></span>
+    </a>
+    {% with path=request.path %}
+    <ul class="nav flex-column">
+      <li><a class="nav-link {% if path == '/' %}active{% endif %}" href="{% url 'dashboard' %}"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
+
+      {% if caps.manage_giving or caps.view_donors %}
+      <li class="nav-heading">Giving</li>
+      <li><a class="nav-link {% if '/giving/batches' in path %}active{% endif %}" href="{% url 'giving:batch_list' %}"><i class="bi bi-inboxes"></i> Offerings &amp; deposits</a></li>
+      <li><a class="nav-link {% if '/giving/donors' in path %}active{% endif %}" href="{% url 'giving:donor_list' %}"><i class="bi bi-people"></i> Donors</a></li>
+      <li><a class="nav-link {% if '/giving/campaigns' in path %}active{% endif %}" href="{% url 'giving:campaign_list' %}"><i class="bi bi-flag"></i> Pledges &amp; campaigns</a></li>
+      <li><a class="nav-link {% if '/giving/statements' in path %}active{% endif %}" href="{% url 'giving:statements' %}"><i class="bi bi-envelope-paper"></i> Giving statements</a></li>
+      {% endif %}
+
+      {% if caps.manage_expenses or caps.approve_expenses %}
+      <li class="nav-heading">Spending</li>
+      <li><a class="nav-link {% if path == '/expenses/' or '/expenses/new' in path or '/expenses/e' in path %}active{% endif %}" href="{% url 'expenses:expense_list' %}"><i class="bi bi-receipt"></i> Expenses &amp; bills</a></li>
+      {% if caps.approve_expenses %}<li><a class="nav-link {% if '/expenses/approvals' in path %}active{% endif %}" href="{% url 'expenses:approvals' %}"><i class="bi bi-check2-square"></i> Approvals</a></li>{% endif %}
+      {% if caps.manage_expenses %}<li><a class="nav-link {% if '/expenses/vendors' in path %}active{% endif %}" href="{% url 'expenses:vendor_list' %}"><i class="bi bi-shop"></i> Vendors &amp; payees</a></li>{% endif %}
+      {% endif %}
+
+      {% if caps.view_payroll %}
+      <li class="nav-heading">Payroll</li>
+      <li><a class="nav-link {% if path == '/payroll/' or '/payroll/runs' in path or '/payroll/paychecks' in path %}active{% endif %}" href="{% url 'payroll:run_list' %}"><i class="bi bi-cash-stack"></i> Payroll runs</a></li>
+      <li><a class="nav-link {% if '/payroll/employees' in path %}active{% endif %}" href="{% url 'payroll:employee_list' %}"><i class="bi bi-person-badge"></i> Staff</a></li>
+      <li><a class="nav-link {% if '/payroll/items' in path %}active{% endif %}" href="{% url 'payroll:item_list' %}"><i class="bi bi-sliders"></i> Pay &amp; deduction types</a></li>
+      {% endif %}
+
+      {% if caps.view_finance %}
+      <li class="nav-heading">Banking &amp; ledger</li>
+      <li><a class="nav-link {% if '/ledger/banking' in path or '/ledger/transfer' in path or '/ledger/income' in path %}active{% endif %}" href="{% url 'ledger:banking' %}"><i class="bi bi-bank"></i> Bank accounts</a></li>
+      <li><a class="nav-link {% if '/ledger/reconciliations' in path %}active{% endif %}" href="{% url 'ledger:reconciliation_list' %}"><i class="bi bi-ui-checks"></i> Reconciliations</a></li>
+      <li><a class="nav-link {% if '/ledger/journal' in path %}active{% endif %}" href="{% url 'ledger:entry_list' %}"><i class="bi bi-journal-text"></i> Journal entries</a></li>
+      <li><a class="nav-link {% if '/ledger/accounts' in path %}active{% endif %}" href="{% url 'ledger:account_list' %}"><i class="bi bi-list-columns-reverse"></i> Chart of accounts</a></li>
+      <li><a class="nav-link {% if '/ledger/funds' in path %}active{% endif %}" href="{% url 'ledger:fund_list' %}"><i class="bi bi-pie-chart"></i> Funds</a></li>
+      <li><a class="nav-link {% if '/ledger/budgets' in path %}active{% endif %}" href="{% url 'ledger:budget_list' %}"><i class="bi bi-clipboard-data"></i> Budgets</a></li>
+      <li><a class="nav-link {% if '/assets/' in path %}active{% endif %}" href="{% url 'fixedassets:asset_list' %}"><i class="bi bi-building"></i> Fixed assets</a></li>
+      <li class="nav-heading">Reports</li>
+      <li><a class="nav-link {% if '/reports/' in path %}active{% endif %}" href="{% url 'reports:index' %}"><i class="bi bi-file-earmark-bar-graph"></i> All reports</a></li>
+      {% endif %}
+
+      {% if caps.manage_settings or caps.manage_users or caps.view_audit %}
+      <li class="nav-heading">Administration</li>
+      {% if caps.manage_settings %}<li><a class="nav-link {% if path == '/settings/' or '/settings/close' in path %}active{% endif %}" href="{% url 'settings' %}"><i class="bi bi-gear"></i> Church settings</a></li>{% endif %}
+      {% if caps.manage_users %}<li><a class="nav-link {% if '/settings/users' in path %}active{% endif %}" href="{% url 'user_list' %}"><i class="bi bi-person-lock"></i> Users &amp; roles</a></li>{% endif %}
+      {% if caps.view_audit %}<li><a class="nav-link {% if '/settings/audit' in path %}active{% endif %}" href="{% url 'audit_log' %}"><i class="bi bi-shield-check"></i> Audit trail</a></li>{% endif %}
+      {% if caps.manage_users %}<li><a class="nav-link {% if '/settings/backup' in path %}active{% endif %}" href="{% url 'backup' %}"><i class="bi bi-cloud-download"></i> Backup</a></li>{% endif %}
+      {% endif %}
+    </ul>
+    {% endwith %}
+  </nav>
+
+  <div class="main">
+    <header class="topbar d-print-none">
+      <button class="btn btn-link text-body d-lg-none px-1" type="button" data-toggle-sidebar aria-label="Toggle navigation"><i class="bi bi-list fs-4"></i></button>
+      <div class="topbar-title text-truncate">{% block topbar %}{% endblock %}</div>
+      <div class="ms-auto d-flex align-items-center gap-2">
+        {% if church.lock_date %}<span class="badge text-bg-light border d-none d-md-inline" title="Books closed through"><i class="bi bi-lock"></i> Closed through {{ church.lock_date|date:"M j, Y" }}</span>{% endif %}
+        <button class="btn btn-sm btn-outline-secondary" type="button" data-theme-toggle aria-label="Toggle dark mode"><i class="bi bi-moon-stars"></i></button>
+        <div class="dropdown">
+          <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="bi bi-person-circle"></i> <span class="d-none d-sm-inline">{{ user.get_full_name|default:user.username }}</span>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li><span class="dropdown-item-text small text-body-secondary">{{ my_roles|join:", "|default:"No role assigned" }}</span></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item" href="{% url 'password_change' %}"><i class="bi bi-key"></i> Change password</a></li>
+            {% if user.is_superuser %}<li><a class="dropdown-item" href="{% url 'admin:index' %}"><i class="bi bi-tools"></i> Django admin</a></li>{% endif %}
+            <li>
+              <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="dropdown-item" type="submit"><i class="bi bi-box-arrow-right"></i> Sign out</button></form>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </header>
+
+    <main class="content">
+      {% if messages %}
+      <div class="d-print-none">
+        {% for message in messages %}
+        <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags|default:'info' }}{% endif %} alert-dismissible fade show" role="alert">
+          {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <div class="page-header">
+        <div>
+          {% block breadcrumbs %}{% endblock %}
+          <h1 class="page-title">{% block page_title %}{% endblock %}</h1>
+          {% block page_subtitle %}{% endblock %}
+        </div>
+        <div class="page-actions d-print-none">{% block actions %}{% endblock %}</div>
+      </div>
+
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</div>
+{% else %}
+  {% block anonymous %}{% endblock %}
+{% endif %}
+<script src="{% static 'vendor/bootstrap/bootstrap.bundle.min.js' %}"></script>
+<script src="{% static 'js/app.js' %}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

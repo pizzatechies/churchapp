@@ -1,0 +1,12 @@
+<form class="filter-bar row g-2 align-items-end" method="get">
+  <div class="col-sm-6 col-md-3"><label class="form-label">Period</label>
+    <select class="form-select form-select-sm" name="period" data-period-select>
+      {% for key, label in period_choices %}<option value="{{ key }}" {% if key == period %}selected{% endif %}>{{ label }}</option>{% endfor %}
+      {% if period == 'custom' %}<option value="custom" selected>Custom dates</option>{% endif %}
+    </select>
+  </div>
+  <div class="col-6 col-md-2"><label class="form-label">From</label><input type="date" class="form-control form-control-sm" name="start" value="{{ start|date:'Y-m-d' }}"></div>
+  <div class="col-6 col-md-2"><label class="form-label">To</label><input type="date" class="form-control form-control-sm" name="end" value="{{ end|date:'Y-m-d' }}"></div>
+  {% block extra %}{{ extra_filters|default:'' }}{% endblock %}
+  <div class="col-md-auto"><button class="btn btn-sm btn-outline-primary">Apply</button></div>
+</form>

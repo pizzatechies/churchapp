@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Not found{% endblock %}
+{% block page_title %}Page not found{% endblock %}
+{% block content %}
+<div class="card"><div class="empty-state"><i class="bi bi-signpost-split"></i>
+<p>That page or record doesn't exist (it may have been deleted).</p>
+<a class="btn btn-outline-primary" href="{% url 'dashboard' %}">Go to the dashboard</a></div></div>
+{% endblock %}
+{% block anonymous %}<div class="container py-5"><h1>Page not found</h1><a href="{% url 'login' %}">Sign in</a></div>{% endblock %}

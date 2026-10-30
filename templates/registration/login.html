@@ -1,0 +1,29 @@
+{% extends "base.html" %}{% load static %}
+{% block title %}Sign in{% endblock %}
+{% block anonymous %}
+<div class="login-wrap">
+  <div class="card login-card shadow-lg">
+    <div class="card-body p-4 p-md-5">
+      <div class="text-center mb-4">
+        <span class="brand-mark mb-2" style="width:52px;height:52px;font-size:1.6rem"><i class="bi bi-droplet-half"></i></span>
+        <h1 class="h4 mb-0">{{ church.name }}</h1>
+        <p class="text-body-secondary small">Finance &amp; accounting</p>
+      </div>
+      {% if form.errors %}<div class="alert alert-danger small">Your username and password didn't match. Please try again.</div>{% endif %}
+      <form method="post" action="{% url 'login' %}">
+        {% csrf_token %}
+        <div class="mb-3">
+          <label class="form-label" for="id_username">Username</label>
+          <input type="text" name="username" id="id_username" class="form-control" autocomplete="username" required autofocus value="{{ form.username.value|default:'' }}">
+        </div>
+        <div class="mb-3">
+          <label class="form-label" for="id_password">Password</label>
+          <input type="password" name="password" id="id_password" class="form-control" autocomplete="current-password" required>
+        </div>
+        <input type="hidden" name="next" value="{{ next }}">
+        <button class="btn btn-primary w-100" type="submit">Sign in</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+{% block page_subtitle %}{% if subtitle %}<p class="text-body-secondary mb-0">{{ subtitle }}</p>{% endif %}{% endblock %}
+{% block content %}
+<div class="card" style="max-width: {{ max_width|default:'900px' }}">
+  <div class="card-body">
+    <form method="post" enctype="multipart/form-data" novalidate>
+      {% csrf_token %}
+      {% include "includes/form_fields.html" %}
+      <div class="d-flex gap-2 mt-2">
+        <button type="submit" class="btn btn-primary">{{ submit_label|default:"Save" }}</button>
+        <a href="{{ cancel_url|default:request.META.HTTP_REFERER|default:'/' }}" class="btn btn-outline-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

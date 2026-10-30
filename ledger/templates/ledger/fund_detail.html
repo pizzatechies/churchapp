@@ -1,0 +1,31 @@
+{% extends "base.html" %}{% load finance %}
+{% block title %}{{ fund.name }}{% endblock %}
+{% block breadcrumbs %}<nav><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{% url 'ledger:fund_list' %}">Funds</a></li><li class="breadcrumb-item active">{{ fund.code }}</li></ol></nav>{% endblock %}
+{% block page_title %}{{ fund.name }}{% endblock %}
+{% block page_subtitle %}<p class="text-body-secondary mb-0">{{ fund.get_restriction_display }}{% if fund.description %} · {{ fund.description }}{% endif %}</p>{% endblock %}
+{% block actions %}{% if caps.manage_settings %}<a href="{% url 'ledger:fund_edit' fund.pk %}" class="btn btn-outline-secondary"><i class="bi bi-pencil"></i> Edit</a>{% endif %}{% endblock %}
+{% block content %}
+{% include "includes/period_filter.html" %}
+<div class="row g-3 mb-3">
+  <div class="col-md-3"><div class="card stat-card"><div class="card-body"><div class="stat-label">Balance {{ start|date:"M j" }}</div><div class="stat-value">{{ opening|money }}</div></div></div></div>
+  <div class="col-md-3"><div class="card stat-card"><div class="card-body"><div class="stat-label">Income</div><div class="stat-value text-positive">{{ income_total|money }}</div></div></div></div>
+  <div class="col-md-3"><div class="card stat-card"><div class="card-body"><div class="stat-label">Expenses</div><div class="stat-value">{{ expense_total|money }}</div>{% if transfers %}<div class="stat-sub">Transfers in/out: {{ transfers|money }}</div>{% endif %}</div></div></div>
+  <div class="col-md-3"><div class="card stat-card"><div class="card-body"><div class="stat-label">Balance {{ end|date:"M j" }}</div><div class="stat-value">{{ balance|money }}</div></div></div></div>
+</div>
+<div class="row g-3">
+  <div class="col-lg-6">
+    <div class="card table-card mb-3"><div class="card-header">Income</div>
+      <table class="table table-sm">{% for a, b in income %}<tr><td><a href="{% url 'ledger:account_detail' a.pk %}?fund={{ fund.pk }}&start={{ start|date:'Y-m-d' }}&end={{ end|date:'Y-m-d' }}">{{ a }}</a></td><td class="num">{{ b|acct }}</td></tr>{% empty %}<tr><td class="text-body-secondary small">No income in this period.</td></tr>{% endfor %}
+      <tfoot><tr><td>Total income</td><td class="num">{{ income_total|acct }}</td></tr></tfoot></table></div>
+    <div class="card table-card"><div class="card-header">Expenses</div>
+      <table class="table table-sm">{% for a, b in expenses %}<tr><td><a href="{% url 'ledger:account_detail' a.pk %}?fund={{ fund.pk }}&start={{ start|date:'Y-m-d' }}&end={{ end|date:'Y-m-d' }}">{{ a }}</a></td><td class="num">{{ b|acct }}</td></tr>{% empty %}<tr><td class="text-body-secondary small">No expenses in this period.</td></tr>{% endfor %}
+      <tfoot><tr><td>Total expenses</td><td class="num">{{ expense_total|acct }}</td></tr></tfoot></table></div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card table-card mb-3"><div class="card-header">What the fund owns ({{ end|date:"M j, Y" }})</div>
+      <table class="table table-sm">{% for a, b in assets %}<tr><td>{{ a }}</td><td class="num">{{ b|acct }}</td></tr>{% empty %}<tr><td class="text-body-secondary small">None.</td></tr>{% endfor %}</table></div>
+    <div class="card table-card"><div class="card-header">What the fund owes</div>
+      <table class="table table-sm">{% for a, b in liabilities %}<tr><td>{{ a }}</td><td class="num">{{ b|acct }}</td></tr>{% empty %}<tr><td class="text-body-secondary small">Nothing owed.</td></tr>{% endfor %}</table></div>
+  </div>
+</div>
+{% endblock %}

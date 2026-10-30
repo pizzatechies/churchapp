@@ -1,0 +1,25 @@
+{% extends "base.html" %}{% load finance %}
+{% block title %}Pledges & campaigns{% endblock %}
+{% block page_title %}Pledges &amp; campaigns{% endblock %}
+{% block actions %}{% if caps.manage_giving %}
+  <a href="{% url 'giving:pledge_create' %}" class="btn btn-outline-primary"><i class="bi bi-plus-lg"></i> Record pledge</a>
+  <a href="{% url 'giving:campaign_create' %}" class="btn btn-primary"><i class="bi bi-flag"></i> New campaign</a>{% endif %}{% endblock %}
+{% block content %}
+<div class="row g-3">
+{% for c in campaigns %}
+  <div class="col-md-6 col-xl-4">
+    <div class="card h-100"><div class="card-body">
+      <div class="d-flex justify-content-between"><a href="{{ c.get_absolute_url }}" class="h6 text-decoration-none">{{ c.name }}</a>{% if not c.is_active %}<span class="badge text-bg-secondary">Closed</span>{% endif %}</div>
+      <div class="small text-body-secondary mb-2">{{ c.fund.name }} · {{ c.start_date|date:"M j, Y" }}{% if c.end_date %} – {{ c.end_date|date:"M j, Y" }}{% endif %}</div>
+      <div class="d-flex justify-content-between small"><span>Received</span><strong>{{ c.total_received|money }}</strong></div>
+      <div class="d-flex justify-content-between small"><span>Pledged ({{ c.pledges.count }})</span><span>{{ c.total_pledged|money }}</span></div>
+      {% if c.goal %}<div class="d-flex justify-content-between small"><span>Goal</span><span>{{ c.goal|money }}</span></div>
+      <div class="progress mt-2"><div class="progress-bar" style="width: {{ c.percent_of_goal|floatformat:0 }}%"></div></div>
+      <div class="small text-body-secondary mt-1">{{ c.percent_of_goal|floatformat:0 }}% of goal</div>{% endif %}
+    </div></div>
+  </div>
+{% empty %}
+  <div class="col-12"><div class="card"><div class="empty-state"><i class="bi bi-flag"></i>No campaigns yet. Create one for a building project or annual stewardship drive.</div></div></div>
+{% endfor %}
+</div>
+{% endblock %}

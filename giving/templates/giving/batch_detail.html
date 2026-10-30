@@ -1,0 +1,93 @@
+{% extends "base.html" %}{% load finance %}
+{% block title %}{{ batch.number }}{% endblock %}
+{% block breadcrumbs %}<nav><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{% url 'giving:batch_list' %}">Offerings &amp; deposits</a></li><li class="breadcrumb-item active">{{ batch.number }}</li></ol></nav>{% endblock %}
+{% block page_title %}{{ batch.number }} · {{ batch.description }} {% status_badge batch.status batch.get_status_display %}{% endblock %}
+{% block page_subtitle %}<p class="text-body-secondary mb-0">{{ batch.date|date:"l, F j, Y" }} · Deposit to {{ batch.deposit_account.name }}{% if batch.counted_by %} · Counted by {{ batch.counted_by }}{% endif %}</p>{% endblock %}
+{% block actions %}
+  <button class="btn btn-outline-secondary" onclick="window.print()"><i class="bi bi-printer"></i> Print</button>
+  {% if batch.is_open %}
+    <a href="{% url 'giving:batch_edit' batch.pk %}" class="btn btn-outline-secondary"><i class="bi bi-pencil"></i> Edit batch</a>
+    {% if not contributions %}<form method="post" action="{% url 'giving:batch_delete' batch.pk %}" data-confirm="Delete this empty batch?">{% csrf_token %}<button class="btn btn-outline-danger"><i class="bi bi-trash"></i></button></form>{% endif %}
+    {% if can_post %}<form method="post" action="{% url 'giving:batch_post' batch.pk %}" data-confirm="Post this batch to the books? The gifts will be locked.">{% csrf_token %}<button class="btn btn-primary" {% if not contributions %}disabled{% endif %}><i class="bi bi-check2-circle"></i> Post deposit</button></form>{% endif %}
+  {% else %}
+    {% if batch.journal_entry %}<a href="{{ batch.journal_entry.get_absolute_url }}" class="btn btn-outline-secondary"><i class="bi bi-journal-text"></i> {{ batch.journal_entry.number }}</a>{% endif %}
+    {% if can_post %}<form method="post" action="{% url 'giving:batch_unpost' batch.pk %}" data-confirm="Reopen this batch? Its deposit entry will be voided until you post it again.">{% csrf_token %}<button class="btn btn-outline-warning"><i class="bi bi-unlock"></i> Reopen to correct</button></form>{% endif %}
+  {% endif %}
+{% endblock %}
+{% block content %}
+<div class="row g-3 mb-3">
+  <div class="col-sm-6 col-lg-3"><div class="card stat-card"><div class="card-body"><div class="stat-label">Entered</div><div class="stat-value">{{ total|money }}</div><div class="stat-sub">{{ contributions|length }} gift{{ contributions|length|pluralize }}</div></div></div></div>
+  <div class="col-sm-6 col-lg-3"><div class="card stat-card"><div class="card-body"><div class="stat-label">Count sheet total</div><div class="stat-value">{% if batch.control_total is not None %}{{ batch.control_total|money }}{% else %}<span class="text-body-tertiary fs-6">Not set</span>{% endif %}</div>
+    {% if difference is not None %}<div class="stat-sub {% if difference == 0 %}text-positive{% else %}text-negative{% endif %}">{% if difference == 0 %}<i class="bi bi-check-circle"></i> Matches{% else %}Difference {{ difference|money }}{% endif %}</div>{% endif %}</div></div></div>
+  <div class="col-lg-6"><div class="card stat-card"><div class="card-body py-2">
+    <div class="row">
+      <div class="col-6"><div class="stat-label mb-1">By method</div>{% for label, n, t in batch.totals_by_method %}<div class="d-flex justify-content-between small"><span>{{ label }} ({{ n }})</span><span class="num">{{ t|money }}</span></div>{% empty %}<span class="small text-body-secondary">—</span>{% endfor %}</div>
+      <div class="col-6"><div class="stat-label mb-1">By fund</div>{% for label, n, t in batch.totals_by_fund %}<div class="d-flex justify-content-between small"><span>{{ label }}</span><span class="num">{{ t|money }}</span></div>{% empty %}<span class="small text-body-secondary">—</span>{% endfor %}</div>
+    </div>
+  </div></div></div>
+</div>
+
+<div class="row g-3">
+  <div class="col-xl-9">
+    {% if form %}
+    <form method="post" class="card mb-3 d-print-none" id="entry" novalidate>{% csrf_token %}
+      <div class="card-header d-flex justify-content-between"><span><i class="bi bi-plus-circle"></i> Add a gift</span><span class="small text-body-secondary">Type an envelope number to find the donor quickly</span></div>
+      <div class="card-body">
+        {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+        <div class="row g-2">
+          <div class="col-md-2"><label class="form-label">Envelope #</label><input class="form-control" data-envelope-lookup="{{ form.donor.auto_id }}" autofocus></div>
+          {% include "includes/field.html" with field=form.donor col="col-md-4" %}
+          {% include "includes/field.html" with field=form.amount col="col-md-2" %}
+          {% include "includes/field.html" with field=form.method col="col-md-2" %}
+          {% include "includes/field.html" with field=form.check_number col="col-md-2" %}
+          {% include "includes/field.html" with field=form.fund col="col-md-3" %}
+          {% include "includes/field.html" with field=form.account col="col-md-3" %}
+          {% include "includes/field.html" with field=form.memo col="col-md-4" %}
+          {% include "includes/field.html" with field=form.is_deductible col="col-md-2" %}
+          <div class="d-none">{{ form.date }}</div>
+        </div>
+        <button class="btn btn-primary"><i class="bi bi-plus-lg"></i> Add gift</button>
+        {% if form.date.errors %}<div class="text-danger small">{{ form.date.errors }}</div>{% endif %}
+      </div>
+    </form>
+    {% endif %}
+    <div class="card table-card">
+      <table class="table table-sm table-hover">
+        <thead><tr><th>Donor</th><th>Fund</th><th>Category</th><th>Method</th><th>Check / ref</th><th>Memo</th><th class="num">Amount</th><th class="d-print-none"></th></tr></thead>
+        <tbody>
+        {% for c in contributions %}
+          <tr>
+            <td>{% if c.donor %}<a href="{{ c.donor.get_absolute_url }}">{{ c.donor }}</a>{% if c.donor.envelope_number %} <span class="small text-body-secondary">#{{ c.donor.envelope_number }}</span>{% endif %}{% else %}<em class="text-body-secondary">Anonymous</em>{% endif %}</td>
+            <td><span class="badge text-bg-light border">{{ c.fund.code }}</span></td>
+            <td class="small">{{ c.account.name }}</td>
+            <td class="small">{{ c.get_method_display }}</td>
+            <td class="small">{{ c.check_number }}</td>
+            <td class="small">{{ c.memo }}{% if not c.is_deductible %} <span class="badge text-bg-warning">not deductible</span>{% endif %}</td>
+            <td class="num">{{ c.amount|money }}</td>
+            <td class="text-end text-nowrap d-print-none">{% if batch.is_open %}
+              <a href="{% url 'giving:contribution_edit' c.pk %}" class="btn btn-sm btn-link" title="Edit"><i class="bi bi-pencil"></i></a>
+              <form method="post" action="{% url 'giving:contribution_delete' c.pk %}" class="d-inline" data-confirm="Remove this gift?">{% csrf_token %}<button class="btn btn-sm btn-link text-danger" title="Remove"><i class="bi bi-x-lg"></i></button></form>
+            {% endif %}</td>
+          </tr>
+        {% empty %}<tr><td colspan="8" class="empty-state">No gifts entered yet.</td></tr>{% endfor %}
+        </tbody>
+        <tfoot><tr><td colspan="6">Total</td><td class="num">{{ total|money }}</td><td class="d-print-none"></td></tr></tfoot>
+      </table>
+    </div>
+    <div class="print-only mt-5">
+      <div class="row"><div class="col-6">Counted by: ______________________</div><div class="col-6">Verified by: ______________________</div></div>
+    </div>
+  </div>
+  <div class="col-xl-3 d-print-none">
+    <div class="card mb-3"><div class="card-body small">
+      <dl class="dl-grid">
+        <dt>Created</dt><dd>{{ batch.created_at|date:"M j, Y" }}{% if batch.created_by %} by {{ batch.created_by }}{% endif %}</dd>
+        {% if batch.posted_at %}<dt>Posted</dt><dd>{{ batch.posted_at|date:"M j, Y" }}{% if batch.posted_by %} by {{ batch.posted_by }}{% endif %}</dd>{% endif %}
+        {% if batch.notes %}<dt>Notes</dt><dd>{{ batch.notes|linebreaksbr }}</dd>{% endif %}
+      </dl>
+    </div></div>
+    {% include "includes/documents.html" with object=batch %}
+    {% if batch.is_open and not can_post %}<div class="alert alert-info small">When the batch matches the count sheet, a bookkeeper or treasurer will post it.</div>{% endif %}
+  </div>
+</div>
+{% endblock %}

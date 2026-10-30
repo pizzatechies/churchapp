@@ -1,0 +1,47 @@
+{% extends "base.html" %}{% load finance %}
+{% block title %}{{ budget }}{% endblock %}
+{% block breadcrumbs %}<nav><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{% url 'ledger:budget_list' %}">Budgets</a></li><li class="breadcrumb-item active">{{ budget.fiscal_year }}</li></ol></nav>{% endblock %}
+{% block page_title %}{{ budget }} {% status_badge budget.status budget.get_status_display %}{% endblock %}
+{% block page_subtitle %}<p class="text-body-secondary mb-0">{% if budget.approved_at %}Approved {{ budget.approved_at|date:"M j, Y" }} by {{ budget.approved_by|default:"—" }}. {% endif %}Type an annual amount to spread it evenly across the months, or edit individual months.</p>{% endblock %}
+{% block actions %}
+  <a href="{% url 'reports:budget_vs_actual' %}?year={{ budget.fiscal_year }}&fund={{ budget.fund.pk }}" class="btn btn-outline-secondary"><i class="bi bi-bar-chart"></i> Compare to actual</a>
+  {% if can_edit %}
+  {% if budget.status == 'approved' %}
+  <form method="post" action="{% url 'ledger:budget_status' budget.pk %}">{% csrf_token %}<input type="hidden" name="action" value="unapprove"><button class="btn btn-outline-secondary">Return to draft</button></form>
+  {% endif %}
+  <form method="post" action="{% url 'ledger:budget_status' budget.pk %}" data-confirm="Delete this budget?">{% csrf_token %}<input type="hidden" name="action" value="delete"><button class="btn btn-outline-danger"><i class="bi bi-trash"></i></button></form>
+  {% endif %}
+{% endblock %}
+{% block content %}
+<form method="post">{% csrf_token %}
+<div class="card mb-3">
+  <div class="table-card" style="max-height: 70vh; overflow:auto">
+    <table class="table table-sm budget-grid" data-budget-grid>
+      <thead style="position:sticky; top:0; background: var(--app-card-bg); z-index:2">
+        <tr><th class="acct-col">Account</th><th class="num">Annual</th>{% for i, first, last in months %}<th class="num">{{ first|date:"M" }}</th>{% endfor %}</tr>
+      </thead>
+      {% for section in sections %}
+      <tbody>
+        <tr class="table-light"><th class="acct-col text-uppercase small" colspan="14">{{ section.label }}</th></tr>
+        {% for row in section.rows %}
+        <tr data-row data-type="{{ section.type }}">
+          <td class="acct-col small">{{ row.account }}</td>
+          <td><input class="form-control form-control-sm fw-semibold" data-annual value="{% if row.total %}{{ row.total }}{% endif %}" inputmode="decimal" {% if not can_edit %}disabled{% endif %} aria-label="Annual {{ row.account.name }}"></td>
+          {% for i, amount in row.months %}<td><input class="form-control form-control-sm" name="a{{ row.account.pk }}_m{{ i }}" data-month="{{ i }}" value="{% if amount %}{{ amount }}{% endif %}" inputmode="decimal" {% if not can_edit %}disabled{% endif %} aria-label="{{ row.account.name }} month {{ i|add:1 }}"></td>{% endfor %}
+        </tr>
+        {% endfor %}
+        <tr class="fw-semibold"><td class="acct-col">Total {{ section.label|lower }}</td><td class="num" data-sum="{{ section.type }}" data-m="total"></td>{% for i, first, last in months %}<td class="num" data-sum="{{ section.type }}" data-m="{{ i }}"></td>{% endfor %}</tr>
+      </tbody>
+      {% endfor %}
+      <tfoot><tr><td class="acct-col">Surplus / (deficit)</td><td class="num" data-sum="net" data-m="total"></td>{% for i, first, last in months %}<td class="num" data-sum="net" data-m="{{ i }}"></td>{% endfor %}</tr></tfoot>
+    </table>
+  </div>
+</div>
+{% if can_edit %}
+<div class="d-flex gap-2">
+  <button class="btn btn-primary" name="save"><i class="bi bi-save"></i> Save budget</button>
+  {% if budget.status != 'approved' %}<button class="btn btn-outline-success" name="approve"><i class="bi bi-check2-circle"></i> Save &amp; approve</button>{% endif %}
+</div>
+{% endif %}
+</form>
+{% endblock %}

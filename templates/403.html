@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Not allowed{% endblock %}
+{% block page_title %}You don't have access to this page{% endblock %}
+{% block content %}
+<div class="card"><div class="empty-state"><i class="bi bi-shield-lock"></i>
+<p>Your role does not include this area. Ask an administrator if you need access.</p>
+<a class="btn btn-outline-primary" href="{% url 'dashboard' %}">Go to the dashboard</a></div></div>
+{% endblock %}
+{% block anonymous %}<div class="container py-5"><h1>Not allowed</h1><a href="{% url 'login' %}">Sign in</a></div>{% endblock %}

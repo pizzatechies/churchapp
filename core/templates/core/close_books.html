@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Close the books{% endblock %}
+{% block page_title %}Close the books{% endblock %}
+{% block content %}
+<div class="card" style="max-width:640px">
+  <div class="card-body">
+    <p>Setting a closing date locks every transaction dated on or before it. Nobody can add, edit or void entries in a closed period, which protects reports that have already been presented to the board or congregation.</p>
+    <ul class="small text-body-secondary">
+      <li>Reconcile every bank account through the closing date first.</li>
+      <li>Corrections found later are recorded as adjusting entries in an open period.</li>
+      <li>Clear the date to reopen all periods (administrators and treasurers only).</li>
+    </ul>
+    <form method="post">{% csrf_token %}
+      <div class="row">{% include "includes/field.html" with field=form.lock_date col="col-md-6" %}</div>
+      <button class="btn btn-primary">Save closing date</button>
+      <a href="{% url 'settings' %}" class="btn btn-outline-secondary">Cancel</a>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,26 @@
+{% extends "base.html" %}{% load finance %}
+{% block title %}Budgets{% endblock %}
+{% block page_title %}Budgets{% endblock %}
+{% block actions %}
+  <a href="{% url 'reports:budget_vs_actual' %}" class="btn btn-outline-secondary"><i class="bi bi-bar-chart"></i> Budget vs actual</a>
+  {% if caps.manage_budget %}<a href="{% url 'ledger:budget_create' %}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> New budget</a>{% endif %}
+{% endblock %}
+{% block content %}
+<div class="card table-card">
+  <table class="table table-hover">
+    <thead><tr><th>Budget</th><th>Fund</th><th>Status</th><th class="num">Income</th><th class="num">Expenses</th><th class="num">Surplus / (deficit)</th></tr></thead>
+    <tbody>
+    {% for b, t in rows %}
+      <tr data-href="{{ b.get_absolute_url }}">
+        <td><a href="{{ b.get_absolute_url }}">{{ b }}</a></td>
+        <td>{{ b.fund.name }}</td>
+        <td>{% status_badge b.status b.get_status_display %}</td>
+        <td class="num">{{ t.income|money }}</td>
+        <td class="num">{{ t.expense|money }}</td>
+        <td class="num">{{ t.net|acct }}</td>
+      </tr>
+    {% empty %}<tr><td colspan="6" class="empty-state"><i class="bi bi-clipboard-data"></i>No budgets yet. Create one for the coming fiscal year.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

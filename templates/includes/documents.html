@@ -1,0 +1,34 @@
+{% load finance %}
+<div class="card mb-3">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span><i class="bi bi-paperclip"></i> Attachments</span>
+    <span class="small text-body-secondary">{{ object.documents.count }}</span>
+  </div>
+  <ul class="list-group list-group-flush">
+    {% for doc in object.documents.all %}
+    <li class="list-group-item d-flex justify-content-between align-items-center">
+      <div class="text-truncate">
+        <a href="{% url 'document_download' doc.pk %}"><i class="bi bi-file-earmark"></i> {{ doc.original_name }}</a>
+        <div class="small text-body-secondary">{{ doc.description }}{% if doc.description %} · {% endif %}{{ doc.size|filesizeformat }} · {{ doc.uploaded_at|date:"M j, Y" }}{% if doc.uploaded_by %} by {{ doc.uploaded_by }}{% endif %}</div>
+      </div>
+      {% if can_attach %}
+      <form method="post" action="{% url 'document_delete' doc.pk %}" data-confirm="Delete this attachment?">{% csrf_token %}
+        <button class="btn btn-sm btn-link text-danger" title="Delete"><i class="bi bi-trash"></i></button>
+      </form>
+      {% endif %}
+    </li>
+    {% empty %}
+    <li class="list-group-item small text-body-secondary">No files attached. Keep receipts, invoices and statements here.</li>
+    {% endfor %}
+  </ul>
+  {% if can_attach %}
+  <div class="card-body border-top">
+    <form method="post" action="{% url 'document_upload' content_type_id object.pk %}" enctype="multipart/form-data" class="d-flex flex-column gap-2">
+      {% csrf_token %}
+      <input type="file" name="file" class="form-control form-control-sm" required>
+      <input type="text" name="description" class="form-control form-control-sm" placeholder="Description (optional)">
+      <button class="btn btn-sm btn-outline-primary align-self-start"><i class="bi bi-upload"></i> Upload</button>
+    </form>
+  </div>
+  {% endif %}
+</div>

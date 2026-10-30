@@ -1,0 +1,66 @@
+{% extends "base.html" %}{% load finance %}
+{% block title %}Church settings{% endblock %}
+{% block page_title %}Church settings{% endblock %}
+{% block actions %}<a href="{% url 'close_books' %}" class="btn btn-outline-secondary"><i class="bi bi-lock"></i> Close the books</a>{% endblock %}
+{% block content %}
+<div class="row g-3">
+  <div class="col-xl-8">
+    <form method="post" class="card">
+      {% csrf_token %}
+      <div class="card-header">Church profile</div>
+      <div class="card-body">
+        {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+        <div class="row">
+          {% include "includes/field.html" with field=form.name col="col-md-8" %}
+          {% include "includes/field.html" with field=form.tax_id col="col-md-4" %}
+          {% include "includes/field.html" with field=form.address col="col-12" %}
+          {% include "includes/field.html" with field=form.phone col="col-md-4" %}
+          {% include "includes/field.html" with field=form.email col="col-md-4" %}
+          {% include "includes/field.html" with field=form.website col="col-md-4" %}
+        </div>
+        <h6 class="mt-2 mb-3 text-body-secondary text-uppercase small fw-semibold">Accounting</h6>
+        <div class="row">
+          {% include "includes/field.html" with field=form.currency_code col="col-md-3" %}
+          {% include "includes/field.html" with field=form.currency_symbol col="col-md-3" %}
+          {% include "includes/field.html" with field=form.fiscal_year_start_month col="col-md-6" %}
+        </div>
+        <h6 class="mt-2 mb-3 text-body-secondary text-uppercase small fw-semibold">Expense controls</h6>
+        <div class="row">
+          {% include "includes/field.html" with field=form.expense_approval_threshold col="col-md-6" %}
+          {% include "includes/field.html" with field=form.require_separate_approver col="col-md-6" %}
+        </div>
+        <h6 class="mt-2 mb-3 text-body-secondary text-uppercase small fw-semibold">Giving statements</h6>
+        <div class="row">
+          {% include "includes/field.html" with field=form.treasurer_name col="col-md-6" %}
+          {% include "includes/field.html" with field=form.statement_footer col="col-12" %}
+        </div>
+      </div>
+      <div class="card-footer bg-transparent"><button class="btn btn-primary">Save settings</button></div>
+    </form>
+  </div>
+  <div class="col-xl-4">
+    <div class="card mb-3">
+      <div class="card-header">Period close</div>
+      <div class="card-body">
+        {% if profile.lock_date %}
+        <p class="mb-2"><i class="bi bi-lock-fill text-warning"></i> Books are closed through <strong>{{ profile.lock_date|date:"F j, Y" }}</strong>.</p>
+        {% else %}
+        <p class="mb-2"><i class="bi bi-unlock"></i> No closing date is set. All periods are open.</p>
+        {% endif %}
+        <p class="small text-body-secondary">Close each month after it has been reconciled and reviewed so reported figures can't change.</p>
+        <a href="{% url 'close_books' %}" class="btn btn-sm btn-outline-primary">Change closing date</a>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">Configuration</div>
+      <div class="list-group list-group-flush">
+        <a class="list-group-item list-group-item-action" href="{% url 'ledger:account_list' %}"><i class="bi bi-list-columns-reverse"></i> Chart of accounts</a>
+        <a class="list-group-item list-group-item-action" href="{% url 'ledger:fund_list' %}"><i class="bi bi-pie-chart"></i> Funds</a>
+        <a class="list-group-item list-group-item-action" href="{% url 'ledger:opening_balances' %}"><i class="bi bi-box-arrow-in-right"></i> Opening balances</a>
+        <a class="list-group-item list-group-item-action" href="{% url 'payroll:item_list' %}"><i class="bi bi-sliders"></i> Pay &amp; deduction types</a>
+        {% if caps.manage_users %}<a class="list-group-item list-group-item-action" href="{% url 'user_list' %}"><i class="bi bi-person-lock"></i> Users &amp; roles</a>{% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}{% if donor %}Edit {{ donor }}{% else %}New donor{% endif %}{% endblock %}
+{% block page_title %}{% if donor %}Edit {{ donor }}{% else %}New donor{% endif %}{% endblock %}
+{% block content %}
+<form method="post" class="card" style="max-width:960px" novalidate>{% csrf_token %}
+  <div class="card-body">
+    {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+    <div class="row">
+      {% include "includes/field.html" with field=form.donor_type col="col-md-4" %}
+      {% include "includes/field.html" with field=form.envelope_number col="col-md-4" %}
+      {% include "includes/field.html" with field=form.is_active col="col-md-4" %}
+      {% include "includes/field.html" with field=form.first_name col="col-md-4" %}
+      {% include "includes/field.html" with field=form.last_name col="col-md-4" %}
+      {% include "includes/field.html" with field=form.organization_name col="col-md-4" %}
+      {% include "includes/field.html" with field=form.email col="col-md-6" %}
+      {% include "includes/field.html" with field=form.phone col="col-md-6" %}
+      {% include "includes/field.html" with field=form.address_line1 col="col-md-6" %}
+      {% include "includes/field.html" with field=form.address_line2 col="col-md-6" %}
+      {% include "includes/field.html" with field=form.city col="col-md-4" %}
+      {% include "includes/field.html" with field=form.state col="col-md-3" %}
+      {% include "includes/field.html" with field=form.postal_code col="col-md-2" %}
+      {% include "includes/field.html" with field=form.country col="col-md-3" %}
+      {% include "includes/field.html" with field=form.is_member col="col-md-4" %}
+      {% include "includes/field.html" with field=form.member_since col="col-md-4" %}
+      {% include "includes/field.html" with field=form.notes col="col-12" %}
+    </div>
+  </div>
+  <div class="card-footer bg-transparent d-flex gap-2"><button class="btn btn-primary">Save donor</button><a class="btn btn-outline-secondary" href="{% if donor %}{{ donor.get_absolute_url }}{% else %}{% url 'giving:donor_list' %}{% endif %}">Cancel</a></div>
+</form>
+{% endblock %}

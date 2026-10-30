@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Giving statements{% endblock %}
+{% block page_title %}Contribution statements{% endblock %}
+{% block page_subtitle %}<p class="text-body-secondary mb-0">Year-end (or any period) giving statements for donors' tax records. Only posted gifts are included.</p>{% endblock %}
+{% block content %}
+<form method="get" class="card" style="max-width:760px">
+  <div class="card-body">
+    <div class="row">
+      {% include "includes/field.html" with field=form.year col="col-md-4" %}
+      {% include "includes/field.html" with field=form.start col="col-md-4" %}
+      {% include "includes/field.html" with field=form.end col="col-md-4" %}
+      {% include "includes/field.html" with field=form.donor col="col-12" %}
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+      <button class="btn btn-primary"><i class="bi bi-printer"></i> Prepare statements</button>
+      <button class="btn btn-outline-secondary" name="export" value="csv"><i class="bi bi-filetype-csv"></i> Mailing list (CSV)</button>
+    </div>
+    <p class="small text-body-secondary mt-3 mb-0">Statements open in a print-ready page: print them or “Save as PDF”. The church's name, tax ID, treasurer and statement message come from <a href="{% url 'settings' %}">Church settings</a>.</p>
+  </div>
+</form>
+{% endblock %}

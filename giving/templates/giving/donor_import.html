@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Import donors{% endblock %}
+{% block page_title %}Import donors from a spreadsheet{% endblock %}
+{% block content %}
+<div class="row g-3">
+  <div class="col-lg-6">
+    <form method="post" enctype="multipart/form-data" class="card" novalidate>{% csrf_token %}
+      <div class="card-body">
+        {% include "includes/form_fields.html" with col="col-12" %}
+        <p class="small text-body-secondary">Donors that already exist (same envelope number, or same name and email) are skipped, so it is safe to import the same file twice.</p>
+        <button class="btn btn-primary"><i class="bi bi-upload"></i> Import</button>
+      </div>
+    </form>
+    {% if result %}
+    <div class="alert alert-success mt-3">Created {{ result.created }}, skipped {{ result.skipped }}.
+      {% if result.errors %}<ul class="mb-0 mt-2 small">{% for e in result.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+      <div class="mt-2"><a href="{% url 'giving:donor_list' %}">View donors</a></div></div>
+    {% endif %}
+  </div>
+  <div class="col-lg-6">
+    <div class="card"><div class="card-header">Recognized column names</div>
+      <table class="table table-sm mb-0">{% for field, aliases in columns.items %}<tr><td class="small text-body-secondary">{{ field|cut:"_"|capfirst }}</td><td class="small">{{ aliases|join:", " }}</td></tr>{% endfor %}</table>
+    </div>
+  </div>
+</div>
+{% endblock %}

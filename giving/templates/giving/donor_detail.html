@@ -1,0 +1,55 @@
+{% extends "base.html" %}{% load finance %}
+{% block title %}{{ donor }}{% endblock %}
+{% block breadcrumbs %}<nav><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{% url 'giving:donor_list' %}">Donors</a></li><li class="breadcrumb-item active">{{ donor }}</li></ol></nav>{% endblock %}
+{% block page_title %}{{ donor.display_name }}{% if not donor.is_active %} <span class="badge text-bg-secondary">Inactive</span>{% endif %}{% endblock %}
+{% block page_subtitle %}<p class="text-body-secondary mb-0">{{ donor.get_donor_type_display }}{% if donor.envelope_number %} · Envelope #{{ donor.envelope_number }}{% endif %}{% if donor.is_member %} · Member{% if donor.member_since %} since {{ donor.member_since|date:"Y" }}{% endif %}{% endif %}</p>{% endblock %}
+{% block actions %}
+  <a href="{% url 'giving:donor_statement' donor.pk %}?year={{ this_year|add:-1 }}" class="btn btn-outline-secondary"><i class="bi bi-envelope-paper"></i> {{ this_year|add:-1 }} statement</a>
+  <a href="{% url 'giving:donor_statement' donor.pk %}?year={{ this_year }}" class="btn btn-outline-secondary">{{ this_year }} statement</a>
+  {% if caps.manage_giving %}<a href="{% url 'giving:donor_edit' donor.pk %}" class="btn btn-outline-primary"><i class="bi bi-pencil"></i> Edit</a>{% endif %}
+{% endblock %}
+{% block content %}
+<div class="row g-3">
+  <div class="col-xl-8">
+    <div class="row g-3 mb-3">
+      <div class="col-sm-4"><div class="card stat-card"><div class="card-body"><div class="stat-label">Lifetime giving</div><div class="stat-value">{{ lifetime|money }}</div><div class="stat-sub">{{ count }} gift{{ count|pluralize }}</div></div></div></div>
+      {% for year, total in by_year|slice:":2" %}
+      <div class="col-sm-4"><div class="card stat-card"><div class="card-body"><div class="stat-label">{{ year }}</div><div class="stat-value">{{ total|money }}</div></div></div></div>
+      {% endfor %}
+    </div>
+    {% if pending %}<div class="alert alert-info small">{{ pending|length }} gift{{ pending|length|pluralize }} in open batches not yet posted ({% for c in pending %}<a href="{{ c.batch.get_absolute_url }}">{{ c.batch.number }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}).</div>{% endif %}
+    <div class="card table-card mb-3">
+      <div class="card-header">Giving history{% if count > 100 %} <span class="small text-body-secondary">(latest 100)</span>{% endif %}</div>
+      <table class="table table-sm table-hover">
+        <thead><tr><th>Date</th><th>Fund</th><th>Method</th><th>Check / ref</th><th>Batch</th><th class="num">Amount</th></tr></thead>
+        <tbody>
+        {% for c in contributions %}
+          <tr><td>{{ c.date|date:"M j, Y" }}</td><td>{{ c.fund.name }}</td><td class="small">{{ c.get_method_display }}</td><td class="small">{{ c.check_number }}</td>
+            <td class="small"><a href="{{ c.batch.get_absolute_url }}">{{ c.batch.number }}</a></td><td class="num">{{ c.amount|money }}{% if not c.is_deductible %} <i class="bi bi-info-circle text-warning" title="Not tax deductible"></i>{% endif %}</td></tr>
+        {% empty %}<tr><td colspan="6" class="empty-state">No posted gifts yet.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="col-xl-4">
+    <div class="card mb-3"><div class="card-header">Contact</div><div class="card-body">
+      {% for line in donor.address_lines %}<div>{{ line }}</div>{% empty %}<div class="text-body-secondary small">No address on file (needed for mailed statements).</div>{% endfor %}
+      {% if donor.email %}<div class="mt-2"><i class="bi bi-envelope"></i> <a href="mailto:{{ donor.email }}">{{ donor.email }}</a></div>{% endif %}
+      {% if donor.phone %}<div><i class="bi bi-telephone"></i> {{ donor.phone }}</div>{% endif %}
+      {% if donor.notes %}<hr><div class="small">{{ donor.notes|linebreaksbr }}</div>{% endif %}
+    </div></div>
+    <div class="card mb-3"><div class="card-header">Giving by year</div>
+      <ul class="list-group list-group-flush">{% for year, total in by_year %}<li class="list-group-item d-flex justify-content-between"><span>{{ year }}</span><span class="num">{{ total|money }}</span></li>{% empty %}<li class="list-group-item small text-body-secondary">None yet.</li>{% endfor %}</ul>
+    </div>
+    <div class="card"><div class="card-header d-flex justify-content-between"><span>Pledges</span>{% if caps.manage_giving %}<a class="small" href="{% url 'giving:pledge_create' %}?donor={{ donor.pk }}">Add pledge</a>{% endif %}</div>
+      <ul class="list-group list-group-flush">
+      {% for p in pledges %}
+        <li class="list-group-item"><div class="d-flex justify-content-between"><a href="{{ p.campaign.get_absolute_url }}">{{ p.campaign }}</a><span class="num">{{ p.amount|money }}</span></div>
+          <div class="progress mt-1" role="progressbar" aria-valuenow="{{ p.percent|floatformat:0 }}" aria-valuemin="0" aria-valuemax="100"><div class="progress-bar" style="width: {{ p.percent|floatformat:0 }}%"></div></div>
+          <div class="small text-body-secondary">{{ p.fulfilled|money }} given · {{ p.remaining|money }} remaining</div></li>
+      {% empty %}<li class="list-group-item small text-body-secondary">No pledges.</li>{% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock %}

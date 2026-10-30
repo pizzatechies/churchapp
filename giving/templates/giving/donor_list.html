@@ -1,0 +1,47 @@
+{% extends "base.html" %}{% load finance %}
+{% block title %}Donors{% endblock %}
+{% block page_title %}Donors{% endblock %}
+{% block actions %}
+  <a href="{% querystring export='csv' page=None %}" class="btn btn-outline-secondary"><i class="bi bi-filetype-csv"></i> Export</a>
+  {% if caps.manage_giving %}
+  <a href="{% url 'giving:donor_import' %}" class="btn btn-outline-secondary"><i class="bi bi-upload"></i> Import</a>
+  <a href="{% url 'giving:donor_create' %}" class="btn btn-primary"><i class="bi bi-person-plus"></i> New donor</a>
+  {% endif %}
+{% endblock %}
+{% block content %}
+<form class="filter-bar row g-2 align-items-end" method="get">
+  <div class="col-md-5"><label class="form-label">Search</label><input class="form-control form-control-sm" name="q" value="{{ q }}" placeholder="Name, email, phone or envelope #"></div>
+  <div class="col-md-3"><label class="form-label">Show</label>
+    <select class="form-select form-select-sm" name="status" data-autosubmit>
+      <option value="active" {% if status == 'active' %}selected{% endif %}>Active donors</option>
+      <option value="members" {% if status == 'members' %}selected{% endif %}>Members only</option>
+      <option value="inactive" {% if status == 'inactive' %}selected{% endif %}>Inactive</option>
+      <option value="all" {% if status == 'all' %}selected{% endif %}>Everyone</option>
+    </select></div>
+  <div class="col-md-2"><label class="form-label">Sort by</label>
+    <select class="form-select form-select-sm" name="sort" data-autosubmit>
+      <option value="name" {% if sort == 'name' %}selected{% endif %}>Name</option>
+      <option value="ytd" {% if sort == 'ytd' %}selected{% endif %}>Giving this year</option>
+      <option value="last" {% if sort == 'last' %}selected{% endif %}>Most recent gift</option>
+    </select></div>
+  <div class="col-md-2"><button class="btn btn-sm btn-outline-primary w-100">Search</button></div>
+</form>
+<div class="card table-card">
+  <table class="table table-hover">
+    <thead><tr><th>Name</th><th>Envelope</th><th>Contact</th><th>Member</th><th>Last gift</th><th class="num">Given this fiscal year</th></tr></thead>
+    <tbody>
+    {% for d in page_obj %}
+      <tr data-href="{{ d.get_absolute_url }}" class="{% if not d.is_active %}text-body-tertiary{% endif %}">
+        <td><a href="{{ d.get_absolute_url }}">{{ d.display_name }}</a>{% if d.donor_type != 'individual' %} <span class="badge text-bg-light border">{{ d.get_donor_type_display }}</span>{% endif %}</td>
+        <td>{{ d.envelope_number|default:"" }}</td>
+        <td class="small">{{ d.email }}{% if d.email and d.phone %}<br>{% endif %}{{ d.phone }}</td>
+        <td>{% if d.is_member %}<i class="bi bi-check-lg text-positive"></i>{% endif %}</td>
+        <td class="small">{{ d.last_gift|date:"M j, Y"|default:"—" }}</td>
+        <td class="num">{{ d.ytd|default:0|money }}</td>
+      </tr>
+    {% empty %}<tr><td colspan="6" class="empty-state"><i class="bi bi-people"></i>No donors found.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+</div>
+{% include "includes/pagination.html" %}
+{% endblock %}

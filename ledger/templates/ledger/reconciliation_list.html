@@ -1,0 +1,35 @@
+{% extends "base.html" %}{% load finance %}
+{% block title %}Reconciliations{% endblock %}
+{% block page_title %}Bank reconciliations{% endblock %}
+{% block page_subtitle %}<p class="text-body-secondary mb-0">Match the books to every bank and credit card statement each month — the single most important internal control.</p>{% endblock %}
+{% block actions %}{% if caps.manage_ledger %}<a href="{% url 'ledger:reconciliation_start' %}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Start reconciliation</a>{% endif %}{% endblock %}
+{% block content %}
+<div class="row g-3 mb-3">
+  {% for account, last, current in accounts %}
+  <div class="col-md-6 col-xl-4"><div class="card h-100"><div class="card-body">
+    <div class="fw-semibold">{{ account.name }}</div>
+    <div class="small text-body-secondary mb-2">{% if last %}Last reconciled through {{ last.statement_date|date:"M j, Y" }} ({{ last.statement_balance|money }}){% else %}Never reconciled{% endif %}</div>
+    {% if current %}<a href="{{ current.get_absolute_url }}" class="btn btn-sm btn-warning">Continue {{ current.statement_date|date:"M Y" }}</a>
+    {% elif caps.manage_ledger %}<a href="{% url 'ledger:reconciliation_start' %}?account={{ account.pk }}" class="btn btn-sm btn-outline-primary">Reconcile</a>{% endif %}
+  </div></div></div>
+  {% endfor %}
+</div>
+<div class="card table-card">
+  <div class="card-header">History</div>
+  <table class="table table-hover">
+    <thead><tr><th>Account</th><th>Statement date</th><th class="num">Beginning</th><th class="num">Ending</th><th>Status</th><th>Completed</th></tr></thead>
+    <tbody>
+    {% for r in recs %}
+      <tr data-href="{{ r.get_absolute_url }}">
+        <td><a href="{{ r.get_absolute_url }}">{{ r.account.name }}</a></td>
+        <td>{{ r.statement_date|date:"M j, Y" }}</td>
+        <td class="num">{{ r.beginning_balance|money }}</td>
+        <td class="num">{{ r.statement_balance|money }}</td>
+        <td>{% status_badge r.status r.get_status_display %}</td>
+        <td class="small">{% if r.completed_at %}{{ r.completed_at|date:"M j, Y" }} by {{ r.completed_by|default:"—" }}{% endif %}</td>
+      </tr>
+    {% empty %}<tr><td colspan="6" class="empty-state">No reconciliations yet.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

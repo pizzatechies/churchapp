@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}{% if instance %}Edit {{ instance.username }}{% else %}Add user{% endif %}{% endblock %}
+{% block page_title %}{% if instance %}Edit {{ instance.username }}{% else %}Add user{% endif %}{% endblock %}
+{% block content %}
+<form method="post" class="card" style="max-width:900px" novalidate>{% csrf_token %}
+  <div class="card-body">
+    {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+    <div class="row">
+      {% include "includes/field.html" with field=form.username col="col-md-6" %}
+      {% include "includes/field.html" with field=form.email col="col-md-6" %}
+      {% include "includes/field.html" with field=form.first_name col="col-md-6" %}
+      {% include "includes/field.html" with field=form.last_name col="col-md-6" %}
+      {% include "includes/field.html" with field=form.password col="col-md-6" %}
+      {% include "includes/field.html" with field=form.is_active col="col-md-6" %}
+    </div>
+    <label class="form-label">Roles</label>
+    <div class="row g-2">
+      {% for choice in form.roles %}
+      <div class="col-md-6">
+        <div class="border rounded p-2 h-100">
+          <div class="form-check">{{ choice.tag }} <label class="form-check-label fw-semibold" for="{{ choice.id_for_label }}">{{ choice.choice_label }}</label></div>
+          <div class="small text-body-secondary ms-4">{% for role, desc in form.role_descriptions.items %}{% if role == choice.choice_label %}{{ desc }}{% endif %}{% endfor %}</div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  <div class="card-footer bg-transparent d-flex gap-2">
+    <button class="btn btn-primary">Save user</button>
+    <a href="{% url 'user_list' %}" class="btn btn-outline-secondary">Cancel</a>
+  </div>
+</form>
+{% endblock %}

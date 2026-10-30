@@ -1,0 +1,59 @@
+{% extends "base.html" %}{% load finance %}
+{% block title %}{{ account.name }}{% endblock %}
+{% block breadcrumbs %}<nav><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{% url 'ledger:account_list' %}">Chart of accounts</a></li><li class="breadcrumb-item active">{{ account.number }}</li></ol></nav>{% endblock %}
+{% block page_title %}{{ account.number }} · {{ account.name }}{% endblock %}
+{% block page_subtitle %}<p class="text-body-secondary mb-0">{{ account.get_type_display }} · {{ account.subtype_label }}{% if account.bank_name %} · {{ account.bank_name }}{% if account.bank_account_last4 %} ••••{{ account.bank_account_last4 }}{% endif %}{% endif %}{% if last_rec %} · Reconciled through {{ last_rec.statement_date|date:"M j, Y" }}{% endif %}</p>{% endblock %}
+{% block actions %}
+  <a href="{% querystring export='csv' %}" class="btn btn-outline-secondary"><i class="bi bi-filetype-csv"></i> Export</a>
+  {% if account.subtype == 'bank' or account.subtype == 'cash' or account.subtype == 'credit_card' %}{% if caps.manage_ledger %}<a href="{% url 'ledger:reconciliation_start' %}?account={{ account.pk }}" class="btn btn-outline-primary"><i class="bi bi-ui-checks"></i> Reconcile</a>{% endif %}{% endif %}
+  {% if caps.manage_settings %}<a href="{% url 'ledger:account_edit' account.pk %}" class="btn btn-outline-secondary"><i class="bi bi-pencil"></i> Edit</a>{% endif %}
+{% endblock %}
+{% block content %}
+<form class="filter-bar row g-2 align-items-end" method="get">
+  <div class="col-sm-6 col-md-3"><label class="form-label">Period</label>
+    <select class="form-select form-select-sm" name="period" data-period-select>
+      {% for key, label in period_choices %}<option value="{{ key }}" {% if key == period %}selected{% endif %}>{{ label }}</option>{% endfor %}
+      {% if period == 'custom' %}<option value="custom" selected>Custom dates</option>{% endif %}
+    </select></div>
+  <div class="col-6 col-md-2"><label class="form-label">From</label><input type="date" class="form-control form-control-sm" name="start" value="{{ start|date:'Y-m-d' }}"></div>
+  <div class="col-6 col-md-2"><label class="form-label">To</label><input type="date" class="form-control form-control-sm" name="end" value="{{ end|date:'Y-m-d' }}"></div>
+  <div class="col-md-3"><label class="form-label">Fund</label>
+    <select class="form-select form-select-sm" name="fund"><option value="">All funds</option>{% for f in funds %}<option value="{{ f.pk }}" {% if f == fund %}selected{% endif %}>{{ f.name }}</option>{% endfor %}</select></div>
+  <div class="col-md-auto"><button class="btn btn-sm btn-outline-primary">Apply</button></div>
+</form>
+<div class="row g-3">
+  <div class="{% if fund_breakdown %}col-xl-9{% else %}col-12{% endif %}">
+    <div class="card table-card">
+      <table class="table table-sm table-hover">
+        <thead><tr><th>Date</th><th>Entry</th><th>Description</th><th>Fund</th><th class="num">Debit</th><th class="num">Credit</th><th class="num">Balance</th><th title="Cleared on a reconciliation"><i class="bi bi-check2-circle"></i></th></tr></thead>
+        <tbody>
+          {% if account.is_balance_sheet %}<tr class="table-light"><td colspan="6"><em>Opening balance {{ start|date:"M j, Y" }}</em></td><td class="num fw-semibold">{{ opening|acct }}</td><td></td></tr>{% endif %}
+          {% for line, balance in rows %}
+          <tr data-href="{{ line.entry.get_absolute_url }}">
+            <td class="text-nowrap">{{ line.entry.date|date:"M j, Y" }}</td>
+            <td class="text-nowrap"><a href="{{ line.entry.get_absolute_url }}">{{ line.entry.number }}</a>{% if line.entry.reference %}<div class="small text-body-secondary">#{{ line.entry.reference }}</div>{% endif %}</td>
+            <td>{{ line.entry.memo }}{% if line.description %}<div class="small text-body-secondary">{{ line.description }}</div>{% endif %}</td>
+            <td><span class="badge text-bg-light border">{{ line.fund.code }}</span></td>
+            <td class="num">{% if line.debit %}{{ line.debit|money:False }}{% endif %}</td>
+            <td class="num">{% if line.credit %}{{ line.credit|money:False }}{% endif %}</td>
+            <td class="num">{{ balance|acct }}</td>
+            <td>{% if line.reconciliation %}<i class="bi bi-check2-circle {% if line.reconciliation.status == 'completed' %}text-positive{% else %}text-warning{% endif %}"></i>{% endif %}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="8" class="empty-state"><i class="bi bi-journal"></i>No transactions in this period.</td></tr>
+          {% endfor %}
+        </tbody>
+        <tfoot><tr><td colspan="4">{% if account.is_balance_sheet %}Closing balance {{ end|date:"M j, Y" }}{% else %}Total for period{% endif %}</td><td class="num">{{ totals.debit|money:False }}</td><td class="num">{{ totals.credit|money:False }}</td><td class="num">{{ closing|acct }}</td><td></td></tr></tfoot>
+      </table>
+    </div>
+  </div>
+  {% if fund_breakdown %}
+  <div class="col-xl-3">
+    <div class="card"><div class="card-header">Balance by fund</div>
+      <ul class="list-group list-group-flush">{% for f, b in fund_breakdown %}<li class="list-group-item d-flex justify-content-between"><span>{{ f.name }}</span><span class="num">{{ b|acct }}</span></li>{% endfor %}</ul>
+      <div class="card-body small text-body-secondary">Shows how much of this account belongs to each fund on {{ end|date:"M j, Y" }}.</div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

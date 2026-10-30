@@ -1,0 +1,33 @@
+{% extends "base.html" %}{% load finance %}
+{% block title %}Offerings & deposits{% endblock %}
+{% block page_title %}Offerings &amp; deposits{% endblock %}
+{% block page_subtitle %}<p class="text-body-secondary mb-0">Each batch is one bank deposit. Enter the gifts, check the total against the count sheet, then post it to the books.</p>{% endblock %}
+{% block actions %}<a href="{% url 'giving:batch_create' %}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> New batch</a>{% endblock %}
+{% block content %}
+<ul class="nav nav-pills mb-3">
+  <li class="nav-item"><a class="nav-link {% if not status %}active{% endif %}" href="?">All</a></li>
+  <li class="nav-item"><a class="nav-link {% if status == 'open' %}active{% endif %}" href="?status=open">Open {% if open_count %}<span class="badge text-bg-warning">{{ open_count }}</span>{% endif %}</a></li>
+  <li class="nav-item"><a class="nav-link {% if status == 'posted' %}active{% endif %}" href="?status=posted">Posted</a></li>
+</ul>
+<div class="card table-card">
+  <table class="table table-hover">
+    <thead><tr><th>Batch</th><th>Date</th><th>Description</th><th>Deposit to</th><th class="num">Gifts</th><th class="num">Total</th><th>Status</th></tr></thead>
+    <tbody>
+    {% for b in page_obj %}
+      <tr data-href="{{ b.get_absolute_url }}">
+        <td><a href="{{ b.get_absolute_url }}">{{ b.number }}</a></td>
+        <td class="text-nowrap">{{ b.date|date:"D, M j, Y" }}</td>
+        <td>{{ b.description }}{% if b.control_total is not None and b.control_total != b.amount and b.status == 'open' %} <span class="badge text-bg-danger">doesn't match count</span>{% endif %}</td>
+        <td class="small">{{ b.deposit_account.name }}</td>
+        <td class="num">{{ b.gifts }}</td>
+        <td class="num">{{ b.amount|money }}</td>
+        <td>{% status_badge b.status b.get_status_display %}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="7" class="empty-state"><i class="bi bi-inboxes"></i>No batches yet. Start one for this Sunday's offering.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% include "includes/pagination.html" %}
+{% endblock %}

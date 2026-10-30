@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}{% if account %}Edit {{ account.name }}{% else %}New account{% endif %}{% endblock %}
+{% block page_title %}{% if account %}Edit account{% else %}New account{% endif %}{% endblock %}
+{% block content %}
+<form method="post" class="card" style="max-width:860px" novalidate>{% csrf_token %}
+  <div class="card-body">
+    {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+    <div class="row">
+      {% include "includes/field.html" with field=form.number col="col-md-3" %}
+      {% include "includes/field.html" with field=form.name col="col-md-9" %}
+      {% include "includes/field.html" with field=form.type col="col-md-4" %}
+      {% include "includes/field.html" with field=form.subtype col="col-md-4" %}
+      {% include "includes/field.html" with field=form.function col="col-md-4" %}
+      {% include "includes/field.html" with field=form.description col="col-12" %}
+      {% include "includes/field.html" with field=form.bank_name col="col-md-6" %}
+      {% include "includes/field.html" with field=form.bank_account_last4 col="col-md-3" %}
+      {% include "includes/field.html" with field=form.is_active col="col-md-3" %}
+    </div>
+    <p class="small text-body-secondary mb-0">Numbering convention: 1000s assets, 2000s liabilities, 3000s net assets, 4000s income, 5000–8000s expenses.</p>
+  </div>
+  <div class="card-footer bg-transparent d-flex gap-2"><button class="btn btn-primary">Save account</button><a class="btn btn-outline-secondary" href="{% url 'ledger:account_list' %}">Cancel</a></div>
+</form>
+{% endblock %}

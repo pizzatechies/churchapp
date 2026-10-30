@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Backup{% endblock %}
+{% block page_title %}Backup your data{% endblock %}
+{% block content %}
+<div class="row g-3">
+  <div class="col-lg-7">
+    <div class="card"><div class="card-body">
+      <p>Download a complete copy of all financial records (accounts, transactions, donors, giving, expenses, payroll, assets, users and settings) as a JSON file. Store it somewhere safe, such as an encrypted drive or your church's cloud storage.</p>
+      <p class="small text-body-secondary">Attachments (receipts and statements) are stored in the server's media folder and should be backed up alongside this file. To restore, an administrator runs <code>python manage.py loaddata backup.json</code> on an empty database.</p>
+      <form method="post">{% csrf_token %}<button class="btn btn-primary"><i class="bi bi-cloud-download"></i> Download backup</button></form>
+    </div></div>
+  </div>
+  <div class="col-lg-5">
+    <div class="card"><div class="card-header">What's in the database</div>
+      <ul class="list-group list-group-flush">{% for name, count in counts %}<li class="list-group-item d-flex justify-content-between"><span>{{ name }}</span><span class="num">{{ count }}</span></li>{% endfor %}</ul>
+    </div>
+  </div>
+</div>
+{% endblock %}

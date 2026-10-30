@@ -1,0 +1,72 @@
+{% extends "base.html" %}{% load finance %}
+{% block title %}Reconcile {{ rec.account.name }}{% endblock %}
+{% block breadcrumbs %}<nav><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{% url 'ledger:reconciliation_list' %}">Reconciliations</a></li><li class="breadcrumb-item active">{{ rec.statement_date|date:"M Y" }}</li></ol></nav>{% endblock %}
+{% block page_title %}{{ rec.account.name }} — statement {{ rec.statement_date|date:"M j, Y" }} {% status_badge rec.status rec.get_status_display %}{% endblock %}
+{% block actions %}
+{% if rec.status == 'completed' and caps.manage_settings %}
+  <form method="post" action="{% url 'ledger:reconciliation_reopen' rec.pk %}" data-confirm="Reopen this reconciliation?">{% csrf_token %}<button class="btn btn-outline-secondary">Reopen</button></form>
+{% endif %}
+{% if editable %}
+  <form method="post" action="{% url 'ledger:reconciliation_delete' rec.pk %}" data-confirm="Delete this reconciliation? Checked items will be unmarked.">{% csrf_token %}<button class="btn btn-outline-danger"><i class="bi bi-trash"></i> Delete</button></form>
+{% endif %}
+<button class="btn btn-outline-secondary" onclick="window.print()"><i class="bi bi-printer"></i> Print</button>
+{% endblock %}
+{% block content %}
+<form method="post" data-reconcile data-beginning="{{ rec.beginning_balance }}" data-statement="{{ rec.statement_balance }}">{% csrf_token %}
+<div class="row g-3">
+  <div class="col-xl-9 order-2 order-xl-1">
+    {% if editable %}
+    <div class="d-flex flex-wrap gap-2 mb-2 d-print-none">
+      <span class="small text-body-secondary align-self-center me-2">Tick each item that appears on the statement.</span>
+      <button type="button" class="btn btn-sm btn-outline-secondary" data-check-all="in">Tick all deposits</button>
+      <button type="button" class="btn btn-sm btn-outline-secondary" data-check-all="out">Tick all payments</button>
+      <button type="button" class="btn btn-sm btn-outline-secondary" data-check-all="none">Clear all</button>
+    </div>
+    {% endif %}
+    <div class="card table-card">
+      <table class="table table-sm table-hover">
+        <thead><tr><th style="width:40px"></th><th>Date</th><th>Entry</th><th>Description</th><th>Ref</th><th class="num">Deposits / credits</th><th class="num">Payments / charges</th></tr></thead>
+        <tbody>
+        {% for line, amount in items %}
+          <tr>
+            <td><input type="checkbox" class="form-check-input" name="cleared" value="{{ line.pk }}" data-amount="{{ amount }}" {% if line.reconciliation_id == rec.pk %}checked{% endif %} {% if not editable %}disabled{% endif %} aria-label="Cleared"></td>
+            <td class="text-nowrap">{{ line.entry.date|date:"M j, Y" }}</td>
+            <td><a href="{{ line.entry.get_absolute_url }}">{{ line.entry.number }}</a></td>
+            <td>{{ line.entry.memo }}{% if line.description %} <span class="small text-body-secondary">· {{ line.description }}</span>{% endif %} <span class="badge text-bg-light border">{{ line.fund.code }}</span></td>
+            <td class="small">{{ line.entry.reference }}</td>
+            <td class="num">{% if amount >= 0 %}{{ amount|money }}{% endif %}</td>
+            <td class="num">{% if amount < 0 %}{{ amount|money|cut:"-" }}{% endif %}</td>
+          </tr>
+        {% empty %}<tr><td colspan="7" class="empty-state">No transactions to reconcile up to the statement date.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="col-xl-3 order-1 order-xl-2">
+    <div class="card mb-3" style="position:sticky; top:70px">
+      <div class="card-header">Summary</div>
+      <div class="card-body">
+        <dl class="dl-grid">
+          <dt>Beginning balance</dt><dd class="num">{{ rec.beginning_balance|money }}</dd>
+          <dt>Cleared deposits</dt><dd class="num" data-out="deposits">—</dd>
+          <dt>Cleared payments</dt><dd class="num" data-out="payments">—</dd>
+          <dt>Cleared balance</dt><dd class="num fw-semibold" data-out="cleared">{{ rec.cleared_balance|money }}</dd>
+          <dt>Statement balance</dt><dd class="num fw-semibold">{{ rec.statement_balance|money }}</dd>
+          <dt>Difference</dt><dd class="num fw-bold fs-5" data-out="difference">{{ rec.difference|money }}</dd>
+        </dl>
+        {% if editable %}
+        <div class="d-grid gap-2 mt-3 d-print-none">
+          <button class="btn btn-primary" name="finish" data-finish><i class="bi bi-check2-all"></i> Finish reconciliation</button>
+          <button class="btn btn-outline-secondary" name="save">Save progress</button>
+        </div>
+        <p class="small text-body-secondary mt-2 mb-0">You can finish when the difference is zero. Missing items? Record them (bank fees, interest) and come back.</p>
+        {% elif rec.completed_at %}
+        <p class="small mb-0 mt-2">Completed {{ rec.completed_at|date:"M j, Y" }} by {{ rec.completed_by|default:"—" }}.</p>
+        {% endif %}
+      </div>
+    </div>
+    {% include "includes/documents.html" with object=rec %}
+  </div>
+</div>
+</form>
+{% endblock %}

@@ -1,0 +1,34 @@
+{% extends "base.html" %}{% load finance %}
+{% block title %}Opening balances{% endblock %}
+{% block page_title %}Opening balances{% endblock %}
+{% block page_subtitle %}<p class="text-body-secondary mb-0">Starting out? Enter what the church owns and owes on the day before you begin using this system.</p>{% endblock %}
+{% block content %}
+{% if existing %}<div class="alert alert-warning">Opening balances have already been recorded ({% for e in existing %}<a href="{{ e.get_absolute_url }}">{{ e.number }} on {{ e.date|date:"M j, Y" }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}). Entering more will add to them.</div>{% endif %}
+<form method="post" novalidate>{% csrf_token %}
+  {% if form.non_field_errors %}<div class="alert alert-danger">{% for e in form.non_field_errors %}{{ e }}{% endfor %}</div>{% endif %}
+  <div class="card mb-3"><div class="card-body"><div class="row">{% include "includes/field.html" with field=form.date col="col-md-4" %}</div>
+  <ul class="small text-body-secondary mb-0">
+    <li>Enter balances as positive numbers: bank balances, loans owed, building cost, etc.</li>
+    <li>If one bank account holds money for several funds, add a row per fund (e.g. Checking / General Fund 12,000 and Checking / Building Fund 30,000).</li>
+    <li>Each fund's net assets are calculated automatically.</li>
+  </ul></div></div>
+  <div class="card mb-3" data-formset="rows">
+    {{ formset.management_form }}
+    <div class="table-card" data-line-totals>
+      <table class="table line-table mb-0">
+        <thead><tr><th>Account</th><th>Fund</th><th class="num amount-col">Balance</th><th></th></tr></thead>
+        <tbody data-formset-body>
+        {% for f in formset %}
+          <tr data-formset-row><td>{{ f.account }}{{ f.account.errors }}</td><td>{{ f.fund }}</td><td>{{ f.balance }}{{ f.balance.errors }}</td>
+          <td class="text-end"><span class="d-none">{{ f.DELETE }}</span><button type="button" class="btn btn-sm btn-link text-danger" data-formset-remove><i class="bi bi-x-lg"></i></button></td></tr>
+        {% endfor %}
+        </tbody>
+        <tfoot><tr><td colspan="4"><button type="button" class="btn btn-sm btn-outline-secondary" data-formset-add><i class="bi bi-plus"></i> Add row</button></td></tr></tfoot>
+      </table>
+      <template><tr data-formset-row><td>{{ formset.empty_form.account }}</td><td>{{ formset.empty_form.fund }}</td><td>{{ formset.empty_form.balance }}</td>
+        <td class="text-end"><span class="d-none">{{ formset.empty_form.DELETE }}</span><button type="button" class="btn btn-sm btn-link text-danger" data-formset-remove><i class="bi bi-x-lg"></i></button></td></tr></template>
+    </div>
+  </div>
+  <button class="btn btn-primary">Record opening balances</button>
+</form>
+{% endblock %}

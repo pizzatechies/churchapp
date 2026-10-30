@@ -1,0 +1,32 @@
+{% extends "base.html" %}{% load finance %}
+{% block title %}Chart of accounts{% endblock %}
+{% block page_title %}Chart of accounts{% endblock %}
+{% block page_subtitle %}<p class="text-body-secondary mb-0">Balance sheet accounts show today's balance; income and expense accounts show fiscal-year-to-date totals.</p>{% endblock %}
+{% block actions %}
+  <a href="?{% if not show_inactive %}inactive=1{% endif %}" class="btn btn-outline-secondary">{% if show_inactive %}Hide{% else %}Show{% endif %} inactive</a>
+  {% if caps.manage_settings %}<a href="{% url 'ledger:account_create' %}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> New account</a>{% endif %}
+{% endblock %}
+{% block content %}
+<div class="card table-card">
+  <table class="table table-hover">
+    <thead><tr><th style="width:90px">Number</th><th>Name</th><th>Subtype</th><th class="num">Balance</th><th></th></tr></thead>
+    {% for label, rows in groups.items %}
+    <tbody>
+      <tr class="table-light"><th colspan="5" class="text-uppercase small">{{ label }}</th></tr>
+      {% for account, balance in rows %}
+      <tr data-href="{{ account.get_absolute_url }}" class="{% if not account.is_active %}text-body-tertiary{% endif %}">
+        <td class="font-monospace">{{ account.number }}</td>
+        <td><a href="{{ account.get_absolute_url }}">{{ account.name }}</a>
+          {% if account.system_code %}<span class="badge text-bg-light border ms-1" title="Used automatically by the app">system</span>{% endif %}
+          {% if not account.is_active %}<span class="badge text-bg-secondary ms-1">inactive</span>{% endif %}</td>
+        <td class="small text-body-secondary">{{ account.subtype_label }}{% if account.function %} · {{ account.get_function_display }}{% endif %}</td>
+        <td class="num">{{ balance|acct }}</td>
+        <td class="text-end">{% if caps.manage_settings %}<a href="{% url 'ledger:account_edit' account.pk %}" class="btn btn-sm btn-link" title="Edit"><i class="bi bi-pencil"></i></a>{% endif %}</td>
+      </tr>
+      {% empty %}<tr><td colspan="5" class="text-body-secondary small">No accounts.</td></tr>
+      {% endfor %}
+    </tbody>
+    {% endfor %}
+  </table>
+</div>
+{% endblock %}

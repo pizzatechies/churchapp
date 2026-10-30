@@ -1,0 +1,52 @@
+{% extends "base.html" %}{% load finance %}
+{% block title %}{% if entry %}Edit {{ entry.number }}{% else %}New journal entry{% endif %}{% endblock %}
+{% block page_title %}{% if entry %}Edit {{ entry.number }}{% else %}New journal entry{% endif %}{% endblock %}
+{% block page_subtitle %}<p class="text-body-secondary mb-0">For adjustments and corrections. Day-to-day giving, bills and payroll have their own screens that create entries for you.</p>{% endblock %}
+{% block content %}
+<form method="post" novalidate>{% csrf_token %}
+  {% if form.non_field_errors %}<div class="alert alert-danger">{% for e in form.non_field_errors %}{{ e }}{% endfor %}</div>{% endif %}
+  {% if formset.non_form_errors %}<div class="alert alert-danger">{{ formset.non_form_errors }}</div>{% endif %}
+  <div class="card mb-3"><div class="card-body"><div class="row">
+    {% include "includes/field.html" with field=form.date col="col-md-3" %}
+    {% include "includes/field.html" with field=form.memo col="col-md-6" %}
+    {% include "includes/field.html" with field=form.reference col="col-md-3" %}
+  </div></div></div>
+  <div class="card mb-3" data-formset="lines">
+    {{ formset.management_form }}
+    <div class="table-card" data-line-totals>
+      <table class="table line-table mb-0">
+        <thead><tr><th>Account</th><th>Fund</th><th>Description</th><th class="num amount-col">Debit</th><th class="num amount-col">Credit</th><th></th></tr></thead>
+        <tbody data-formset-body>
+        {% for f in formset %}
+          <tr data-formset-row class="{% if f.DELETE.value %}is-deleted{% endif %}">
+            <td>{{ f.account }}{{ f.account.errors }}</td>
+            <td>{{ f.fund }}{{ f.fund.errors }}</td>
+            <td>{{ f.description }}</td>
+            <td>{{ f.debit }}{{ f.debit.errors }}</td>
+            <td>{{ f.credit }}{{ f.credit.errors }}</td>
+            <td class="text-end"><span class="d-none">{{ f.DELETE }}</span><button type="button" class="btn btn-sm btn-link text-danger" data-formset-remove title="Remove line"><i class="bi bi-x-lg"></i></button></td>
+          </tr>
+        {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr><td colspan="3"><button type="button" class="btn btn-sm btn-outline-secondary" data-formset-add><i class="bi bi-plus"></i> Add line</button> <span data-total="difference"></span></td>
+          <td class="num" data-total="debit"></td><td class="num" data-total="credit"></td><td></td></tr>
+        </tfoot>
+      </table>
+      <template>
+        <tr data-formset-row>
+          <td>{{ formset.empty_form.account }}</td><td>{{ formset.empty_form.fund }}</td><td>{{ formset.empty_form.description }}</td>
+          <td>{{ formset.empty_form.debit }}</td><td>{{ formset.empty_form.credit }}</td>
+          <td class="text-end"><span class="d-none">{{ formset.empty_form.DELETE }}</span><button type="button" class="btn btn-sm btn-link text-danger" data-formset-remove><i class="bi bi-x-lg"></i></button></td>
+        </tr>
+      </template>
+    </div>
+  </div>
+  <div class="alert alert-info small"><i class="bi bi-info-circle"></i> Debits must equal credits, and each fund must balance on its own. Debits increase assets and expenses; credits increase liabilities, net assets and income.</div>
+  <div class="d-flex gap-2">
+    <button class="btn btn-primary" name="post"><i class="bi bi-check2"></i> Save &amp; post</button>
+    <button class="btn btn-outline-secondary" name="save_draft">Save as draft</button>
+    <a class="btn btn-link" href="{% if entry %}{{ entry.get_absolute_url }}{% else %}{% url 'ledger:entry_list' %}{% endif %}">Cancel</a>
+  </div>
+</form>
+{% endblock %}

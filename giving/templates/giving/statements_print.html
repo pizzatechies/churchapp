@@ -1,0 +1,50 @@
+{% extends "base.html" %}{% load finance %}
+{% block title %}Contribution statements{% endblock %}
+{% block page_title %}Contribution statements · {{ start|date:"M j, Y" }} – {{ end|date:"M j, Y" }}{% endblock %}
+{% block page_subtitle %}<p class="text-body-secondary mb-0">{{ statements|length }} statement{{ statements|length|pluralize }}. Each prints on its own page.</p>{% endblock %}
+{% block actions %}<button class="btn btn-primary" onclick="window.print()"><i class="bi bi-printer"></i> Print / save as PDF</button>
+{% if single %}<a class="btn btn-outline-secondary" href="{{ single.get_absolute_url }}">Back to donor</a>{% else %}<a class="btn btn-outline-secondary" href="{% url 'giving:statements' %}">Change</a>{% endif %}{% endblock %}
+{% block content %}
+{% for s in statements %}
+<div class="card mb-4 {% if not forloop.last %}page-break{% endif %}">
+  <div class="card-body p-4 p-md-5">
+    <div class="d-flex justify-content-between flex-wrap gap-3 mb-4">
+      <div>
+        <h2 class="h4 mb-1">{{ church.name }}</h2>
+        <div class="small">{{ church.address|linebreaksbr }}</div>
+        <div class="small">{% if church.phone %}{{ church.phone }}{% endif %}{% if church.email %} · {{ church.email }}{% endif %}</div>
+        {% if church.tax_id %}<div class="small">Tax ID: {{ church.tax_id }}</div>{% endif %}
+      </div>
+      <div class="text-md-end">
+        <div class="h5 mb-1">Contribution Statement</div>
+        <div class="small">{{ start|date:"F j, Y" }} – {{ end|date:"F j, Y" }}</div>
+        <div class="small text-body-secondary">Issued {{ generated|date:"F j, Y" }}</div>
+      </div>
+    </div>
+    <div class="mb-4">
+      <div class="fw-semibold">{{ s.donor.display_name }}</div>
+      {% for line in s.donor.address_lines %}<div>{{ line }}</div>{% endfor %}
+      {% if s.donor.envelope_number %}<div class="small text-body-secondary">Envelope #{{ s.donor.envelope_number }}</div>{% endif %}
+    </div>
+    <table class="table table-sm">
+      <thead><tr><th>Date</th><th>Fund</th><th>Method</th><th>Check / ref</th><th class="num">Amount</th></tr></thead>
+      <tbody>{% for g in s.gifts %}<tr><td>{{ g.date|date:"M j, Y" }}</td><td>{{ g.fund.name }}</td><td>{{ g.get_method_display }}</td><td>{{ g.check_number }}</td><td class="num">{{ g.amount|money }}{% if not g.is_deductible %}*{% endif %}</td></tr>{% endfor %}</tbody>
+      <tfoot><tr><td colspan="4">Total contributions</td><td class="num">{{ s.total|money }}</td></tr></tfoot>
+    </table>
+    <div class="row">
+      <div class="col-md-6">
+        <table class="table table-sm table-borderless small">{% for fund, amt in s.by_fund %}<tr><td>{{ fund }}</td><td class="num">{{ amt|money }}</td></tr>{% endfor %}</table>
+      </div>
+      <div class="col-md-6 text-md-end">
+        <div>Tax-deductible total: <strong>{{ s.deductible|money }}</strong></div>
+        {% if s.deductible != s.total %}<div class="small text-body-secondary">* Gift for which goods or services were received; not fully deductible.</div>{% endif %}
+      </div>
+    </div>
+    <p class="small mt-4 mb-1">{{ church.statement_footer|linebreaksbr }}</p>
+    {% if church.treasurer_name %}<p class="small mt-3 mb-0">{{ church.treasurer_name }}, Treasurer</p>{% endif %}
+  </div>
+</div>
+{% empty %}
+<div class="card"><div class="empty-state"><i class="bi bi-envelope-paper"></i>No posted gifts from identified donors in this period.</div></div>
+{% endfor %}
+{% endblock %}

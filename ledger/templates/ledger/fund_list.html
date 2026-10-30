@@ -1,0 +1,31 @@
+{% extends "base.html" %}{% load finance %}
+{% block title %}Funds{% endblock %}
+{% block page_title %}Funds{% endblock %}
+{% block page_subtitle %}<p class="text-body-secondary mb-0">{{ fy_label }} activity and current balance of each fund.</p>{% endblock %}
+{% block actions %}
+  {% if caps.manage_ledger %}<a href="{% url 'ledger:fund_transfer' %}" class="btn btn-outline-primary"><i class="bi bi-arrow-left-right"></i> Transfer between funds</a>{% endif %}
+  {% if caps.manage_settings %}<a href="{% url 'ledger:fund_create' %}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> New fund</a>{% endif %}
+{% endblock %}
+{% block content %}
+<div class="card table-card">
+  <table class="table table-hover">
+    <thead><tr><th>Fund</th><th>Restriction</th><th class="num">Start of year</th><th class="num">Income</th><th class="num">Expenses</th><th class="num">Balance today</th><th></th></tr></thead>
+    <tbody>
+    {% for r in rows %}
+      <tr data-href="{{ r.fund.get_absolute_url }}" class="{% if not r.fund.is_active %}text-body-tertiary{% endif %}">
+        <td><a href="{{ r.fund.get_absolute_url }}">{{ r.fund.name }}</a> <span class="badge text-bg-light border">{{ r.fund.code }}</span>{% if r.fund.is_default %} <span class="badge text-bg-primary">General</span>{% endif %}
+          {% if r.fund.description %}<div class="small text-body-secondary">{{ r.fund.description|truncatechars:90 }}</div>{% endif %}</td>
+        <td class="small">{{ r.fund.get_restriction_display }}</td>
+        <td class="num">{{ r.opening|acct }}</td>
+        <td class="num">{{ r.income|acct }}</td>
+        <td class="num">{{ r.expense|acct }}</td>
+        <td class="num fw-semibold">{{ r.balance|acct }}</td>
+        <td class="text-end">{% if caps.manage_settings %}<a href="{% url 'ledger:fund_edit' r.fund.pk %}" class="btn btn-sm btn-link"><i class="bi bi-pencil"></i></a>{% endif %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+    <tfoot><tr><td colspan="2">All funds</td><td class="num">{{ total.opening|acct }}</td><td class="num">{{ total.income|acct }}</td><td class="num">{{ total.expense|acct }}</td><td class="num">{{ total.balance|acct }}</td><td></td></tr></tfoot>
+  </table>
+</div>
+<p class="small text-body-secondary mt-2">Balances include transfers between funds. A fund's balance is its share of the church's net assets: the cash and other assets it owns minus what it owes.</p>
+{% endblock %}

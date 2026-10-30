@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Users & roles{% endblock %}
+{% block page_title %}Users &amp; roles{% endblock %}
+{% block actions %}<a href="{% url 'user_create' %}" class="btn btn-primary"><i class="bi bi-person-plus"></i> Add user</a>{% endblock %}
+{% block content %}
+<div class="row g-3">
+  <div class="col-xl-8">
+    <div class="card table-card">
+      <table class="table table-hover">
+        <thead><tr><th>User</th><th>Email</th><th>Roles</th><th>Last sign-in</th><th>Status</th></tr></thead>
+        <tbody>
+        {% for u in users %}
+          <tr data-href="{% url 'user_edit' u.pk %}">
+            <td><a href="{% url 'user_edit' u.pk %}">{{ u.username }}</a><div class="small text-body-secondary">{{ u.get_full_name }}</div></td>
+            <td>{{ u.email }}</td>
+            <td>{% if u.is_superuser %}<span class="badge text-bg-dark">Superuser</span> {% endif %}{% for g in u.groups.all %}<span class="badge text-bg-light border">{{ g.name }}</span> {% empty %}{% if not u.is_superuser %}<span class="text-body-secondary small">None</span>{% endif %}{% endfor %}</td>
+            <td class="small">{{ u.last_login|date:"M j, Y H:i"|default:"Never" }}</td>
+            <td>{% if u.is_active %}<span class="badge text-bg-success">Active</span>{% else %}<span class="badge text-bg-secondary">Disabled</span>{% endif %}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="col-xl-4">
+    <div class="card"><div class="card-header">What each role can do</div>
+      <ul class="list-group list-group-flush">
+        {% for role, desc in role_descriptions.items %}<li class="list-group-item"><strong>{{ role }}</strong><div class="small text-body-secondary">{{ desc }}</div></li>{% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock %}

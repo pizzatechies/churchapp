@@ -1,0 +1,59 @@
+{% extends "base.html" %}{% load finance %}
+{% block title %}Bank accounts{% endblock %}
+{% block page_title %}Bank accounts{% endblock %}
+{% block actions %}
+{% if caps.manage_ledger %}
+  <a href="{% url 'ledger:record_income' %}" class="btn btn-outline-primary"><i class="bi bi-box-arrow-in-down"></i> Record other income</a>
+  <a href="{% url 'ledger:bank_transfer' %}" class="btn btn-outline-primary"><i class="bi bi-arrow-left-right"></i> Transfer</a>
+  <a href="{% url 'ledger:reconciliation_start' %}" class="btn btn-primary"><i class="bi bi-ui-checks"></i> Reconcile</a>
+{% endif %}
+{% endblock %}
+{% block content %}
+<div class="row g-3 mb-3">
+  {% for a in accounts %}
+  <div class="col-md-6 col-xl-4">
+    <div class="card stat-card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start">
+          <div>
+            <div class="stat-label">{{ a.account.subtype_label }}</div>
+            <a href="{{ a.account.get_absolute_url }}" class="h6 d-block mb-0 mt-1 text-decoration-none">{{ a.account.name }}</a>
+            {% if a.account.bank_name %}<div class="small text-body-secondary">{{ a.account.bank_name }}{% if a.account.bank_account_last4 %} ••••{{ a.account.bank_account_last4 }}{% endif %}</div>{% endif %}
+          </div>
+          <span class="stat-icon"><i class="bi {% if a.account.subtype == 'credit_card' %}bi-credit-card{% elif a.account.subtype == 'cash' %}bi-wallet2{% else %}bi-bank{% endif %}"></i></span>
+        </div>
+        <div class="stat-value mt-2">{{ a.balance|money }}</div>
+        <div class="stat-sub">
+          {% if a.last_rec %}Reconciled through {{ a.last_rec.statement_date|date:"M j, Y" }}{% else %}Never reconciled{% endif %}
+          · {{ a.uncleared }} uncleared item{{ a.uncleared|pluralize }}
+        </div>
+        <div class="mt-2 d-flex gap-2">
+          <a href="{{ a.account.get_absolute_url }}" class="btn btn-sm btn-outline-secondary">Register</a>
+          {% if caps.manage_ledger %}<a href="{% url 'ledger:reconciliation_start' %}?account={{ a.account.pk }}" class="btn btn-sm btn-outline-secondary">Reconcile</a>{% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+  {% empty %}
+  <div class="col-12"><div class="card"><div class="empty-state"><i class="bi bi-bank"></i>No bank accounts yet. Add one in the chart of accounts with the subtype “Bank account”.</div></div></div>
+  {% endfor %}
+</div>
+<div class="card table-card">
+  <div class="card-header">Recent bank and cash activity</div>
+  <table class="table table-sm table-hover">
+    <thead><tr><th>Date</th><th>Account</th><th>Description</th><th>Fund</th><th class="num">In</th><th class="num">Out</th></tr></thead>
+    <tbody>
+    {% for line in recent %}
+      <tr data-href="{{ line.entry.get_absolute_url }}">
+        <td class="text-nowrap">{{ line.entry.date|date:"M j, Y" }}</td>
+        <td>{{ line.account.name }}</td>
+        <td><a href="{{ line.entry.get_absolute_url }}">{{ line.entry.memo }}</a></td>
+        <td><span class="badge text-bg-light border">{{ line.fund.code }}</span></td>
+        <td class="num text-positive">{% if line.debit %}{{ line.debit|money }}{% endif %}</td>
+        <td class="num">{% if line.credit %}{{ line.credit|money }}{% endif %}</td>
+      </tr>
+    {% empty %}<tr><td colspan="6" class="empty-state">No activity yet.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

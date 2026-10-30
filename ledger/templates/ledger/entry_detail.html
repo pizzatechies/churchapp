@@ -1,0 +1,64 @@
+{% extends "base.html" %}{% load finance %}
+{% block title %}{{ entry.number }}{% endblock %}
+{% block breadcrumbs %}<nav><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{% url 'ledger:entry_list' %}">Journal entries</a></li><li class="breadcrumb-item active">{{ entry.number }}</li></ol></nav>{% endblock %}
+{% block page_title %}{{ entry.number }} {% status_badge entry.status %}{% endblock %}
+{% block page_subtitle %}<p class="text-body-secondary mb-0">{{ entry.memo }}</p>{% endblock %}
+{% block actions %}
+  {% if entry.source_url %}<a href="{{ entry.source_url }}" class="btn btn-outline-primary"><i class="bi bi-box-arrow-up-right"></i> View {{ entry.get_source_type_display|lower }}</a>{% endif %}
+  {% if caps.manage_ledger %}
+    {% if entry.is_editable %}
+      <a href="{% url 'ledger:entry_edit' entry.pk %}" class="btn btn-outline-secondary"><i class="bi bi-pencil"></i> Edit</a>
+      <form method="post" action="{% url 'ledger:entry_post' entry.pk %}">{% csrf_token %}<button class="btn btn-primary"><i class="bi bi-check2"></i> Post</button></form>
+      <form method="post" action="{% url 'ledger:entry_delete' entry.pk %}" data-confirm="Delete this draft?">{% csrf_token %}<button class="btn btn-outline-danger"><i class="bi bi-trash"></i></button></form>
+    {% endif %}
+    {% if entry.source_type == 'manual' %}<a href="{% url 'ledger:entry_create' %}?copy={{ entry.pk }}" class="btn btn-outline-secondary"><i class="bi bi-copy"></i> Copy</a>{% endif %}
+    {% if entry.status == 'posted' and not entry.source_url %}
+      <button class="btn btn-outline-danger" data-bs-toggle="collapse" data-bs-target="#voidBox"><i class="bi bi-x-octagon"></i> Void</button>
+    {% endif %}
+  {% endif %}
+{% endblock %}
+{% block content %}
+<div class="collapse mb-3" id="voidBox">
+  <form method="post" action="{% url 'ledger:entry_void' entry.pk %}" class="card card-body border-danger" data-confirm="Void this entry? It will stop affecting all balances.">{% csrf_token %}
+    <div class="row g-2 align-items-end">
+      <div class="col-md-8"><label class="form-label">Reason for voiding</label><input name="reason" class="form-control" required maxlength="255"></div>
+      <div class="col-md-4"><button class="btn btn-danger w-100">Void entry</button></div>
+    </div>
+  </form>
+</div>
+{% if entry.status == 'void' %}<div class="alert alert-dark"><i class="bi bi-x-octagon"></i> Voided {{ entry.voided_at|date:"M j, Y H:i" }}{% if entry.voided_by %} by {{ entry.voided_by }}{% endif %}. Reason: {{ entry.void_reason|default:"none given" }}. This entry no longer affects any balance.</div>{% endif %}
+{% if entry.status == 'draft' %}<div class="alert alert-warning"><i class="bi bi-pencil-square"></i> Draft — not yet posted, so it doesn't affect balances.</div>{% endif %}
+<div class="row g-3">
+  <div class="col-xl-9">
+    <div class="card table-card mb-3">
+      <table class="table">
+        <thead><tr><th>Account</th><th>Fund</th><th>Description</th><th class="num">Debit</th><th class="num">Credit</th></tr></thead>
+        <tbody>
+        {% for line in lines %}
+          <tr>
+            <td><a href="{{ line.account.get_absolute_url }}">{{ line.account }}</a>{% if line.reconciliation %} <i class="bi bi-check2-circle text-positive" title="Cleared {{ line.reconciliation }}"></i>{% endif %}</td>
+            <td><a href="{{ line.fund.get_absolute_url }}" class="badge text-bg-light border text-decoration-none">{{ line.fund.code }}</a></td>
+            <td class="small">{{ line.description }}</td>
+            <td class="num">{% if line.debit %}{{ line.debit|money }}{% endif %}</td>
+            <td class="num">{% if line.credit %}{{ line.credit|money }}{% endif %}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+        <tfoot><tr><td colspan="3">Total</td><td class="num">{{ totals.debit|money }}</td><td class="num">{{ totals.credit|money }}</td></tr></tfoot>
+      </table>
+    </div>
+  </div>
+  <div class="col-xl-3">
+    <div class="card mb-3"><div class="card-body">
+      <dl class="dl-grid">
+        <dt>Date</dt><dd>{{ entry.date|date:"M j, Y" }}</dd>
+        {% if entry.reference %}<dt>Reference</dt><dd>{{ entry.reference }}</dd>{% endif %}
+        <dt>Type</dt><dd>{{ entry.get_source_type_display }}</dd>
+        <dt>Created</dt><dd>{{ entry.created_at|date:"M j, Y" }}{% if entry.created_by %}<br><span class="small text-body-secondary">by {{ entry.created_by }}</span>{% endif %}</dd>
+        {% if entry.posted_at %}<dt>Posted</dt><dd>{{ entry.posted_at|date:"M j, Y" }}{% if entry.posted_by %}<br><span class="small text-body-secondary">by {{ entry.posted_by }}</span>{% endif %}</dd>{% endif %}
+      </dl>
+    </div></div>
+    {% include "includes/documents.html" with object=entry %}
+  </div>
+</div>
+{% endblock %}

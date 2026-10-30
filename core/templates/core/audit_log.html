@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Audit trail{% endblock %}
+{% block page_title %}Audit trail{% endblock %}
+{% block page_subtitle %}<p class="text-body-secondary mb-0">Every change to financial records, who made it and when.</p>{% endblock %}
+{% block content %}
+<form class="filter-bar row g-2 align-items-end" method="get">
+  <div class="col-md-4"><label class="form-label">Search</label><input class="form-control form-control-sm" name="q" value="{{ q }}" placeholder="Record name or ID"></div>
+  <div class="col-md-3"><label class="form-label">Record type</label>
+    <select class="form-select form-select-sm" name="model" data-autosubmit><option value="">All</option>{% for m in models %}<option {% if m == model %}selected{% endif %}>{{ m }}</option>{% endfor %}</select></div>
+  <div class="col-md-3"><label class="form-label">User</label>
+    <select class="form-select form-select-sm" name="user" data-autosubmit><option value="">Everyone</option>{% for u in users %}<option value="{{ u.pk }}" {% if u.pk|stringformat:"s" == user_id %}selected{% endif %}>{{ u.username }}</option>{% endfor %}</select></div>
+  <div class="col-md-2"><button class="btn btn-sm btn-outline-primary w-100">Filter</button></div>
+</form>
+<div class="card table-card">
+  <table class="table table-sm">
+    <thead><tr><th>When</th><th>User</th><th>Action</th><th>Record</th><th>Changes</th></tr></thead>
+    <tbody>
+    {% for log in page_obj %}
+      <tr>
+        <td class="small text-nowrap">{{ log.timestamp|date:"M j, Y H:i" }}</td>
+        <td class="small">{{ log.user|default:"System" }}</td>
+        <td><span class="badge {% if log.action == 'delete' %}text-bg-danger{% elif log.action == 'create' %}text-bg-success{% else %}text-bg-info{% endif %}">{{ log.get_action_display }}</span></td>
+        <td class="small"><span class="text-body-secondary">{{ log.model }}</span><br>{{ log.object_repr }}</td>
+        <td class="small">
+          <details><summary>{{ log.changes|length }} field{{ log.changes|length|pluralize }}</summary>
+          <table class="table table-sm mb-0 mt-1">{% for field, vals in log.changes.items %}<tr><td class="text-body-secondary">{{ field }}</td><td><del class="text-body-tertiary">{{ vals.0|default_if_none:"" }}</del></td><td>{{ vals.1|default_if_none:"" }}</td></tr>{% endfor %}</table>
+          </details>
+        </td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="5" class="empty-state">No activity recorded yet.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% include "includes/pagination.html" %}
+{% endblock %}
