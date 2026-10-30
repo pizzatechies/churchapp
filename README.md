@@ -137,6 +137,8 @@ By default the app connects to `postgres://church:church@localhost:5432/church_f
 
 ## Deploying
 
+For a step-by-step setup on one server, with HTTPS and the first steps in the app, follow [QUICKSTART.md](QUICKSTART.md).
+
 ### Option A — one server with Docker Compose (recommended)
 
 A small VPS (2 GB RAM) runs everything: PostgreSQL, the admin app and the members app.
