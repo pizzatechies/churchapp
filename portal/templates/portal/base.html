@@ -6,6 +6,12 @@
   <title>{% block title %}Home{% endblock %} · {{ brand.app_name }}</title>
   <link rel="icon" type="image/svg+xml" href="{% static 'brand/favicon.svg' %}">
   <meta name="theme-color" content="#0b1d51">
+  <link rel="manifest" href="{% url 'manifest' %}">
+  <link rel="apple-touch-icon" href="{% static 'brand/icons/apple-touch-icon.png' %}">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="{{ brand.app_name }}">
   <script>
     (function () { try { var t = localStorage.getItem("theme") || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"); document.documentElement.setAttribute("data-bs-theme", t); } catch (e) {} })();
   </script>

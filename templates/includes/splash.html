@@ -1,4 +1,4 @@
-{% load static %}
+{% if not native_app %}{% load static %}
 <div class="splash" id="splash" role="status" aria-label="{{ brand.app_name }} is loading" data-splash-key="{{ brand.app_name|slugify }}">
   <img class="splash-logo" src="{% static 'brand/ecclesia-logo.svg' %}" alt="">
   <div class="splash-name">{{ brand.app_name }}</div>
@@ -28,3 +28,4 @@
   })();
 </script>
 <noscript><style>.splash { display: none; }</style></noscript>
+{% endif %}

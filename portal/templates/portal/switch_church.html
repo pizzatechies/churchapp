@@ -1,0 +1,18 @@
+{% extends "portal/base.html" %}
+{% block title %}Switch church{% endblock %}
+{% block content %}
+<div class="card"><div class="empty-state">
+  <i class="bi bi-arrow-left-right"></i>
+  <p>Opening the app's start screen…</p>
+  <a id="go" class="btn btn-primary" href="#">Continue</a>
+</div></div>
+<script>
+  // The app's own start screen lives at its local origin (Android: https://localhost, iOS: capacitor://localhost).
+  (function () {
+    var local = /Android/i.test(navigator.userAgent) ? "https://localhost" : "capacitor://localhost";
+    var target = local + "/index.html#change";
+    document.getElementById("go").href = target;
+    location.replace(target);
+  })();
+</script>
+{% endblock %}

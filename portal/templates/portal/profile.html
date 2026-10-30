@@ -25,6 +25,12 @@
     </form>
   </div>
   <div class="col-lg-5">
+    {% if native_app %}
+    <div class="card mb-3"><div class="card-header">App</div><div class="card-body">
+      <p class="small text-body-secondary mb-2">Connected to {{ church.name }}.</p>
+      <a href="{% url 'portal:switch_church' %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-arrow-left-right"></i> Switch church</a>
+    </div></div>
+    {% endif %}
     <div class="card"><div class="card-header">My groups</div>
       <ul class="list-group list-group-flush">{% for gm in memberships %}<li class="list-group-item d-flex justify-content-between"><a href="{% url 'portal:group_detail' gm.group.pk %}">{{ gm.group }}</a><span class="small text-body-secondary">{{ gm.get_role_display|cut:" / chairperson" }}{% if gm.inducted_on %} · since {{ gm.inducted_on|date:"M Y" }}{% endif %}</span></li>{% empty %}<li class="list-group-item small text-body-secondary">None yet.</li>{% endfor %}</ul>
     </div>

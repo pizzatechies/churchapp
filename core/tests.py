@@ -112,6 +112,29 @@ class DocumentTests(ChurchTestCase):
             self.assertEqual(self.client.get(reverse("document_download", args=[doc.pk])).status_code, 403)
 
 
+class AppShellTests(ChurchTestCase):
+    def test_health_check_is_public_and_names_the_app(self):
+        response = self.client.get(reverse("health"))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["app"], "Ecclesia Admin")
+        self.assertEqual(response.json()["product"], "Ecclesia")
+
+    def test_manifest_and_service_worker(self):
+        manifest = self.client.get(reverse("manifest"))
+        self.assertEqual(manifest["Content-Type"], "application/manifest+json")
+        data = manifest.json()
+        self.assertTrue(data["name"].startswith("Ecclesia Admin"))
+        self.assertEqual({icon["purpose"] for icon in data["icons"]}, {"any", "maskable"})
+        worker = self.client.get(reverse("service_worker"))
+        self.assertEqual(worker["Content-Type"], "application/javascript")
+        self.assertIn("no-cache", worker["Cache-Control"])
+        body = worker.content.decode()
+        self.assertIn('"/offline/"', body)
+        self.assertIn("never cached", body)
+
+    def test_offline_page(self):
+        self.assertContains(self.client.get(reverse("offline")), "offline", status_code=200)
+
 class SiteSmokeTest(TestCase):
     """Load the demo data and visit every reachable page as each role: nothing may error."""
 

@@ -27,6 +27,7 @@ It defaults to **Kenya** (Kenya Shillings, M-Pesa, PAYE/NSSF/SHIF/Housing Levy p
 - [Why Django + PostgreSQL](#why-django--postgresql)
 - [Try it locally](#try-it-locally)
 - [Deploying](#deploying)
+- [Phone and desktop apps](#phone-and-desktop-apps)
 - [Configuration](#configuration)
 - [Roles and permissions](#roles-and-permissions)
 - [How the accounting works](#how-the-accounting-works)
@@ -165,6 +166,19 @@ The admin container applies database migrations and creates the default accounts
 `render.yaml` is a blueprint for [Render](https://render.com): a managed PostgreSQL database plus the two apps as separate services. Because separate services don't share a disk, set the `S3_*` variables so uploads go to an S3-compatible bucket (Cloudflare R2, AWS S3, DigitalOcean Spaces, Backblaze B2). Files stay private: the apps hand out signed links that expire after an hour.
 
 The same Docker image runs on any container platform (Fly.io, Railway, Google Cloud Run, Azure, AWS): run it twice with `APP=admin` and `APP=members`, point both at the same `DATABASE_URL` and storage.
+
+---
+
+## Phone and desktop apps
+
+| | Android | iOS | Windows | macOS | Linux | Any browser |
+|---|---|---|---|---|---|---|
+| **Ecclesia Connect** (members) | ✓ app | ✓ app | | | | ✓ installable web app |
+| **Ecclesia Admin** (management & finance) | | | ✓ app | ✓ app | ✓ app | ✓ installable web app |
+
+The native apps live in [`apps/`](apps/README.md). On first launch they ask for the church's address, check that it really is the right Ecclesia app, and remember it; after that they open straight into the church. GitHub Actions builds the Windows, macOS and Linux installers, the Android APK/Play Store bundle and an iOS build — see [apps/README.md](apps/README.md) for building, signing and publishing to Google Play and the App Store.
+
+Both web apps are also Progressive Web Apps: open either address in Chrome, Edge or Safari and choose *Install app* / *Add to Home Screen*.
 
 ---
 

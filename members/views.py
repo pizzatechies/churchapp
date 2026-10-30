@@ -62,7 +62,9 @@ def _filtered_members(request):
 @require_cap("view_members")
 def member_list(request):
     members, filters = _filtered_members(request)
-    members = members.annotate(groups_count=Count("group_memberships", filter=Q(group_memberships__status=GroupMembership.ACTIVE)))
+    members = members.annotate(
+        groups_count=Count("group_memberships", filter=Q(group_memberships__status=GroupMembership.ACTIVE)),
+    ).order_by("last_name", "first_name", "pk")
     if request.GET.get("export") == "csv":
         return csv_response("members.csv", [
             "Member no.", "Title", "First name", "Middle name", "Last name", "Gender", "Date of birth", "Age group",

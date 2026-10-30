@@ -175,6 +175,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # Product identity. The members app (config.settings_portal) overrides APP_NAME.
 PRODUCT_NAME = "Ecclesia"
 APP_NAME = "Ecclesia Admin"
+APP_SHORT_NAME = "Ecclesia Admin"
 APP_TAGLINE = "Church management & finance"
 VENDOR_NAME = "Pizza Technologies"
 

@@ -1,0 +1,84 @@
+{
+  "name": "ecclesia-admin",
+  "productName": "Ecclesia Admin",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Ecclesia Admin \u2014 church management & finance for Windows, macOS and Linux. A product of Pizza Technologies.",
+  "author": "Pizza Technologies",
+  "license": "MIT",
+  "homepage": "https://ecclesia.pizzatechnologies.example",
+  "main": "main.js",
+  "scripts": {
+    "prepare-launcher": "node scripts/prepare.js",
+    "start": "npm run prepare-launcher && electron .",
+    "dist": "npm run prepare-launcher && electron-builder",
+    "dist:win": "npm run prepare-launcher && electron-builder --win",
+    "dist:mac": "npm run prepare-launcher && electron-builder --mac",
+    "dist:linux": "npm run prepare-launcher && electron-builder --linux"
+  },
+  "devDependencies": {
+    "electron": "45.1.0",
+    "electron-builder": "26.18.0"
+  },
+  "build": {
+    "appId": "com.pizzatechnologies.ecclesia.admin",
+    "productName": "Ecclesia Admin",
+    "copyright": "\u00a9 Pizza Technologies",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "launcher/**",
+      "build/icon.png"
+    ],
+    "artifactName": "Ecclesia-Admin-${version}-${os}-${arch}.${ext}",
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Ecclesia Admin"
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "universal"
+          ]
+        }
+      ],
+      "category": "public.app-category.finance",
+      "hardenedRuntime": true
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Office;Finance",
+      "maintainer": "Pizza Technologies",
+      "synopsis": "Church management & finance",
+      "syncDesktopName": true
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pizzatechies/lifesourcechurch.git"
+  },
+  "desktopName": "ecclesia-admin.desktop"
+}

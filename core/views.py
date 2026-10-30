@@ -2,6 +2,7 @@ import io
 import mimetypes
 
 from django.apps import apps
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_not_required
 from django.contrib.auth.models import User
@@ -199,4 +200,12 @@ def health(request):
     """For load balancers and uptime monitors: checks the app can reach the database."""
     with connection.cursor() as cursor:
         cursor.execute("SELECT 1")
-    return JsonResponse({"status": "ok"})
+    response = JsonResponse({
+        "status": "ok",
+        "app": settings.APP_NAME,
+        "product": settings.PRODUCT_NAME,
+        "church": ChurchProfile.cached().name,
+    })
+    # The mobile and desktop apps check this address before connecting to it.
+    response["Access-Control-Allow-Origin"] = "*"
+    return response

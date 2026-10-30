@@ -1,0 +1,34 @@
+{
+  "appId": "com.pizzatechnologies.ecclesia.connect",
+  "appName": "Ecclesia Connect",
+  "webDir": "www",
+  "backgroundColor": "#0b1d51",
+  "appendUserAgent": "EcclesiaApp/1.0 (Connect)",
+  "server": {
+    "androidScheme": "https",
+    "allowNavigation": ["*"]
+  },
+  "android": {
+    "allowMixedContent": false,
+    "captureInput": true
+  },
+  "ios": {
+    "contentInset": "never",
+    "scrollEnabled": true,
+    "limitsNavigationsToAppBoundDomains": false
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 800,
+      "launchAutoHide": true,
+      "backgroundColor": "#0b1d51",
+      "showSpinner": false,
+      "androidScaleType": "CENTER_CROP"
+    },
+    "StatusBar": {
+      "style": "DARK",
+      "backgroundColor": "#0b1d51",
+      "overlaysWebView": false
+    }
+  }
+}

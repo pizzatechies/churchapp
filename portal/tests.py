@@ -72,3 +72,25 @@ class MembersAppTests(ChurchTestCase):
         self.assertEqual(self.member.phone, "+254 700 000 111")
         self.assertEqual(self.member.gender, Member.FEMALE)
         self.assertEqual(self.member.notes, "")
+
+    def test_mobile_app_skips_web_splash_and_offers_switch_church(self):
+        self.client.force_login(self.user)
+        browser = self.client.get("/profile/")
+        self.assertContains(browser, 'id="splash"')
+        self.assertNotContains(browser, "Switch church")
+        app = self.client.get("/profile/", HTTP_USER_AGENT="Mozilla/5.0 (Linux; Android 15) EcclesiaApp/1.0 (Connect)")
+        self.assertNotContains(app, 'id="splash"')
+        self.assertContains(app, "Switch church")
+        self.assertContains(self.client.get(reverse("portal:switch_church")), "index.html#change")
+
+    @override_settings(APP_NAME="Ecclesia Connect")
+    def test_health_check_identifies_the_members_app(self):
+        response = self.client.get("/healthz/")
+        self.assertEqual(response.json()["app"], "Ecclesia Connect")
+        self.assertEqual(response.json()["product"], "Ecclesia")
+        self.assertEqual(response["Access-Control-Allow-Origin"], "*")
+
+    def test_installable_without_signing_in(self):
+        self.assertEqual(self.client.get("/manifest.webmanifest").status_code, 200)
+        self.assertEqual(self.client.get("/sw.js").status_code, 200)
+        self.assertEqual(self.client.get("/offline/").status_code, 200)

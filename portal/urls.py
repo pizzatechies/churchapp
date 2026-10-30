@@ -15,4 +15,5 @@ urlpatterns = [
     path("sermons/<int:pk>/<str:kind>/", views.sermon_media, name="sermon_media"),
     path("profile/", views.profile, name="profile"),
     path("profile/password/", views.PasswordChangeView.as_view(), name="password"),
+    path("app/switch-church/", views.switch_church, name="switch_church"),
 ]

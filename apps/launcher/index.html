@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b1d51">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src *; img-src 'self' data:; style-src 'self'; script-src 'self'">
+  <title>Ecclesia</title>
+  <link rel="stylesheet" href="launcher.css">
+</head>
+<body>
+  <main class="launcher">
+    <section class="brand" aria-live="polite">
+      <img class="logo" src="img/ecclesia-logo.svg" alt="">
+      <h1 id="app-name">Ecclesia</h1>
+      <p class="tag" id="app-tag">Church management</p>
+      <div class="bar" id="bar" aria-hidden="true"></div>
+    </section>
+
+    <section class="panel" id="connect" hidden>
+      <h2>Connect to your church</h2>
+      <p class="hint" id="connect-hint">Enter the address your church gave you for the members app.</p>
+      <form id="connect-form" novalidate>
+        <label for="url">Church address</label>
+        <input id="url" name="url" type="url" inputmode="url" autocomplete="url" autocapitalize="off" spellcheck="false"
+               placeholder="members.yourchurch.org" required>
+        <p class="error" id="error" role="alert" hidden></p>
+        <button type="submit" id="connect-btn">Continue</button>
+      </form>
+    </section>
+
+    <section class="panel" id="confirm" hidden>
+      <h2 id="confirm-title">Connect to your church?</h2>
+      <p class="hint" id="confirm-url"></p>
+      <button type="button" id="confirm-yes">Yes, connect</button>
+      <button type="button" class="link" id="confirm-no">Use a different address</button>
+    </section>
+
+    <section class="panel" id="offline" hidden>
+      <h2>Can't reach your church</h2>
+      <p class="hint" id="offline-text">Check your internet connection and try again.</p>
+      <button type="button" id="retry">Try again</button>
+      <button type="button" class="link" id="change">Change church</button>
+    </section>
+
+    <footer class="maker">
+      <span>A product of</span>
+      <img src="img/pizza-technologies.png" alt="Pizza Technologies">
+    </footer>
+  </main>
+  <script src="config.js"></script>
+  <script src="launcher.js"></script>
+</body>
+</html>

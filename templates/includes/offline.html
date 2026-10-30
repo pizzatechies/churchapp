@@ -1,0 +1,21 @@
+{% load static %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>You're offline · {{ brand.app_name }}</title>
+  <style>
+    body { margin: 0; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; text-align: center; padding: 24px; color: #fff;
+      background: radial-gradient(circle at 50% 35%, #2f5bd3 0%, #10286e 50%, #071541 100%); }
+    h1 { margin: 8px 0 0; font-size: 1.5rem; }
+    p { margin: 0; color: #d6def5; max-width: 340px; }
+    button { margin-top: 12px; background: #e2b43f; color: #071541; border: 0; border-radius: 999px; padding: 10px 22px; font-weight: 700; font-size: 1rem; }
+  </style>
+</head>
+<body>
+  <img src="{% static 'brand/ecclesia-logo.svg' %}" alt="" width="88" height="88">
+  <h1>You're offline</h1>
+  <p>{{ brand.app_name }} needs an internet connection. Check your data or Wi-Fi and try again.</p>
+  <button type="button" onclick="location.reload()">Try again</button>
+</body>
+</html>

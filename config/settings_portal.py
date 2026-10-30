@@ -12,6 +12,7 @@ ROOT_URLCONF = "config.urls_portal"
 WSGI_APPLICATION = "config.wsgi_portal.application"
 
 APP_NAME = "Ecclesia Connect"
+APP_SHORT_NAME = "Ecclesia"
 APP_TAGLINE = "Fellowships, groups & sermons"
 
 # Separate cookies so members and staff sessions never mix, even on one domain.

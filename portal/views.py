@@ -185,3 +185,8 @@ def error_403(request, exception=None):
     return render(request, "portal/error.html", {"title": "Not available", "message": "This page isn't available in the members app."}, status=403)
 
 
+
+
+def switch_church(request):
+    """Inside the mobile app: go back to the app's start screen to connect to a different church."""
+    return render(request, "portal/switch_church.html")

@@ -2,6 +2,13 @@
 (function () {
   "use strict";
 
+  // Installable app (Android, iOS, desktop): register the service worker.
+  if ("serviceWorker" in navigator && window.isSecureContext) {
+    window.addEventListener("load", function () {
+      navigator.serviceWorker.register("/sw.js").catch(function () {});
+    });
+  }
+
   function parseAmount(value) {
     var n = parseFloat(String(value || "").replace(/,/g, ""));
     return isNaN(n) ? 0 : n;

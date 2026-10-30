@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Ecclesia Connect</string>
+    <string name="title_activity_main">Ecclesia Connect</string>
+    <string name="package_name">com.pizzatechnologies.ecclesia.connect</string>
+    <string name="custom_url_scheme">com.pizzatechnologies.ecclesia.connect</string>
+</resources>

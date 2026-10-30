@@ -1,10 +1,13 @@
 from django.urls import path
 
-from . import dashboard, views
+from . import dashboard, pwa, views
 
 urlpatterns = [
     path("", dashboard.dashboard, name="dashboard"),
     path("healthz/", views.health, name="health"),
+    path("manifest.webmanifest", pwa.manifest, name="manifest"),
+    path("sw.js", pwa.service_worker, name="service_worker"),
+    path("offline/", pwa.offline, name="offline"),
     path("settings/", views.settings_view, name="settings"),
     path("settings/close-books/", views.close_books, name="close_books"),
     path("settings/users/", views.user_list, name="user_list"),
