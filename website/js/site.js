@@ -167,6 +167,18 @@
     });
   }
 
+  // ------------------------------------------------------------------ sign in
+  var signIn = cfg.signIn || {};
+  if (signIn.admin || signIn.members) {
+    $$("[data-sign-in]").forEach(function (el) { el.hidden = false; });
+    $$("[data-sign-in-app]").forEach(function (a) {
+      var url = signIn[a.getAttribute("data-sign-in-app")];
+      if (!url) { a.hidden = true; return; }
+      a.href = url;
+      $("em", a).textContent = url.replace(/^https?:\/\//, "").replace(/\/$/, "");
+    });
+  }
+
   // ------------------------------------------------------------------ downloads
   var downloads = cfg.downloads || {};
   $$("[data-download]").forEach(function (a) {

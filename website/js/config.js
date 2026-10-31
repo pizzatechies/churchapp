@@ -14,6 +14,13 @@ window.ECCLESIA_SITE = {
     phone: "+254 747 354 677",
   },
 
+  // The live Ecclesia apps, for people who already use them ("Sign in" links).
+  // Empty hides them.
+  signIn: {
+    admin: "https://ecclesia-admin.onrender.com",
+    members: "https://ecclesia-members.onrender.com",
+  },
+
   // A public demo server (ECCLESIA_DEMO_MODE=1, see the main README). Empty hides the buttons.
   liveDemo: {
     admin: "",      // e.g. "https://demo-admin.example.com"
