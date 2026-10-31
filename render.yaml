@@ -68,17 +68,10 @@ services:
         value: members
       - key: DATABASE_URL
         fromDatabase: { name: ecclesia-db, property: connectionString }
-      # Shared with the admin app, so each value is entered only once.
       - key: SECRET_KEY
         fromService: { type: web, name: ecclesia-admin, envVarKey: SECRET_KEY }
-      - key: S3_BUCKET
-        fromService: { type: web, name: ecclesia-admin, envVarKey: S3_BUCKET }
-      - key: S3_ENDPOINT_URL
-        fromService: { type: web, name: ecclesia-admin, envVarKey: S3_ENDPOINT_URL }
-      - key: S3_ACCESS_KEY_ID
-        fromService: { type: web, name: ecclesia-admin, envVarKey: S3_ACCESS_KEY_ID }
-      - key: S3_SECRET_ACCESS_KEY
-        fromService: { type: web, name: ecclesia-admin, envVarKey: S3_SECRET_ACCESS_KEY }
+      # File storage: when you connect a bucket, add the same four S3_ values here in
+      # Render (ecclesia-members > Environment) as on ecclesia-admin.
       - key: DEBUG
         value: "0"
       - key: ALLOWED_HOSTS
