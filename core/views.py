@@ -173,7 +173,7 @@ def audit_log(request):
 
 # -------------------------------------------------------------------- backup
 
-BACKUP_APPS = ["auth.user", "auth.group", "core", "ledger", "giving", "expenses", "payroll", "fixedassets"]
+BACKUP_APPS = ["auth.user", "auth.group", "core", "ledger", "giving", "expenses", "payroll", "fixedassets", "members"]
 
 
 @require_cap("manage_users")
@@ -185,11 +185,12 @@ def backup(request):
         )
         stamp = timezone.localtime().strftime("%Y%m%d-%H%M")
         response = HttpResponse(buffer.getvalue(), content_type="application/json")
-        response["Content-Disposition"] = f'attachment; filename="church-finance-backup-{stamp}.json"'
+        response["Content-Disposition"] = f'attachment; filename="ecclesia-backup-{stamp}.json"'
         return response
     counts = []
     for label in ["ledger.JournalEntry", "giving.Contribution", "giving.Donor", "expenses.Expense",
-                  "payroll.Paycheck", "fixedassets.FixedAsset", "core.Document"]:
+                  "payroll.Paycheck", "fixedassets.FixedAsset", "members.Member", "members.Group",
+                  "members.Sermon", "core.Document"]:
         model = apps.get_model(label)
         counts.append((model._meta.verbose_name_plural.title(), model.objects.count()))
     return render(request, "core/backup.html", {"counts": counts})

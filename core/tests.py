@@ -91,6 +91,16 @@ class SettingsAndBackupTests(ChurchTestCase):
         self.assertEqual(response["Content-Type"], "application/json")
         self.assertIn(b'"model": "ledger.journalentry"', response.content)
 
+    def test_backup_includes_the_congregation(self):
+        from members.models import Group, Member
+
+        Member.objects.create(first_name="Njeri", last_name="Mwangi", gender=Member.FEMALE)
+        Group.objects.create(name="Women's Fellowship", gender_restriction=Member.FEMALE)
+        self.client.force_login(self.users["Administrator"])
+        response = self.client.post(reverse("backup"))
+        self.assertIn(b'"model": "members.member"', response.content)
+        self.assertIn(b'"model": "members.group"', response.content)
+
 
 class DocumentTests(ChurchTestCase):
     def setUp(self):

@@ -2,13 +2,20 @@
 #
 # - Both apps run as free web services in Frankfurt. They sleep after 15 minutes
 #   without visitors and take about a minute to wake up.
-# - The database is a free Neon PostgreSQL database (neon.tech): paste its connection
-#   string when Render asks for DATABASE_URL. Render's own free database is deleted
-#   after 30 days, so it isn't used.
+# - The database is Render's free PostgreSQL. Render deletes free databases 30 days
+#   after they are created unless they are upgraded to a paid plan, so upgrade it (or
+#   move the data) before then. deploy/RENDER.md explains how.
 # - Free services forget files when they restart, so receipts and sermon uploads need an
 #   S3-compatible bucket (Cloudflare R2, Backblaze B2...). Leave the S3 values empty to
 #   start without one; administrators then see a warning.
 # For always-on paid plans, use deploy/render-paid.yaml instead.
+databases:
+  - name: ecclesia-db
+    plan: free
+    region: frankfurt
+    databaseName: ecclesia
+    user: ecclesia
+
 services:
   - type: web
     name: ecclesia-admin
@@ -20,9 +27,7 @@ services:
       - key: APP
         value: admin
       - key: DATABASE_URL
-        sync: false
-      - key: DB_SSL_REQUIRE
-        value: "1"
+        fromDatabase: { name: ecclesia-db, property: connectionString }
       - key: SECRET_KEY
         generateValue: true
       - key: DEBUG
@@ -61,9 +66,9 @@ services:
     envVars:
       - key: APP
         value: members
-      # Shared with the admin app, so each value is entered only once.
       - key: DATABASE_URL
-        fromService: { type: web, name: ecclesia-admin, envVarKey: DATABASE_URL }
+        fromDatabase: { name: ecclesia-db, property: connectionString }
+      # Shared with the admin app, so each value is entered only once.
       - key: SECRET_KEY
         fromService: { type: web, name: ecclesia-admin, envVarKey: SECRET_KEY }
       - key: S3_BUCKET
@@ -74,8 +79,6 @@ services:
         fromService: { type: web, name: ecclesia-admin, envVarKey: S3_ACCESS_KEY_ID }
       - key: S3_SECRET_ACCESS_KEY
         fromService: { type: web, name: ecclesia-admin, envVarKey: S3_SECRET_ACCESS_KEY }
-      - key: DB_SSL_REQUIRE
-        value: "1"
       - key: DEBUG
         value: "0"
       - key: ALLOWED_HOSTS
