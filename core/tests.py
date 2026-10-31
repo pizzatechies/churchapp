@@ -214,3 +214,16 @@ class DemoModeTests(ChurchTestCase):
 
         with self.settings(DEMO_MODE=False), self.assertRaises(CommandError):
             call_command("reset_demo")
+
+
+class TemporaryStorageWarningTests(ChurchTestCase):
+    @override_settings(MEDIA_IS_TEMPORARY=True)
+    def test_administrators_are_warned_when_uploads_are_not_kept(self):
+        self.client.force_login(self.admin)
+        self.assertContains(self.client.get(reverse("dashboard")), "only kept until this server restarts")
+        self.client.force_login(self.counter)
+        self.assertNotContains(self.client.get(reverse("dashboard")), "only kept until this server restarts")
+
+    def test_no_warning_by_default(self):
+        self.client.force_login(self.admin)
+        self.assertNotContains(self.client.get(reverse("dashboard")), "only kept until this server restarts")

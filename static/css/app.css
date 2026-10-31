@@ -246,6 +246,8 @@ tr.row-link { cursor: pointer; }
 /* ---------- public demo ---------- */
 .demo-banner { background: var(--app-gold-soft); color: var(--app-gold-ink); border-bottom: 1px solid var(--app-border);
   font-size: 0.82rem; font-weight: 500; padding: 0.4rem 1rem; text-align: center; }
+.storage-banner { background: #fdecea; color: #8a1c12; border-bottom: 1px solid var(--app-border); font-size: 0.82rem; font-weight: 500; padding: 0.4rem 1rem; text-align: center; }
+[data-bs-theme="dark"] .storage-banner { background: #3b1512; color: #f4b4ab; }
 .demo-logins { margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px dashed var(--app-border); }
 .demo-logins-title { font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--app-gold-ink); margin-bottom: 0.6rem; }
 .demo-logins-list { display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; }

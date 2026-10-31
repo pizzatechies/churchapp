@@ -158,11 +158,15 @@ if DEBUG or TESTING:
 # the members app run on separate servers, point both at the same S3-compatible bucket instead
 # (AWS S3, Cloudflare R2, DigitalOcean Spaces, Backblaze B2...). Files stay private: links are
 # signed and expire after an hour.
-if os.environ.get("S3_BUCKET"):
+# "none" or "-" count as not set, for hosts that insist on a value when asking for it.
+S3_BUCKET = os.environ.get("S3_BUCKET", "").strip()
+if S3_BUCKET.lower() in {"none", "-"}:
+    S3_BUCKET = ""
+if S3_BUCKET:
     STORAGES["default"] = {
         "BACKEND": "storages.backends.s3.S3Storage",
         "OPTIONS": {
-            "bucket_name": os.environ["S3_BUCKET"],
+            "bucket_name": S3_BUCKET,
             "endpoint_url": os.environ.get("S3_ENDPOINT_URL") or None,
             "region_name": os.environ.get("S3_REGION") or None,
             "access_key": os.environ.get("S3_ACCESS_KEY_ID"),
@@ -173,6 +177,10 @@ if os.environ.get("S3_BUCKET"):
             "file_overwrite": False,
         },
     }
+
+# On hosts whose disk is wiped on every restart (Render sets RENDER=true) and with no bucket
+# configured, uploads would silently disappear: administrators see a warning.
+MEDIA_IS_TEMPORARY = env_bool("RENDER") and not S3_BUCKET
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 

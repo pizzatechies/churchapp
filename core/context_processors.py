@@ -24,6 +24,7 @@ def church(request):
         "brand": brand(),
         "native_app": native_app,
         "demo_mode": settings.DEMO_MODE,
+        "media_is_temporary": settings.MEDIA_IS_TEMPORARY,
         "church": ChurchProfile.cached(),
         "caps": capabilities_for(user),
         "my_roles": sorted(user_roles(user)) or (["Superuser"] if user.is_superuser else []),

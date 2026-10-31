@@ -120,6 +120,9 @@
     </header>
 
     {% include "includes/demo_banner.html" %}
+    {% if media_is_temporary and caps.manage_settings %}
+    <div class="storage-banner d-print-none" role="alert"><i class="bi bi-exclamation-triangle"></i> Uploaded receipts and sermons are only kept until this server restarts. Connect file storage (the S3 settings) to keep them.</div>
+    {% endif %}
     <main class="content">
       {% if messages %}
       <div class="d-print-none">
