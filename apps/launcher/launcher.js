@@ -39,28 +39,87 @@
     return (parsed.origin + parsed.pathname).replace(/\/+$/, "");
   }
 
-  function check(url) {
+  // Free hosting (such as Render's free plan) puts idle servers to sleep; waking one takes
+  // about a minute, during which the host answers 502/503/504 or a holding page.
+  var WAKE_LIMIT_MS = 120000;
+  var ATTEMPT_MS = 20000;
+  var RETRY_DELAY_MS = 3000;
+  var SLOW_AFTER_MS = 4000;
+
+  function failure(kind) {
+    var err = new Error(kind);
+    err.kind = kind;
+    return err;
+  }
+
+  function checkOnce(url) {
     var ctrl = typeof AbortController !== "undefined" ? new AbortController() : null;
-    var timer = setTimeout(function () { if (ctrl) ctrl.abort(); }, 12000);
+    var timer = setTimeout(function () { if (ctrl) ctrl.abort(); }, ATTEMPT_MS);
     return fetch(url + "/healthz/", { cache: "no-store", signal: ctrl ? ctrl.signal : undefined })
       .then(function (r) {
-        clearTimeout(timer);
-        if (!r.ok) throw Object.assign(new Error("status"), { kind: "bad" });
+        if (r.status >= 500 || r.status === 429) throw failure("waking");
+        if (!r.ok) throw failure("bad");
+        if ((r.headers.get("content-type") || "").indexOf("json") === -1) throw failure("holding-page");
         return r.json();
       })
       .then(function (data) {
-        if (!data || data.product !== "Ecclesia") throw Object.assign(new Error("not ecclesia"), { kind: "bad" });
+        clearTimeout(timer);
+        if (!data || data.product !== "Ecclesia") throw failure("bad");
         return data;
       }, function (err) {
         clearTimeout(timer);
-        if (err && err.kind) throw err;
-        throw Object.assign(new Error("offline"), { kind: "offline" });
+        throw err && err.kind ? err : failure("offline");
       });
   }
 
+  // Keeps trying while the server wakes up, for up to two minutes. Calls onSlow once if it
+  // takes longer than a few seconds. The returned promise has cancel().
+  function check(url, onSlow) {
+    var startedAt = Date.now();
+    var cancelled = false;
+    var rejectNow;
+    var slowTimer = setTimeout(function () { if (onSlow) onSlow(); }, SLOW_AFTER_MS);
+    var promise = new Promise(function (resolve, reject) {
+      rejectNow = reject;
+      (function attempt() {
+        checkOnce(url).then(function (data) {
+          if (!cancelled) resolve(data);
+        }, function (err) {
+          if (cancelled) return;
+          if (err.kind !== "bad" && Date.now() - startedAt < WAKE_LIMIT_MS) setTimeout(attempt, RETRY_DELAY_MS);
+          else reject(err);
+        });
+      })();
+    });
+    var stop = function () { clearTimeout(slowTimer); };
+    promise.then(stop, stop);
+    promise.cancel = function () {
+      cancelled = true;
+      stop();
+      rejectNow(failure("cancelled"));
+    };
+    return promise;
+  }
+
+  var PANELS = ["connect", "confirm", "waking", "offline"];
+  var wakingTimer = null;
+
   function show(id) {
-    ["connect", "confirm", "offline"].forEach(function (p) { $(p).hidden = p !== id; });
-    $("bar").classList.add("done");
+    PANELS.forEach(function (p) { $(p).hidden = p !== id; });
+    $("bar").classList.toggle("done", id !== "waking");
+    if (id !== "waking") clearInterval(wakingTimer);
+  }
+
+  // The "Waking up" panel, with a running count so people can see it is still trying.
+  function showWaking(url) {
+    var since = Date.now();
+    $("waking-text").textContent = "Trying " + url.replace(/^https?:\/\//, "") + ". After a quiet spell this can take up to a minute. Please keep the app open.";
+    $("waking-time").textContent = "";
+    show("waking");
+    clearInterval(wakingTimer);
+    wakingTimer = setInterval(function () {
+      $("waking-time").textContent = "Still trying… " + Math.round((Date.now() - since) / 1000) + " seconds";
+    }, 1000);
   }
 
   function afterSplash(fn) {
@@ -78,6 +137,15 @@
   }
 
   var pending = null;
+  var current = null;   // the check in progress, so Cancel can stop it
+  var cancelTo = null;  // what Cancel goes back to
+
+  function describe(err) {
+    if (err.kind === "wrong") return err.message;
+    if (err.kind === "bad" || err.kind === "holding-page") return "That address isn't an Ecclesia server. Please check it with your church office.";
+    if (err.kind === "waking") return "Your church's server didn't finish starting. Please try again in a minute.";
+    return "We couldn't reach that address. Check it, and your internet connection.";
+  }
 
   $("connect-form").addEventListener("submit", function (e) {
     e.preventDefault();
@@ -87,7 +155,9 @@
     var btn = $("connect-btn");
     btn.disabled = true;
     btn.textContent = "Checking…";
-    check(url).then(function (data) {
+    cancelTo = "connect";
+    current = check(url, function () { showWaking(url); });
+    current.then(function (data) {
       if (cfg.expectedApp && data.app !== cfg.expectedApp) {
         var other = data.app === "Ecclesia Admin" ? "the staff app (Ecclesia Admin)" : "the members app (Ecclesia Connect)";
         throw Object.assign(new Error("That address is for " + other + ". Ask your church for the " + cfg.expectedApp + " address."), { kind: "wrong" });
@@ -97,13 +167,19 @@
       $("confirm-url").textContent = url.replace(/^https?:\/\//, "");
       show("confirm");
     }).catch(function (err) {
-      if (err.kind === "wrong") showError(err.message);
-      else if (err.kind === "offline") showError("We couldn't reach that address. Check it, and your internet connection.");
-      else showError("That address isn't an Ecclesia server. Please check it with your church office.");
+      if (err.kind === "cancelled") return;
+      show("connect");
+      showError(describe(err));
     }).then(function () {
       btn.disabled = false;
       btn.textContent = "Continue";
     });
+  });
+
+  $("waking-cancel").addEventListener("click", function () {
+    if (current) current.cancel();
+    if (cancelTo === "offline") showOffline(currentUrl);
+    else show("connect");
   });
 
   $("confirm-yes").addEventListener("click", function () {
@@ -113,19 +189,27 @@
   $("retry").addEventListener("click", function () { start(); });
   $("change").addEventListener("click", function () { show("connect"); });
 
+  var currentUrl = null;
+
+  function showOffline(url) {
+    $("offline-text").textContent = "We couldn't reach " + url.replace(/^https?:\/\//, "") + ". Check your internet connection and try again.";
+    $("change").hidden = !!cfg.churchUrl;
+    show("offline");
+  }
+
   function start() {
     $("bar").classList.remove("done");
-    ["connect", "confirm", "offline"].forEach(function (p) { $(p).hidden = true; });
+    PANELS.forEach(function (p) { $(p).hidden = true; });
     getSaved().then(function (saved) {
       var changing = window.location.hash === "#change" && !cfg.churchUrl;
       if (saved && !changing) {
-        check(saved).then(function () { afterSplash(function () { open(saved); }); })
-          .catch(function () {
-            afterSplash(function () {
-              $("offline-text").textContent = "We couldn't reach " + saved.replace(/^https?:\/\//, "") + ". Check your internet connection and try again.";
-              $("change").hidden = !!cfg.churchUrl;
-              show("offline");
-            });
+        currentUrl = saved;
+        cancelTo = "offline";
+        current = check(saved, function () { showWaking(saved); });
+        current.then(function () { afterSplash(function () { open(saved); }); })
+          .catch(function (err) {
+            if (err.kind === "cancelled") return;
+            afterSplash(function () { showOffline(saved); });
           });
       } else {
         if (saved) $("url").value = saved.replace(/^https?:\/\//, "");

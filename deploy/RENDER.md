@@ -56,7 +56,7 @@ Cloudflare R2 includes 10 GB free each month (Cloudflare asks for a card to turn
    - **iPhone:** open it in Safari, tap Share, then *Add to Home Screen*.
    - **Windows:** enter the **ecclesia-admin** address in Ecclesia Admin.
 
-**After a quiet spell the first visit takes about a minute.** If an app says it can't reach your church, wait a minute and tap **Retry**, or open the address in a browser first.
+**After a quiet spell the first visit takes about a minute.** The phone and Windows apps (version 1.1 and later) show *Waking up your church's server* and wait for up to two minutes, so there's nothing to do but keep them open. In a browser, the page simply loads a little slower.
 
 ## Good to know
 

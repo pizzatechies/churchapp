@@ -1,9 +1,9 @@
 {
   "name": "ecclesia-admin",
   "productName": "Ecclesia Admin",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
-  "description": "Ecclesia Admin \u2014 church management & finance for Windows, macOS and Linux. A product of Pizza Technologies.",
+  "description": "Ecclesia Admin — church management & finance for Windows, macOS and Linux. A product of Pizza Technologies.",
   "author": "Pizza Technologies",
   "license": "MIT",
   "homepage": "https://ecclesia.pizzatechnologies.example",
@@ -23,7 +23,7 @@
   "build": {
     "appId": "com.pizzatechnologies.ecclesia.admin",
     "productName": "Ecclesia Admin",
-    "copyright": "\u00a9 Pizza Technologies",
+    "copyright": "© Pizza Technologies",
     "directories": {
       "output": "dist",
       "buildResources": "build"

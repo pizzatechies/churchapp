@@ -13,6 +13,7 @@ The native apps are thin, fast shells around your church's own Ecclesia server, 
 
 1. On first launch the app shows the Ecclesia splash (with the Pizza Technologies mark) and asks for the church's address, e.g. `members.yourchurch.org`.
 2. It checks `https://<address>/healthz/` and only connects if that address really is the right Ecclesia app — Ecclesia Connect refuses an admin address and Ecclesia Admin refuses a members address — then asks the user to confirm the church's name.
+   If the church's server is asleep (free hosting such as Render's free plan sleeps when idle), the app shows *Waking up your church's server* and keeps trying for up to two minutes.
 3. The address is remembered. Next time the app opens straight into the church; *Profile → Switch church* (mobile) or *File → Change church server…* (desktop) changes it.
 4. In the desktop app, links to other websites open in the computer's browser, never inside the app.
 

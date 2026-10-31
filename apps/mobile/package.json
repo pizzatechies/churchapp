@@ -1,8 +1,8 @@
 {
   "name": "ecclesia-connect",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
-  "description": "Ecclesia Connect \u2014 the members app for Android and iOS. A product of Pizza Technologies.",
+  "description": "Ecclesia Connect — the members app for Android and iOS. A product of Pizza Technologies.",
   "author": "Pizza Technologies",
   "license": "MIT",
   "scripts": {

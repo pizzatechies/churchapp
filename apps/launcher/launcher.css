@@ -36,6 +36,7 @@ button {
 button:disabled { opacity: 0.6; }
 button.link { background: transparent; color: var(--gold-300); font-weight: 600; margin-top: 8px; }
 .error { color: #ffb4ab; font-size: 0.88rem; margin: 10px 0 0; }
+.waking-time { margin: -8px 0 0; font-variant-numeric: tabular-nums; color: var(--gold-300); }
 .maker { display: flex; flex-direction: column; align-items: center; gap: 6px; margin-top: 8px; animation: rise 0.6s 0.15s ease-out both; }
 .maker span { font-size: 0.68rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-soft); }
 .maker img { width: 120px; height: auto; }
