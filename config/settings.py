@@ -61,6 +61,7 @@ INSTALLED_APPS = [
     "reports",
     "members",
     "portal",
+    "bankfeeds",
 ]
 
 MIDDLEWARE = [
@@ -134,6 +135,14 @@ MEDIA_ROOT = Path(os.environ.get("MEDIA_ROOT", BASE_DIR / "media"))
 MEDIA_URL = "/media/"
 MAX_UPLOAD_SIZE = int(os.environ.get("MAX_UPLOAD_MB", "15")) * 1024 * 1024
 SERMON_MAX_UPLOAD_SIZE = int(os.environ.get("SERMON_MAX_UPLOAD_MB", "300")) * 1024 * 1024
+
+# Bank feeds: M-Pesa Paybill/Till payments arrive live from Safaricom's Daraja API.
+# The keys are only needed to register the payment address from inside Ecclesia.
+MPESA_CONSUMER_KEY = os.environ.get("MPESA_CONSUMER_KEY", "").strip()
+MPESA_CONSUMER_SECRET = os.environ.get("MPESA_CONSUMER_SECRET", "").strip()
+MPESA_ENVIRONMENT = os.environ.get("MPESA_ENVIRONMENT", "production").strip().lower()
+# Optional: only accept payment notifications from these IP addresses (Safaricom's published list).
+MPESA_ALLOWED_IPS = env_list("MPESA_ALLOWED_IPS")
 # Large sermon uploads are streamed to a temporary file rather than held in memory.
 FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
 

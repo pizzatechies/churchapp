@@ -280,6 +280,7 @@ class JournalEntry(models.Model):
     SOURCE_FUND_TRANSFER = "fund_transfer"
     SOURCE_INCOME = "income"
     SOURCE_OPENING = "opening"
+    SOURCE_BANK_FEED = "bank_feed"
     SOURCE_CHOICES = [
         (SOURCE_MANUAL, "Journal entry"),
         (SOURCE_GIVING, "Contribution deposit"),
@@ -292,6 +293,7 @@ class JournalEntry(models.Model):
         (SOURCE_FUND_TRANSFER, "Fund transfer"),
         (SOURCE_INCOME, "Other income"),
         (SOURCE_OPENING, "Opening balances"),
+        (SOURCE_BANK_FEED, "Bank feed"),
     ]
 
     date = models.DateField(db_index=True)

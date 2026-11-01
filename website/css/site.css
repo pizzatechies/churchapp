@@ -311,7 +311,7 @@ a.download[href]:hover { background: rgba(255, 255, 255, 0.12); }
 /* ---------- trust ---------- */
 .trust-grid { display: grid; grid-template-columns: 1fr; gap: 28px; }
 @media (min-width: 640px) { .trust-grid { grid-template-columns: 1fr 1fr; } }
-@media (min-width: 980px) { .trust-grid { grid-template-columns: repeat(4, 1fr); } }
+@media (min-width: 980px) { .trust-grid { grid-template-columns: repeat(3, 1fr); } }
 .trust i { font-size: 1.6rem; color: var(--gold-500); }
 .trust h3 { margin-top: 0.6rem; }
 .trust p { color: var(--ink-2); font-size: 0.93rem; }

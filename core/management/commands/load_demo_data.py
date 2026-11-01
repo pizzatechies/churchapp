@@ -181,6 +181,7 @@ class Command(BaseCommand):
         self._budget()
         self._reconciliations()
         self._recent_workflow(vendors)
+        self._bank_feed()
         self._sermons()
         profile.lock_date = date(self.today.year - 1, 12, 31)
         profile.save()
@@ -736,6 +737,35 @@ class Command(BaseCommand):
                 services.set_cleared(rec, services.reconciliation_candidates(rec).values_list("pk", flat=True))
                 services.complete_reconciliation(rec, self.users["bookkeeper"])
                 d = month_end(d + timedelta(days=1))
+
+    def _bank_feed(self):
+        """Link the current account by statement: this month's statement, as the bank would export it."""
+        from bankfeeds import services as feeds
+        from bankfeeds.models import BankConnection
+        from ledger.models import JournalEntry, JournalLine
+
+        account = self.acct("1010")
+        connection = BankConnection.objects.create(account=account, method=BankConnection.STATEMENT, created_by=self.users["admin"],
+                                                   default_fund=self.fund("GEN"), default_income_account=self.acct("4000"))
+        start = self.today - timedelta(days=45)
+        rows = []
+        lines = (JournalLine.objects.filter(account=account, entry__status=JournalEntry.POSTED, entry__date__gte=start)
+                 .select_related("entry").order_by("entry__date", "entry_id"))
+        by_entry = {}
+        for line in lines:
+            e = by_entry.setdefault(line.entry_id, [line.entry, D("0")])
+            e[1] += line.debit - line.credit
+        for entry, net in by_entry.values():
+            if net:
+                rows.append((entry.date + timedelta(days=1 if net > 0 else 0), entry.memo.upper()[:40], net))
+        rows += [(self.today - timedelta(days=20), "LEDGER FEE", D("-350.00")), (self.today - timedelta(days=20), "EXCISE DUTY", D("-70.00")),
+                 (self.today - timedelta(days=9), "RTGS IN HOPE FOUNDATION KENYA", D("75000.00"))]
+        rows = [r for r in rows if r[0] <= self.today]
+        rows.sort(key=lambda r: r[0])
+        csv = ["Transaction Date,Narrative,Debit,Credit"]
+        for d, text, amount in rows:
+            csv.append(f'{d:%d/%m/%Y},"{text}",{-amount if amount < 0 else ""},{amount if amount > 0 else ""}')
+        feeds.import_statement(connection, f"equity-statement-{self.today:%b-%Y}.csv".lower(), "\n".join(csv).encode(), self.users["bookkeeper"])
 
     def _recent_workflow(self, v):
         from expenses import services as ex

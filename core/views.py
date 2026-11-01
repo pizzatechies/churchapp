@@ -176,7 +176,7 @@ def audit_log(request):
 
 # -------------------------------------------------------------------- backup
 
-BACKUP_APPS = ["auth.user", "auth.group", "core", "ledger", "giving", "expenses", "payroll", "fixedassets", "members"]
+BACKUP_APPS = ["auth.user", "auth.group", "core", "ledger", "giving", "expenses", "payroll", "fixedassets", "members", "bankfeeds"]
 
 
 @require_cap("manage_users")

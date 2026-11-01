@@ -27,9 +27,14 @@
           {% if a.last_rec %}Reconciled through {{ a.last_rec.statement_date|date:"M j, Y" }}{% else %}Never reconciled{% endif %}
           · {{ a.uncleared }} uncleared item{{ a.uncleared|pluralize }}
         </div>
-        <div class="mt-2 d-flex gap-2">
+        {% if a.connection %}
+        <div class="small mt-1"><i class="bi bi-link-45deg text-positive"></i> {% if a.connection.is_live %}Live from M-Pesa {{ a.connection.shortcode }}{% else %}Linked by statement upload{% endif %}{% if a.to_review %} · <strong>{{ a.to_review }} to review</strong>{% endif %}</div>
+        {% endif %}
+        <div class="mt-2 d-flex flex-wrap gap-2">
           <a href="{{ a.account.get_absolute_url }}" class="btn btn-sm btn-outline-secondary">Register</a>
           {% if caps.manage_ledger %}<a href="{% url 'ledger:reconciliation_start' %}?account={{ a.account.pk }}" class="btn btn-sm btn-outline-secondary">Reconcile</a>{% endif %}
+          {% if a.connection and caps.manage_ledger %}<a href="{% url 'bankfeeds:feed' a.account.pk %}" class="btn btn-sm {% if a.to_review %}btn-primary{% else %}btn-outline-primary{% endif %}"><i class="bi bi-list-check"></i> Bank feed</a>
+          {% elif a.linkable and not a.connection and caps.manage_settings %}<a href="{% url 'bankfeeds:link' a.account.pk %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-link-45deg"></i> Link account</a>{% endif %}
         </div>
       </div>
     </div>

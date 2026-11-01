@@ -2,6 +2,7 @@ from django.contrib import admin
 from django.contrib.auth import views as auth_views
 from django.urls import include, path
 
+from bankfeeds.urls import callback_urlpatterns as bank_feed_callbacks
 from core.forms import StaffAuthenticationForm
 
 admin.site.site_header = "Ecclesia – database administration"
@@ -21,4 +22,6 @@ urlpatterns = [
     path("assets/", include("fixedassets.urls")),
     path("reports/", include("reports.urls")),
     path("congregation/", include("members.urls")),
+    path("ledger/banking/feeds/", include("bankfeeds.urls")),
+    *bank_feed_callbacks,
 ]

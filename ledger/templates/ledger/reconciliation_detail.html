@@ -21,6 +21,7 @@
       <button type="button" class="btn btn-sm btn-outline-secondary" data-check-all="in">Tick all deposits</button>
       <button type="button" class="btn btn-sm btn-outline-secondary" data-check-all="out">Tick all payments</button>
       <button type="button" class="btn btn-sm btn-outline-secondary" data-check-all="none">Clear all</button>
+      {% if has_feed and in_feed %}<button type="button" class="btn btn-sm btn-outline-primary" data-check-all="feed"><i class="bi bi-link-45deg"></i> Tick items the bank feed confirms</button>{% endif %}
     </div>
     {% endif %}
     <div class="card table-card">
@@ -29,11 +30,11 @@
         <tbody>
         {% for line, amount in items %}
           <tr>
-            <td><input type="checkbox" class="form-check-input" name="cleared" value="{{ line.pk }}" data-amount="{{ amount }}" {% if line.reconciliation_id == rec.pk %}checked{% endif %} {% if not editable %}disabled{% endif %} aria-label="Cleared"></td>
+            <td><input type="checkbox" class="form-check-input" name="cleared" value="{{ line.pk }}" data-amount="{{ amount }}"{% if line.pk in in_feed %} data-feed{% endif %} {% if line.reconciliation_id == rec.pk %}checked{% endif %} {% if not editable %}disabled{% endif %} aria-label="Cleared"></td>
             <td class="text-nowrap">{{ line.entry.date|date:"M j, Y" }}</td>
             <td><a href="{{ line.entry.get_absolute_url }}">{{ line.entry.number }}</a></td>
             <td>{{ line.entry.memo }}{% if line.description %} <span class="small text-body-secondary">· {{ line.description }}</span>{% endif %} <span class="badge text-bg-light border">{{ line.fund.code }}</span></td>
-            <td class="small">{{ line.entry.reference }}</td>
+            <td class="small">{{ line.entry.reference }}{% if line.pk in in_feed %} <i class="bi bi-link-45deg text-positive" title="Confirmed by the bank feed"></i>{% endif %}</td>
             <td class="num">{% if amount >= 0 %}{{ amount|money }}{% endif %}</td>
             <td class="num">{% if amount < 0 %}{{ amount|money|cut:"-" }}{% endif %}</td>
           </tr>

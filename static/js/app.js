@@ -49,6 +49,51 @@
     });
   });
 
+  // Copy-to-clipboard buttons
+  document.querySelectorAll("[data-copy]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var input = document.querySelector(btn.getAttribute("data-copy"));
+      if (!input) return;
+      input.select();
+      var done = function () { btn.innerHTML = '<i class="bi bi-check2"></i>'; setTimeout(function () { btn.innerHTML = '<i class="bi bi-clipboard"></i>'; }, 1500); };
+      if (navigator.clipboard) navigator.clipboard.writeText(input.value).then(done, function () { document.execCommand("copy"); done(); });
+      else { document.execCommand("copy"); done(); }
+    });
+  });
+
+  // Bank linking: show the Paybill fields only for the M-Pesa method
+  var mpesaOnly = document.querySelector("[data-mpesa-only]");
+  if (mpesaOnly) {
+    var radios = document.querySelectorAll('input[name="method"]');
+    var sync = function () {
+      var picked = document.querySelector('input[name="method"]:checked');
+      mpesaOnly.hidden = !picked || picked.value !== "mpesa";
+    };
+    radios.forEach(function (r) { r.addEventListener("change", sync); });
+    sync();
+  }
+
+  // Bank feed: gift vs other income, and the full giver list on demand
+  document.querySelectorAll("[data-kind]").forEach(function (sel) {
+    var form = sel.closest("form");
+    var sync = function () { form.querySelectorAll("[data-gift-only]").forEach(function (el) { el.hidden = sel.value !== "gift"; }); };
+    sel.addEventListener("change", sync);
+    sync();
+  });
+  var donorTemplate = document.getElementById("donor-options");
+  document.querySelectorAll("[data-donor-select]").forEach(function (sel) {
+    var fill = function () {
+      if (!donorTemplate || sel.dataset.filled) return;
+      var chosen = sel.value;
+      Array.prototype.forEach.call(donorTemplate.content.children, function (opt) {
+        if (opt.value !== chosen) sel.appendChild(opt.cloneNode(true));
+      });
+      sel.dataset.filled = "1";
+    };
+    sel.addEventListener("focus", fill);
+    sel.addEventListener("pointerdown", fill);
+  });
+
   // Print buttons
   document.querySelectorAll("[data-print]").forEach(function (btn) {
     btn.addEventListener("click", function () { window.print(); });
@@ -242,7 +287,7 @@
         var kind = btn.getAttribute("data-check-all");
         form.querySelectorAll("input[data-amount]").forEach(function (cb) {
           var a = parseAmount(cb.getAttribute("data-amount"));
-          if (kind === "all" || (kind === "in" && a >= 0) || (kind === "out" && a < 0)) cb.checked = true;
+          if (kind === "all" || (kind === "in" && a >= 0) || (kind === "out" && a < 0) || (kind === "feed" && cb.hasAttribute("data-feed"))) cb.checked = true;
           if (kind === "none") cb.checked = false;
         });
         recalc();

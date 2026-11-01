@@ -65,6 +65,11 @@ It defaults to **Kenya** (Kenya Shillings, M-Pesa, PAYE/NSSF/SHIF/Housing Levy p
 - **Expenses**: bills, reimbursements and payment requests with receipts attached, an approval limit, **segregation of duties** (nobody approves their own request), partial payments split exactly across funds, voids, duplicates for recurring bills.
 - **Payroll**: salaried and hourly staff, configurable earnings/deductions/employer contributions, progressive tax bands with relief, monthly caps and minimums, pre-tax deductions, pay slips with year-to-date figures, posting to the ledger and remittance tracking.
 - **Banking**: bank/cash/M-Pesa/credit-card accounts, transfers, interfund transfers, other income, **bank reconciliation** with live difference checking.
+- **Linked bank accounts (bank feeds)**: link any bank or cash account from *Bank accounts → Link account*, in one of two ways:
+  - **Statement upload, any bank**: CSV or OFX from Equity, KCB, Co-op, NCBA, Absa, Stanbic, the M-Pesa business portal and others. The header row and columns are found automatically, and re-uploading or overlapping statements never duplicates a line.
+  - **Live M-Pesa Paybill or Till**: Safaricom's Daraja C2B API sends each payment the moment it arrives. Gifts go into the day's open offering batch, matched to the giver by the envelope number they type as the account number (or their phone), and to a fund by a code such as `BLD`. The batch is still checked and posted by the finance team.
+  
+  Every line is matched automatically to entries already in the books when there's exactly one candidate. The rest wait in a review list where you match, record (gift, other income, or spending such as bank charges, with a suggested category) or ignore them. Reconciliation can then tick everything the bank feed confirms in one click, and each uploaded statement's closing balance is compared with the books. Linking is read-only: Ecclesia never holds online-banking passwords and can't move money.
 - **Budgets**: monthly budget grid per fund, seeded from last year's actuals, with approval.
 - **Fixed assets**: register, straight-line depreciation (including assets migrated with prior depreciation), disposal with automatic gain/loss.
 - **Controls**: role-based access, period close (lock date), complete audit trail of every change, protected attachments, one-click JSON backup.
@@ -215,6 +220,9 @@ All settings are environment variables (see `.env.example`).
 | `ADMIN_USERNAME` / `ADMIN_PASSWORD` | — | First administrator, created on start if missing (Docker) |
 | `MAX_UPLOAD_MB` / `SERMON_MAX_UPLOAD_MB` | 15 / 300 | Upload limits |
 | `S3_BUCKET`, `S3_ENDPOINT_URL`, `S3_REGION`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` | — | Optional object storage for uploads |
+| `MPESA_CONSUMER_KEY`, `MPESA_CONSUMER_SECRET` | — | Optional: lets *Link account* register a Paybill/Till's payment address with Safaricom (Daraja). Receiving payments needs no keys |
+| `MPESA_ENVIRONMENT` | `production` | `sandbox` to test against Safaricom's sandbox |
+| `MPESA_ALLOWED_IPS` | — | Optional comma-separated list: only accept M-Pesa payment notices from these addresses |
 | `SESSION_HOURS` | 12 | How long people stay signed in |
 | `DB_SSL_REQUIRE` | off | Require SSL to the database |
 

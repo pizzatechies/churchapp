@@ -1,0 +1,29 @@
+<form method="post" action="{% url 'bankfeeds:line_action' t.pk %}" class="row g-2 align-items-end w-100 m-0 feed-form">{% csrf_token %}
+  <input type="hidden" name="next" value="{{ request.get_full_path }}">
+  {% if t.money_in %}
+  <div class="col-sm-6 col-lg-2 ps-0"><label class="form-label small mb-0" for="kind-{{ t.pk }}">Record as</label>
+    <select name="kind" id="kind-{{ t.pk }}" class="form-select form-select-sm" data-kind><option value="gift">Gift</option><option value="income">Other income</option></select></div>
+  <div class="col-sm-6 col-lg-3" data-gift-only><label class="form-label small mb-0" for="donor-{{ t.pk }}">Giver</label>
+    <select name="donor" id="donor-{{ t.pk }}" class="form-select form-select-sm" data-donor-select>
+      <option value="">Anonymous / loose offering</option>
+      {% if row.guess.0 %}<option value="{{ row.guess.0.pk }}" selected>{{ row.guess.0.display_name }}{% if row.guess.0.envelope_number %} ({{ row.guess.0.envelope_number }}){% endif %}</option>{% endif %}
+    </select></div>
+  <div class="col-sm-6 col-lg-2"><label class="form-label small mb-0" for="cat-{{ t.pk }}">Category</label>
+    <select name="category" id="cat-{{ t.pk }}" class="form-select form-select-sm">{% for a in income_accounts %}<option value="{{ a.pk }}" {% if row.guess.2.pk == a.pk %}selected{% endif %}>{{ a.name }}</option>{% endfor %}</select></div>
+  <div class="col-sm-6 col-lg-2"><label class="form-label small mb-0" for="fund-{{ t.pk }}">Fund</label>
+    <select name="fund" id="fund-{{ t.pk }}" class="form-select form-select-sm">{% for f in funds %}<option value="{{ f.pk }}" {% if row.guess.1.pk == f.pk %}selected{% endif %}>{{ f.name }}</option>{% endfor %}</select></div>
+  {% else %}
+  <div class="col-sm-6 col-lg-4 ps-0"><label class="form-label small mb-0" for="cat-{{ t.pk }}">Category</label>
+    <select name="category" id="cat-{{ t.pk }}" class="form-select form-select-sm" required>
+      {% if not row.spend_guess %}<option value="">Choose…</option>{% endif %}
+      {% for a in expense_accounts %}<option value="{{ a.pk }}" {% if row.spend_guess.pk == a.pk %}selected{% endif %}>{{ a.name }}</option>{% endfor %}</select></div>
+  <div class="col-sm-6 col-lg-2"><label class="form-label small mb-0" for="fund-{{ t.pk }}">Fund</label>
+    <select name="fund" id="fund-{{ t.pk }}" class="form-select form-select-sm">{% for f in funds %}<option value="{{ f.pk }}">{{ f.name }}</option>{% endfor %}</select></div>
+  <div class="col-sm-12 col-lg-3"><label class="form-label small mb-0" for="memo-{{ t.pk }}">Note</label>
+    <input name="memo" id="memo-{{ t.pk }}" class="form-control form-control-sm" maxlength="255" placeholder="{{ t.description|truncatechars:40 }}"></div>
+  {% endif %}
+  <div class="col-12 col-lg-3 d-flex gap-1">
+    <button class="btn btn-sm btn-primary flex-grow-1" name="action" value="record">Record</button>
+    <button class="btn btn-sm btn-outline-secondary" name="action" value="ignore" formnovalidate title="For lines that don't belong in the books, such as a duplicate">Ignore</button>
+  </div>
+</form>

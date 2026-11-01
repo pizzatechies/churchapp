@@ -334,3 +334,22 @@ tr.row-link { cursor: pointer; }
 .split-c { background: var(--series-muted); }
 .group-card .group-icon { width: 40px; height: 40px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center;
   background: var(--app-gold-soft); color: var(--app-gold-ink); font-size: 1.2rem; }
+
+/* ---------- bank feeds ---------- */
+.link-methods { display: grid; gap: 0.5rem; }
+.link-method { display: flex; gap: 0.75rem; align-items: flex-start; padding: 0.75rem 0.9rem; border: 1px solid var(--app-border); border-radius: 0.6rem; cursor: pointer; }
+.link-method:has(input:checked) { border-color: var(--app-accent); background: var(--app-accent-soft); }
+.link-method input { margin-top: 0.2rem; flex: 0 0 auto; }
+.link-method span { display: flex; flex-direction: column; gap: 0.15rem; }
+.link-method small { color: var(--bs-secondary-color); }
+.feed-date { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; width: 44px; height: 46px; flex: 0 0 44px;
+  border-radius: 10px; background: var(--app-accent-soft); color: var(--royal-700); line-height: 1.05; }
+[data-bs-theme="dark"] .feed-date { color: #b7c9fa; }
+.feed-date span { font-size: 0.64rem; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 700; }
+.feed-date strong { font-size: 1.05rem; }
+.feed-actions { margin: 0.5rem 0 0 calc(44px + 1rem); display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; }
+.feed-more { display: block; }
+.feed-more > summary { cursor: pointer; width: max-content; }
+.feed-more[open] > summary { margin-bottom: 0.25rem; }
+@media (max-width: 575.98px) { .feed-actions { margin-left: 0; } }
+.min-w-0 { min-width: 0; }

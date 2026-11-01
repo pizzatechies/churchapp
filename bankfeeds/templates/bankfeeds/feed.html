@@ -1,0 +1,111 @@
+{% extends "base.html" %}{% load finance %}
+{% block title %}Bank feed · {{ account.name }}{% endblock %}
+{% block breadcrumbs %}<nav><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{% url 'ledger:banking' %}">Bank accounts</a></li><li class="breadcrumb-item active">Bank feed</li></ol></nav>{% endblock %}
+{% block page_title %}{{ account.name }} <span class="badge badge-gold align-middle fs-6"><i class="bi bi-link-45deg"></i> {% if connection.is_live %}Live M-Pesa {{ connection.shortcode }}{% else %}Linked by statement{% endif %}</span>{% endblock %}
+{% block page_subtitle %}<p class="text-body-secondary mb-0">Every line from the bank is matched to the books, recorded, or set aside. When "To review" is empty, the books agree with the bank.</p>{% endblock %}
+{% block actions %}
+  <form method="post" action="{% url 'bankfeeds:auto_match' account.pk %}">{% csrf_token %}<button class="btn btn-outline-primary"><i class="bi bi-magic"></i> Match automatically</button></form>
+  <a href="{% url 'ledger:reconciliation_start' %}?account={{ account.pk }}" class="btn btn-outline-secondary"><i class="bi bi-ui-checks"></i> Reconcile</a>
+  {% if can_manage_link %}<a href="{% url 'bankfeeds:link' account.pk %}" class="btn btn-outline-secondary"><i class="bi bi-gear"></i> Link settings</a>{% endif %}
+{% endblock %}
+{% block content %}
+<div class="row g-3">
+  <div class="col-xl-9">
+    <ul class="nav nav-pills mb-3 flex-wrap gap-1">
+      {% for key, label in tabs %}
+      <li class="nav-item"><a class="nav-link py-1 px-3 {% if status == key %}active{% endif %}" href="?status={{ key }}">{{ label }}{% if key != 'all' %} <span class="badge {% if status == key %}text-bg-light{% else %}text-bg-secondary{% endif %} ms-1">{{ counts|get_item:key }}</span>{% endif %}</a></li>
+      {% endfor %}
+    </ul>
+    <div class="card">
+      {% if rows %}
+      <ul class="list-group list-group-flush feed-list">
+        {% for row in rows %}{% with t=row.t %}
+        <li class="list-group-item feed-line" id="line-{{ t.pk }}">
+          <div class="d-flex gap-3 align-items-start">
+            <span class="feed-date"><span>{{ t.date|date:"M" }}</span><strong>{{ t.date|date:"j" }}</strong></span>
+            <div class="flex-grow-1 min-w-0">
+              <div class="fw-semibold text-break">{{ t.description|default:"(no description)" }}</div>
+              <div class="small text-body-secondary">
+                {% if t.payer_name %}{{ t.payer_name }}{% if t.payer_phone %} · {{ t.payer_phone }}{% endif %} · {% endif %}
+                {% if t.reference %}Ref {{ t.reference }}{% endif %}
+                {% if t.account_reference %} · Account no. typed: <strong>{{ t.account_reference }}</strong>{% endif %}
+                {% if t.source == 'live' %} · <i class="bi bi-broadcast"></i> live{% endif %}
+              </div>
+            </div>
+            <div class="num fw-semibold text-nowrap {% if t.money_in %}text-positive{% endif %}">{% if t.money_in %}+{% endif %}{{ t.amount|money }}</div>
+          </div>
+
+          {% if t.status == 'new' %}
+          {% if row.candidates %}
+          <div class="feed-actions">
+            {% for c in row.candidates %}
+            <form method="post" action="{% url 'bankfeeds:line_action' t.pk %}" class="d-inline">{% csrf_token %}
+              <input type="hidden" name="entry" value="{{ c.entry_id }}"><input type="hidden" name="next" value="{{ request.get_full_path }}">
+              <button class="btn btn-sm btn-success" name="action" value="match"><i class="bi bi-link-45deg"></i> Match JE-{{ c.entry_id|stringformat:"05d" }} · {{ c.memo|truncatechars:42 }} <span class="opacity-75">({{ c.date|date:"j M" }})</span></button>
+            </form>
+            {% endfor %}
+          </div>
+          <details class="feed-actions feed-more"><summary class="small text-primary">It's something else…</summary>{% include "bankfeeds/_record_form.html" %}</details>
+          {% else %}
+          <div class="feed-actions">{% include "bankfeeds/_record_form.html" %}</div>
+          {% endif %}
+          {% else %}
+          <div class="feed-actions small">
+            {% if t.status == 'matched' and t.journal_entry %}
+              <i class="bi bi-check-circle-fill text-positive"></i> {% if t.journal_entry.source_type == 'bank_feed' %}Recorded as{% else %}Matched to{% endif %} <a href="{{ t.journal_entry.get_absolute_url }}">{{ t.journal_entry.number }}</a> · {{ t.journal_entry.memo|truncatechars:60 }}{% if t.auto_matched %} <span class="badge text-bg-light border">automatic</span>{% endif %}
+            {% elif t.status == 'recorded' and t.contribution %}
+              <i class="bi bi-heart-fill text-gold"></i> Gift{% if t.contribution.donor %} from <a href="{{ t.contribution.donor.get_absolute_url }}">{{ t.contribution.donor.display_name }}</a>{% else %} (anonymous){% endif %} in batch <a href="{{ t.contribution.batch.get_absolute_url }}">{{ t.contribution.batch.number }}</a> {% status_badge t.contribution.batch.status t.contribution.batch.get_status_display %}
+            {% elif t.status == 'ignored' %}
+              <i class="bi bi-slash-circle"></i> Ignored
+            {% else %}
+              <i class="bi bi-exclamation-circle text-warning"></i> The matched entry was removed.
+            {% endif %}
+            <form method="post" action="{% url 'bankfeeds:line_action' t.pk %}" class="d-inline">{% csrf_token %}
+              <input type="hidden" name="action" value="undo"><input type="hidden" name="next" value="{{ request.get_full_path }}">
+              <button class="btn btn-sm btn-link p-0 ms-2">Undo</button>
+            </form>
+          </div>
+          {% endif %}
+        </li>
+        {% endwith %}{% endfor %}
+      </ul>
+      {% else %}
+      <div class="empty-state">
+        {% if status == 'new' %}<i class="bi bi-check2-circle"></i>Nothing to review. {% if counts.matched or counts.recorded %}The books agree with every line received so far.{% else %}{% if connection.is_live %}Payments to {{ connection.shortcode }} will appear here as they arrive.{% else %}Upload a statement to begin.{% endif %}{% endif %}
+        {% else %}<i class="bi bi-inbox"></i>No lines here.{% endif %}
+      </div>
+      {% endif %}
+    </div>
+    {% include "includes/pagination.html" %}
+  </div>
+
+  <div class="col-xl-3">
+    <div class="card mb-3">
+      <div class="card-header"><i class="bi bi-file-earmark-arrow-up"></i> Upload a statement</div>
+      <form method="post" action="{% url 'bankfeeds:import' account.pk %}" enctype="multipart/form-data" class="card-body">{% csrf_token %}
+        <input type="file" name="file" class="form-control form-control-sm mb-2" accept=".csv,.ofx,.qfx,.txt,text/csv" required aria-label="Statement file">
+        <div class="form-text mb-2">CSV or OFX from online banking or the M-Pesa business portal. Lines already imported are skipped.</div>
+        <button class="btn btn-sm btn-primary w-100">Upload</button>
+      </form>
+    </div>
+    {% if imports %}
+    <div class="card">
+      <div class="card-header">Recent statements</div>
+      <ul class="list-group list-group-flush small">
+        {% for imp in imports %}
+        <li class="list-group-item">
+          <div class="fw-semibold text-truncate" title="{{ imp.file_name }}">{{ imp.file_name }}</div>
+          <div class="text-body-secondary">{{ imp.first_date|date:"j M" }} – {{ imp.last_date|date:"j M Y" }} · {{ imp.added }} new{% if imp.skipped %}, {{ imp.skipped }} skipped{% endif %}</div>
+          {% if imp.closing_balance is not None %}
+          <div class="mt-1">Bank balance {{ imp.closing_balance|money }}<br>Books on {{ imp.last_date|date:"j M" }}: {{ imp.book_balance|money }}
+            {% if imp.difference %}<span class="text-negative"> · differ by {{ imp.difference|money }}</span>{% else %} <i class="bi bi-check-circle text-positive" title="They agree"></i>{% endif %}</div>
+          {% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+  </div>
+</div>
+<template id="donor-options">{% for d in donors %}<option value="{{ d.pk }}">{{ d.display_name }}{% if d.envelope_number %} ({{ d.envelope_number }}){% endif %}</option>{% endfor %}</template>
+{% endblock %}

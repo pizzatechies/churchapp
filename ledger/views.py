@@ -196,12 +196,21 @@ def banking(request):
         JournalLine.objects.filter(entry__status=JournalEntry.POSTED, reconciliation__isnull=True)
         .values_list("account").annotate(n=Count("id"))
     )
+    from bankfeeds.models import BankConnection, BankTransaction
+
+    connections = {c.account_id: c for c in BankConnection.objects.all()}
+    to_review = dict(
+        BankTransaction.objects.filter(status=BankTransaction.NEW).values_list("account").annotate(n=Count("id"))
+    )
     for account in Account.payment_accounts():
         accounts.append({
             "account": account,
             "balance": balances.get(account.pk, ZERO),
             "last_rec": services.last_reconciled(account),
             "uncleared": uncleared.get(account.pk, 0),
+            "connection": connections.get(account.pk),
+            "to_review": to_review.get(account.pk, 0),
+            "linkable": account.subtype in Account.CASH_SUBTYPES,
         })
     recent = (
         JournalLine.objects.filter(entry__status=JournalEntry.POSTED, account__subtype__in=Account.PAYMENT_SUBTYPES)
@@ -468,11 +477,14 @@ def reconciliation_detail(request, pk):
         except LedgerError as e:
             messages.error(request, str(e))
         return redirect(rec.get_absolute_url())
+    from bankfeeds.services import feed_entry_line_ids
+
     lines = services.reconciliation_candidates(rec) if rec.status == Reconciliation.IN_PROGRESS else rec.lines.select_related("entry", "fund").order_by("entry__date")
     sign = 1 if rec.account.is_debit_normal else -1
     items = [(line, (line.debit - line.credit) * sign) for line in lines]
     return render(request, "ledger/reconciliation_detail.html", {
-        "rec": rec, "items": items, "editable": editable, **document_context(rec, request.user),
+        "rec": rec, "items": items, "editable": editable, "in_feed": feed_entry_line_ids(rec),
+        "has_feed": hasattr(rec.account, "bank_connection"), **document_context(rec, request.user),
     })
 
 
