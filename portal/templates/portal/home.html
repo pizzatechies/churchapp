@@ -41,6 +41,18 @@
       </div>
     </a>
     {% empty %}<div class="card"><div class="empty-state"><i class="bi bi-mic"></i>No sermons yet.</div></div>{% endfor %}
+
+    {% if church.members_see_own_giving or church.members_see_finances %}
+    <h2 class="h5 mt-4 mb-2">Giving</h2>
+    <a href="{% url 'portal:giving' %}" class="card mb-2 text-decoration-none portal-list-item">
+      <div class="card-body d-flex align-items-center gap-3 py-3">
+        <span class="group-icon"><i class="bi bi-heart"></i></span>
+        <div class="flex-grow-1"><div class="fw-semibold text-body">{% if church.members_see_own_giving %}My giving and statements{% else %}Church finances{% endif %}</div>
+          <div class="small text-body-secondary">{% if church.members_see_finances %}See how the church's money is used{% else %}Your gifts, pledges and yearly statement{% endif %}</div></div>
+        <i class="bi bi-chevron-right text-body-secondary"></i>
+      </div>
+    </a>
+    {% endif %}
   </div>
 </div>
 {% endblock %}

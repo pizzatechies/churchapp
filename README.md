@@ -10,7 +10,7 @@ Ecclesia gives a church everything it needs to run its finances properly and kee
 | App | Who uses it | What it does |
 |---|---|---|
 | **Ecclesia Admin** | Pastors, treasurer, bookkeeper, church secretary, finance committee, offering counters, media team | Full double-entry fund accounting, giving, expenses, payroll, budgets, assets, reports, **plus** the membership register, groups & fellowships, inductions and sermon uploads |
-| **Ecclesia Connect** | Church members | Fellowships, church groups, sermons and the member's own profile. **Nothing financial exists in this app** — the finance screens aren't hidden, they simply aren't part of it |
+| **Ecclesia Connect** | Church members | Fellowships, church groups, sermons, the member's own profile, **their own giving and statements**, and (when the church switches it on) **a summary of the church's finances for accountability**. No donor lists, payroll or data entry exist in this app |
 
 It defaults to **Kenya** (Kenya Shillings, M-Pesa, PAYE/NSSF/SHIF/Housing Levy payroll, Africa/Nairobi time) and works for churches anywhere: pick a country on setup and change the currency, fiscal year, payroll rules and wording in *Church settings*.
 
@@ -54,6 +54,9 @@ It defaults to **Kenya** (Kenya Shillings, M-Pesa, PAYE/NSSF/SHIF/Housing Levy p
 - Fellow-member lists are visible only to people in that group.
 - Sermons: search, filter by series, listen/watch in the app, download notes.
 - My profile: update contact details and password (name, gender and office notes are managed by the church office).
+- **My giving**: the member's own gifts (once the offering is posted), giving by fund and month, pledge progress, last year's total, and a printable yearly giving statement. Members see only their own records; the church office links each member to their giving record (one by one or in bulk, with matches by email and phone suggested).
+- **Church finances** (for financial accountability): income by category, spending by area, monthly income against spending, progress against the approved budget, fund balances, campaign progress and the controls that protect the money (approval limits, two-person approvals, bank reconciliations, closed periods). Totals only: it never shows who gave what, and all staff costs appear as one "Staff & personnel" figure so nobody's pay can be worked out.
+- Both are switched on or off in **Church settings → Members app**, where the church also chooses how current the figures are: up to the end of last month (default), up to the date the books are closed through, or up to today.
 - Mobile-first with a bottom tab bar; works as a website on any phone.
 
 ### Finance (Admin app)
@@ -81,7 +84,7 @@ Money software has to be correct first. The backend is **Django (Python)** on **
 - **PostgreSQL** stores amounts as exact `numeric` values (no floating-point rounding), enforces constraints, and gives row-level locking so two people posting at once can't corrupt a batch.
 - **Every request runs in a database transaction**, and every posting goes through one service that validates the double-entry rules — a failure part-way can never leave half-posted books.
 - **Django** brings mature, secure foundations: authentication, CSRF/XSS/clickjacking protection, migrations and an admin, maintained since 2005 and used by organisations of every size.
-- Two apps, one codebase: both apps share the same models and database but have **separate URL configurations, templates, logins and session cookies**, so the members app physically contains no financial code paths.
+- Two apps, one codebase: both apps share the same models and database but have **separate URL configurations, templates, logins and session cookies**, so the members app physically contains no finance-office code paths: its only money pages are a member's own giving and the church's summary totals.
 
 ---
 
@@ -282,7 +285,7 @@ These are the rates in force when this version was written. **Tax law changes: c
 python manage.py test
 ```
 
-The suite runs against PostgreSQL and covers posting rules, fund balancing, period locks, voids, reconciliation, giving, expense approvals and payments, Kenyan payroll calculations, depreciation, report integrity, membership rules (gender and age), the members app (including that no financial pages exist there), permissions, the audit trail, and a crawl of every page as every role.
+The suite runs against PostgreSQL and covers posting rules, fund balancing, period locks, voids, reconciliation, giving, expense approvals and payments, Kenyan payroll calculations, depreciation, report integrity, membership rules (gender and age), the members app (including that members see only their own giving, that the church summary shows no names or individual salaries, and that no finance-office pages exist there), permissions, the audit trail, and a crawl of every page as every role.
 
 ```
 config/        settings, URLs and WSGI for both apps (settings_portal / urls_portal = members app)

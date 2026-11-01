@@ -1,0 +1,176 @@
+{% extends "portal/base.html" %}{% load static finance %}
+{% block title %}Church finances{% endblock %}
+{% block content %}
+{% include "portal/_giving_tabs.html" with active="church" %}
+
+{% if not summary %}
+<section class="portal-hero">
+  <div class="portal-hero-kicker">Financial accountability</div>
+  <h1 class="h3 mb-1">Church finances</h1>
+  <p class="mb-0">The figures will appear here once the finance team has closed the books for the first time.</p>
+</section>
+{% else %}
+<section class="portal-hero">
+  <div class="portal-hero-kicker">Financial accountability · {{ summary.fy_label }}</div>
+  <h1 class="h3 mb-1">How {{ church.name }} is using its money</h1>
+  <p class="mb-0">{{ summary.start|date:"j M Y" }} to {{ summary.cutoff|date:"j M Y" }}. Totals from the church's books, shared so every member can see how gifts are used. Nobody's individual giving is shown.</p>
+</section>
+
+<div class="row g-3 mb-3">
+  <div class="col-sm-6 col-lg-4"><div class="card stat-card"><div class="card-body">
+    <div class="d-flex justify-content-between"><div class="stat-label">Income</div><span class="stat-icon"><i class="bi bi-arrow-down-left-circle"></i></span></div>
+    <div class="stat-value">{{ summary.income|money }}</div>
+    <div class="stat-sub">{% if summary.income_change is not None %}{{ summary.income_change|floatformat:0 }}% {% if summary.income_change >= 0 %}more{% else %}less{% endif %} than the same period last year{% else %}Gifts and other income{% endif %}</div>
+  </div></div></div>
+  <div class="col-sm-6 col-lg-4"><div class="card stat-card"><div class="card-body">
+    <div class="d-flex justify-content-between"><div class="stat-label">Spending</div><span class="stat-icon"><i class="bi bi-arrow-up-right-circle"></i></span></div>
+    <div class="stat-value">{{ summary.expense|money }}</div>
+    <div class="stat-sub">{% if summary.expense_change is not None %}{{ summary.expense_change|floatformat:0 }}% {% if summary.expense_change >= 0 %}more{% else %}less{% endif %} than the same period last year{% else %}Ministry, people and buildings{% endif %}</div>
+  </div></div></div>
+  <div class="col-lg-4"><div class="card stat-card"><div class="card-body">
+    <div class="d-flex justify-content-between"><div class="stat-label">{% if summary.net >= 0 %}Surplus{% else %}Shortfall{% endif %}</div><span class="stat-icon"><i class="bi bi-graph-up"></i></span></div>
+    <div class="stat-value {% if summary.net < 0 %}text-negative{% endif %}">{{ summary.net|money }}</div>
+    <div class="stat-sub">Income minus spending so far this year</div>
+  </div></div></div>
+</div>
+
+{% if summary.months %}
+<div class="card mb-3">
+  <div class="card-header d-flex justify-content-between flex-wrap gap-2">
+    <span>Income and spending by month</span>
+    <span class="small fw-normal text-body-secondary"><span class="legend-key" style="background:var(--series-1)"></span>Income <span class="legend-key ms-2" style="background:var(--series-2)"></span>Spending</span>
+  </div>
+  <div class="card-body">
+    <div class="chart-box"><canvas id="chartChurch" role="img" aria-label="Church income and spending by month, {{ summary.fy_label }}"></canvas></div>
+    <details class="mt-2 small"><summary class="text-body-secondary">Show as table</summary>
+      <table class="table table-sm mt-2 mb-0"><thead><tr><th>Month</th><th class="num">Income</th><th class="num">Spending</th></tr></thead>
+        <tbody>{% for m in summary.months %}<tr><td>{{ m.label }}</td><td class="num">{{ m.income|money }}</td><td class="num">{{ m.expense|money }}</td></tr>{% endfor %}</tbody>
+      </table>
+    </details>
+  </div>
+</div>
+{% endif %}
+
+<div class="row g-3 mb-3">
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-header">Where the money came from</div>
+      {% if summary.income_rows %}
+      <ul class="list-group list-group-flush">
+        {% for r in summary.income_rows %}
+        <li class="list-group-item">
+          <div class="d-flex justify-content-between gap-2"><span>{{ r.name }}</span><span class="num">{{ r.amount|money }}</span></div>
+          <div class="share-bar mt-1" aria-hidden="true"><span class="share-a" style="width: {{ r.share|default:0|floatformat:0 }}%"></span></div>
+          <div class="small text-body-secondary">{{ r.share|default:0|floatformat:0 }}% of income</div>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}<div class="empty-state"><i class="bi bi-inbox"></i>No income recorded yet this year.</div>{% endif %}
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-header">How it was spent</div>
+      {% if summary.spending %}
+      <ul class="list-group list-group-flush">
+        {% for area in summary.spending %}
+        <li class="list-group-item">
+          <div class="d-flex justify-content-between gap-2"><span>{{ area.label }}</span><span class="num">{{ area.total|money }}</span></div>
+          <div class="share-bar mt-1" aria-hidden="true"><span class="share-b" style="width: {{ area.share|default:0|floatformat:0 }}%"></span></div>
+          <div class="small text-body-secondary">{{ area.share|default:0|floatformat:0 }}% of spending{% if area.code == 'personnel' %} · salaries and staff costs, shown as one total to protect staff privacy{% endif %}</div>
+          {% if area.items %}
+          <details class="small mt-1"><summary class="text-body-secondary">Details</summary>
+            <table class="table table-sm table-borderless mb-0 mt-1">{% for i in area.items %}<tr><td class="ps-0">{{ i.name }}</td><td class="num pe-0">{{ i.amount|money }}</td></tr>{% endfor %}</table>
+          </details>
+          {% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}<div class="empty-state"><i class="bi bi-inbox"></i>No spending recorded yet this year.</div>{% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-header">Against the approved budget</div>
+      {% if summary.budget %}
+      <div class="card-body">
+        {% with b=summary.budget %}
+        <div class="mb-3">
+          <div class="d-flex justify-content-between flex-wrap column-gap-2 small"><span class="fw-semibold">Income</span><span>{{ b.actual_income|money }} of {{ b.income|money }} planned so far</span></div>
+          <div class="progress mt-1" role="progressbar" aria-label="Income against budget" aria-valuenow="{{ b.income_pct|default:0|floatformat:0 }}" aria-valuemin="0" aria-valuemax="100"><div class="progress-bar" style="width: {% if b.income_pct > 100 %}100{% else %}{{ b.income_pct|default:0|floatformat:0 }}{% endif %}%"></div></div>
+          {% if b.income_pct is not None %}<div class="small text-body-secondary">{{ b.income_pct|floatformat:0 }}% of the income planned for this point in the year</div>{% endif %}
+        </div>
+        <div class="mb-3">
+          <div class="d-flex justify-content-between flex-wrap column-gap-2 small"><span class="fw-semibold">Spending</span><span>{{ b.actual_expense|money }} of {{ b.expense|money }} planned so far</span></div>
+          <div class="progress mt-1" role="progressbar" aria-label="Spending against budget" aria-valuenow="{{ b.expense_pct|default:0|floatformat:0 }}" aria-valuemin="0" aria-valuemax="100"><div class="progress-bar progress-bar-gold" style="width: {% if b.expense_pct > 100 %}100{% else %}{{ b.expense_pct|default:0|floatformat:0 }}{% endif %}%"></div></div>
+          {% if b.expense_pct is not None %}<div class="small text-body-secondary">{{ b.expense_pct|floatformat:0 }}% of the spending planned for this point in the year</div>{% endif %}
+        </div>
+        <p class="small text-body-secondary mb-0">The year's budget: {{ b.annual_income|money }} income and {{ b.annual_expense|money }} spending ({{ b.funds }}).</p>
+        {% endwith %}
+      </div>
+      {% else %}<div class="card-body small text-body-secondary">No budget has been approved for {{ summary.fy_label }} yet.</div>{% endif %}
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-header">Funds</div>
+      <ul class="list-group list-group-flush">
+        {% for f in summary.funds %}
+        <li class="list-group-item">
+          <div class="d-flex justify-content-between gap-2"><span class="fw-semibold">{{ f.name }}</span><span class="num {% if f.balance < 0 %}text-negative{% endif %}">{{ f.balance|money }}</span></div>
+          {% if f.description %}<div class="small text-body-secondary">{{ f.description }}</div>{% endif %}
+          {% if f.restricted %}<span class="badge badge-gold mt-1">Set aside by givers for this purpose</span>{% endif %}
+        </li>
+        {% endfor %}
+        <li class="list-group-item d-flex justify-content-between flex-wrap column-gap-2 fw-semibold"><span>All funds on {{ summary.cutoff|date:"j M Y" }}</span><span class="num">{{ summary.funds_total|money }}</span></li>
+      </ul>
+      <div class="card-footer bg-transparent small text-body-secondary">A fund's balance is everything it holds, including buildings and equipment, less what it owes. It is not all cash in the bank.</div>
+    </div>
+  </div>
+</div>
+
+{% if summary.campaigns %}
+<h2 class="h5 mb-2">Campaigns</h2>
+<div class="row g-3 mb-3">
+  {% for c in summary.campaigns %}
+  <div class="col-md-6"><div class="card h-100"><div class="card-body">
+    <div class="d-flex justify-content-between gap-2"><span class="fw-semibold">{{ c.name }}</span>{% if c.end_date %}<span class="small text-body-secondary text-nowrap">Until {{ c.end_date|date:"M Y" }}</span>{% endif %}</div>
+    {% if c.description %}<p class="small text-body-secondary mb-2">{{ c.description }}</p>{% endif %}
+    {% if c.goal %}
+    <div class="progress my-2" role="progressbar" aria-label="{{ c.name }} progress" aria-valuenow="{{ c.percent|floatformat:0 }}" aria-valuemin="0" aria-valuemax="100"><div class="progress-bar" style="width: {{ c.percent|floatformat:0 }}%"></div></div>
+    <div class="small">{{ c.received|money }} received of the {{ c.goal|money }} goal ({{ c.percent|floatformat:0 }}%)</div>
+    {% else %}
+    <div class="small">{{ c.received|money }} received so far</div>
+    {% endif %}
+    {% if c.pledgers %}<div class="small text-body-secondary">{{ c.pledgers }} pledge{{ c.pledgers|pluralize }} totalling {{ c.pledged|money }}</div>{% endif %}
+  </div></div></div>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% with s=summary.safeguards %}
+<div class="card mb-3">
+  <div class="card-header"><i class="bi bi-shield-check"></i> How your gifts are safeguarded</div>
+  <ul class="list-group list-group-flush">
+    <li class="list-group-item d-flex gap-2"><i class="bi bi-people text-gold"></i><span>Offerings are counted and recorded in batches, and every gift is entered into the church's books.</span></li>
+    <li class="list-group-item d-flex gap-2"><i class="bi bi-check2-circle text-gold"></i><span>Any spending above {{ s.approval_threshold|money }} needs approval from the finance committee or treasurer{% if s.separate_approver %}, and nobody can approve spending they asked for themselves{% endif %}.</span></li>
+    {% if s.reconciled %}<li class="list-group-item d-flex gap-2"><i class="bi bi-bank text-gold"></i><span>The books are checked line by line against the bank statements: {% for name, when in s.reconciled %}{{ name }} up to {{ when|date:"j F Y" }}{% if not forloop.last %}; {% endif %}{% endfor %}.</span></li>{% endif %}
+    {% if s.lock_date %}<li class="list-group-item d-flex gap-2"><i class="bi bi-lock text-gold"></i><span>The books are reviewed and closed up to {{ s.lock_date|date:"j F Y" }}. Figures up to that date can no longer be changed.</span></li>{% endif %}
+    {% if s.budget_approved %}<li class="list-group-item d-flex gap-2"><i class="bi bi-clipboard-check text-gold"></i><span>The {{ s.budget_approved }} was approved on {{ s.budget_approved.approved_at|date:"j F Y" }}.</span></li>{% endif %}
+  </ul>
+</div>
+{% endwith %}
+
+<p class="small text-body-secondary">Figures run from {{ summary.start|date:"j F Y" }} to {{ summary.cutoff|date:"j F Y" }} and come straight from the church's books{% if summary.safeguards.treasurer %}, kept under the oversight of {{ summary.safeguards.treasurer }}, Treasurer{% endif %}. Have a question about the finances? Please speak to the treasurer or the church office{% if church.email %} ({{ church.email }}){% endif %}.</p>
+{% endif %}
+{% endblock %}
+{% block scripts %}
+{% if summary.months %}
+{{ summary.chart|json_script:"data-church" }}
+<script src="{% static 'vendor/chartjs/chart.umd.min.js' %}"></script>
+<script src="{% static 'js/portal-finance.js' %}"></script>
+{% endif %}
+{% endblock %}

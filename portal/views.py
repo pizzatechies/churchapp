@@ -2,9 +2,12 @@
 Ecclesia Connect — the members app.
 
 Members see fellowships, church groups and sermons, and manage their own
-contact details. Deliberately nothing financial: no giving, budgets or payroll.
+contact details. When the church switches it on in Church settings, they also
+see their own giving and a summary of the church's finances (see finances.py).
+No other financial screens exist here: no donor lists, payroll or data entry.
 """
 
+from datetime import date
 from functools import wraps
 
 from django.contrib import messages
@@ -12,15 +15,20 @@ from django.contrib.auth import logout
 from django.contrib.auth import views as auth_views
 from django.core.paginator import Paginator
 from django.db.models import Q
+from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
 from django.views.decorators.http import require_POST
 
 from core.media import ranged_file_response
+from core.models import ChurchProfile
+from core.utils import today
+from giving.views import statement_data
 from members import services
 from members.models import Group, GroupMembership, Sermon
 from members.services import MembershipError
 
+from . import finances
 from .forms import PortalAuthenticationForm, ProfileForm
 
 
@@ -174,6 +182,56 @@ def profile(request):
         return redirect("portal:profile")
     return render(request, "portal/profile.html", {
         "member": member, "form": form, "memberships": member.active_memberships().order_by("group__name"),
+    })
+
+
+def _year(request):
+    try:
+        year = int(request.GET.get("year") or today().year)
+    except ValueError:
+        return today().year
+    return year if 2000 <= year <= today().year else today().year
+
+
+@member_required
+def giving(request):
+    """My giving: the member's own gifts, pledges and statements, nobody else's."""
+    profile = ChurchProfile.get()
+    if not profile.members_see_own_giving:
+        if profile.members_see_finances:
+            return redirect("portal:church_finances")
+        raise Http404
+    year = _year(request)
+    return render(request, "portal/giving.html", {
+        "profile": profile, "year": year, "mine": finances.member_giving(request.member, year),
+    })
+
+
+@member_required
+def church_finances(request):
+    """The church's financial summary, shared for accountability: totals only."""
+    profile = ChurchProfile.get()
+    if not profile.members_see_finances:
+        if profile.members_see_own_giving:
+            return redirect("portal:giving")
+        raise Http404
+    cutoff = finances.cutoff_date(profile)
+    return render(request, "portal/church_finances.html", {
+        "profile": profile, "summary": finances.church_summary(cutoff, profile) if cutoff else None,
+    })
+
+
+@member_required
+def giving_statement(request, year):
+    """A printable statement of the member's own gifts for one calendar year."""
+    profile = ChurchProfile.get()
+    donor = request.member.donor
+    if not profile.members_see_own_giving or donor is None or not 2000 <= year <= today().year:
+        raise Http404
+    start, end = date(year, 1, 1), min(date(year, 12, 31), today())
+    data = statement_data(start, end, donor)
+    return render(request, "portal/giving_statement.html", {
+        "statement": data[0] if data else None, "donor": donor, "year": year, "start": start, "end": end, "generated": today(),
     })
 
 

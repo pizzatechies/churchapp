@@ -1,0 +1,8 @@
+{% load finance %}
+<li class="list-group-item d-flex justify-content-between align-items-center gap-3">
+  <div class="min-w-0">
+    <div class="fw-semibold">{{ g.fund.name }}</div>
+    <div class="small text-body-secondary">{{ g.date|date:"D j M Y" }} · {{ g.get_method_display }}{% if g.check_number %} · {{ g.check_number }}{% endif %}</div>
+  </div>
+  <div class="num fw-semibold text-nowrap">{{ g.amount|money }}</div>
+</li>

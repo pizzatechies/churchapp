@@ -81,6 +81,30 @@ class ChurchProfile(models.Model):
     treasurer_name = models.CharField(
         max_length=100, blank=True, help_text="Signs contribution statements and reports.",
     )
+
+    # What members see in the members app (Ecclesia Connect).
+    MEMBER_FINANCE_MONTH = "month"
+    MEMBER_FINANCE_CLOSED = "closed"
+    MEMBER_FINANCE_LIVE = "live"
+    MEMBER_FINANCE_PERIOD_CHOICES = [
+        (MEMBER_FINANCE_MONTH, "Up to the end of last month"),
+        (MEMBER_FINANCE_CLOSED, "Up to the date the books are closed through"),
+        (MEMBER_FINANCE_LIVE, "Up to today"),
+    ]
+    members_see_own_giving = models.BooleanField(
+        "Members can see their own giving", default=True,
+        help_text="Each member sees only their own gifts, pledges and yearly statement. "
+                  "Members must be linked to their giving record in the membership register.",
+    )
+    members_see_finances = models.BooleanField(
+        "Share the church's financial summary with members", default=False,
+        help_text="Totals only: income, spending by area, fund balances, budget and campaign progress. "
+                  "Never who gave what, and staff costs are shown as one total.",
+    )
+    member_finance_period = models.CharField(
+        "Figures shown to members", max_length=10, choices=MEMBER_FINANCE_PERIOD_CHOICES, default=MEMBER_FINANCE_MONTH,
+        help_text="Showing completed periods gives you time to review the figures before members see them.",
+    )
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:

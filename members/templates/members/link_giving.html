@@ -1,0 +1,46 @@
+{% extends "base.html" %}{% load finance %}
+{% block title %}Link giving records{% endblock %}
+{% block breadcrumbs %}<nav><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{% url 'members:member_list' %}">Members</a></li><li class="breadcrumb-item active">Link giving records</li></ol></nav>{% endblock %}
+{% block page_title %}Link members to giving records{% endblock %}
+{% block page_subtitle %}<p class="text-body-secondary mb-0">A linked member sees their own gifts, pledges and statements in the members app, and nobody else's.</p>{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+  <div class="btn-group btn-group-sm" role="group" aria-label="Which members">
+    <a href="?" class="btn {% if with_login %}btn-primary{% else %}btn-outline-primary{% endif %}">Members with an app login</a>
+    <a href="?all=1" class="btn {% if not with_login %}btn-primary{% else %}btn-outline-primary{% endif %}">All current members</a>
+  </div>
+  {% if not church.members_see_own_giving %}<span class="small text-body-secondary"><i class="bi bi-info-circle"></i> Members can't see their giving until it's switched on in <a href="{% url 'settings' %}#members-app">Church settings</a>.</span>{% endif %}
+</div>
+{% if rows %}
+<form method="post" class="card table-card">{% csrf_token %}
+  <div class="card-header d-flex justify-content-between flex-wrap gap-2">
+    <span>{{ rows|length }} member{{ rows|length|pluralize }} without a giving record</span>
+    <span class="small fw-normal text-body-secondary">Matches by the same email or phone are chosen for you. Check matches by name only before linking.</span>
+  </div>
+  <div class="table-responsive">
+  <table class="table table-sm align-middle mb-0">
+    <thead><tr><th>Member</th><th>Contact</th><th style="min-width: 280px">Giving record</th></tr></thead>
+    <tbody>
+    {% for r in rows %}
+      <tr>
+        <td><a href="{{ r.member.get_absolute_url }}">{{ r.member.full_name }}</a><div class="small text-body-secondary">{{ r.member.member_number }}</div></td>
+        <td class="small">{{ r.member.email|default:"" }}{% if r.member.email and r.member.phone %}<br>{% endif %}{{ r.member.phone|default:"" }}</td>
+        <td>
+          <select name="m-{{ r.member.pk }}" class="form-select form-select-sm" aria-label="Giving record for {{ r.member.full_name }}">
+            <option value="">Leave for now</option>
+            {% if r.suggestions %}<optgroup label="Looks like a match">{% for d, reason in r.suggestions %}<option value="{{ d.pk }}"{% if d.pk == r.default %} selected{% endif %}>{{ d.display_name }}{% if d.envelope_number %} ({{ d.envelope_number }}){% endif %} · same {{ reason }}</option>{% endfor %}</optgroup>{% endif %}
+            <option value="new">Create a new giving record</option>
+            <optgroup label="All unlinked giving records">{% for d in donors %}<option value="{{ d.pk }}">{{ d.display_name }}{% if d.envelope_number %} ({{ d.envelope_number }}){% endif %}</option>{% endfor %}</optgroup>
+          </select>
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  <div class="card-footer bg-transparent"><button class="btn btn-primary">Save links</button></div>
+</form>
+{% else %}
+<div class="card"><div class="empty-state"><i class="bi bi-check2-circle"></i>{% if with_login %}Every member with an app login is linked to a giving record.{% else %}Every current member is linked to a giving record.{% endif %}</div></div>
+{% endif %}
+{% endblock %}

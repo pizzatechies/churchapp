@@ -52,6 +52,7 @@ class ChurchProfileForm(StyledModelForm):
             "currency_code", "currency_symbol", "fiscal_year_start_month",
             "expense_approval_threshold", "require_separate_approver",
             "treasurer_name", "statement_footer",
+            "members_see_own_giving", "members_see_finances", "member_finance_period",
         ]
         widgets = {"address": forms.Textarea(attrs={"rows": 3}), "statement_footer": forms.Textarea(attrs={"rows": 4})}
 

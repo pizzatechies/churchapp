@@ -4,6 +4,7 @@
 {% block page_subtitle %}<p class="text-body-secondary mb-0">{{ count }} {% if filters.status == 'current' %}current {% endif %}record{{ count|pluralize }}</p>{% endblock %}
 {% block actions %}
   <a href="{% querystring export='csv' page=None %}" class="btn btn-outline-secondary"><i class="bi bi-filetype-csv"></i> Export</a>
+  {% if caps.manage_giving %}<a href="{% url 'members:link_giving' %}" class="btn btn-outline-secondary"><i class="bi bi-link-45deg"></i> Link giving records</a>{% endif %}
   {% if caps.manage_members %}
   <a href="{% url 'members:member_import' %}" class="btn btn-outline-secondary"><i class="bi bi-upload"></i> Import</a>
   <a href="{% url 'members:member_create' %}" class="btn btn-primary"><i class="bi bi-person-plus"></i> Add member</a>

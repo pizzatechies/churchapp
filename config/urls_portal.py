@@ -1,4 +1,8 @@
-"""URLs for Ecclesia Connect, the members app. No finance URLs exist here at all."""
+"""
+URLs for Ecclesia Connect, the members app. The only money pages are a member's own
+giving and the church's summary for accountability (portal.finances); there is no
+data entry, donor list or payroll here.
+"""
 
 from django.contrib.auth import views as auth_views
 from django.urls import include, path

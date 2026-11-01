@@ -1,0 +1,6 @@
+{% if profile.members_see_own_giving and profile.members_see_finances %}
+<nav class="portal-segment mb-3" aria-label="Giving">
+  <a href="{% url 'portal:giving' %}" class="{% if active == 'mine' %}active{% endif %}"{% if active == 'mine' %} aria-current="page"{% endif %}><i class="bi bi-person-heart"></i> My giving</a>
+  <a href="{% url 'portal:church_finances' %}" class="{% if active == 'church' %}active{% endif %}"{% if active == 'church' %} aria-current="page"{% endif %}><i class="bi bi-bar-chart-line"></i> Church finances</a>
+</nav>
+{% endif %}

@@ -34,6 +34,7 @@
       <a href="{% url 'portal:home' %}" class="{% if path == '/' %}active{% endif %}">Home</a>
       <a href="{% url 'portal:groups' %}" class="{% if '/groups' in path %}active{% endif %}">Groups &amp; fellowships</a>
       <a href="{% url 'portal:sermons' %}" class="{% if '/sermons' in path %}active{% endif %}">Sermons</a>
+      {% if church.members_see_own_giving or church.members_see_finances %}<a href="{% url 'portal:giving' %}" class="{% if '/giving' in path or '/church-finances' in path %}active{% endif %}">Giving</a>{% endif %}
       <a href="{% url 'portal:profile' %}" class="{% if '/profile' in path %}active{% endif %}">My profile</a>
     </nav>
     {% endwith %}
@@ -56,6 +57,7 @@
   <a href="{% url 'portal:home' %}" class="{% if path == '/' %}active{% endif %}"><i class="bi bi-house-door"></i><span>Home</span></a>
   <a href="{% url 'portal:groups' %}" class="{% if '/groups' in path %}active{% endif %}"><i class="bi bi-people"></i><span>Groups</span></a>
   <a href="{% url 'portal:sermons' %}" class="{% if '/sermons' in path %}active{% endif %}"><i class="bi bi-play-circle"></i><span>Sermons</span></a>
+  {% if church.members_see_own_giving or church.members_see_finances %}<a href="{% url 'portal:giving' %}" class="{% if '/giving' in path or '/church-finances' in path %}active{% endif %}"><i class="bi bi-heart"></i><span>Giving</span></a>{% endif %}
   <a href="{% url 'portal:profile' %}" class="{% if '/profile' in path %}active{% endif %}"><i class="bi bi-person-circle"></i><span>Me</span></a>
 </nav>
 {% endwith %}
@@ -64,5 +66,6 @@
 {% endif %}
 <script src="{% static 'vendor/bootstrap/bootstrap.bundle.min.js' %}"></script>
 <script src="{% static 'js/app.js' %}"></script>
+{% block scripts %}{% endblock %}
 </body>
 </html>

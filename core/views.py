@@ -110,7 +110,10 @@ def settings_view(request):
         form.save()
         messages.success(request, "Church settings saved.")
         return redirect("settings")
-    return render(request, "core/settings.html", {"form": form, "profile": profile})
+    from members.models import Member
+
+    unlinked = Member.objects.filter(status__in=Member.CURRENT, donor__isnull=True, user__isnull=False, user__is_active=True).count()
+    return render(request, "core/settings.html", {"form": form, "profile": profile, "unlinked_members": unlinked})
 
 
 @require_cap("manage_settings")

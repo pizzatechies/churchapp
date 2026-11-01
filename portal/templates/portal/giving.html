@@ -1,0 +1,127 @@
+{% extends "portal/base.html" %}{% load static finance %}
+{% block title %}My giving{% endblock %}
+{% block content %}
+{% include "portal/_giving_tabs.html" with active="mine" %}
+
+<div class="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-3">
+  <div>
+    <h1 class="h3 mb-0">My giving</h1>
+    <p class="text-body-secondary small mb-0">Only you can see these figures.</p>
+  </div>
+  {% if mine %}
+  <div class="portal-chips" aria-label="Year">
+    {% for y in mine.years %}<a href="?year={{ y }}" class="{% if y == year %}active{% endif %}">{{ y }}</a>{% endfor %}
+  </div>
+  {% endif %}
+</div>
+
+{% if not mine %}
+<div class="card"><div class="empty-state">
+  <i class="bi bi-link-45deg"></i>
+  <p class="mb-1 text-body fw-semibold">Your giving record isn't linked yet</p>
+  <p class="mb-0 small">Ask the church office to link your membership to your giving record. Your gifts, pledges and statements will then appear here.</p>
+</div></div>
+{% else %}
+
+<div class="row g-3 mb-3">
+  <div class="col-sm-6 col-lg-4"><div class="card stat-card"><div class="card-body">
+    <div class="d-flex justify-content-between"><div class="stat-label">Given in {{ year }}</div><span class="stat-icon"><i class="bi bi-heart"></i></span></div>
+    <div class="stat-value">{{ mine.total|money }}</div>
+    <div class="stat-sub">{{ mine.count }} gift{{ mine.count|pluralize }}</div>
+  </div></div></div>
+  <div class="col-sm-6 col-lg-4"><div class="card stat-card"><div class="card-body">
+    <div class="d-flex justify-content-between"><div class="stat-label">Given in {{ year|add:"-1" }}</div><span class="stat-icon"><i class="bi bi-calendar3"></i></span></div>
+    <div class="stat-value">{{ mine.last_year|money }}</div>
+    <div class="stat-sub">The whole year</div>
+  </div></div></div>
+  <div class="col-lg-4"><div class="card stat-card"><div class="card-body d-flex flex-column">
+    <div class="d-flex justify-content-between"><div class="stat-label">Statement</div><span class="stat-icon"><i class="bi bi-file-earmark-text"></i></span></div>
+    <p class="small text-body-secondary mb-2 mt-1">A statement of your {{ year }} gifts, signed off by the church, to keep or print.</p>
+    <a href="{% url 'portal:giving_statement' year %}" class="btn btn-sm btn-primary align-self-start mt-auto"><i class="bi bi-download"></i> {{ year }} statement</a>
+  </div></div></div>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-7">
+    {% if mine.count %}
+    <div class="card mb-3">
+      <div class="card-header">Month by month, {{ year }}</div>
+      <div class="card-body">
+        <div class="chart-box chart-box-sm"><canvas id="chartMine" role="img" aria-label="My giving by month in {{ year }}"></canvas></div>
+        <details class="mt-2 small"><summary class="text-body-secondary">Show as table</summary>
+          <table class="table table-sm mt-2 mb-0">{% for l in mine.chart.labels %}<tr><td>{{ l }}</td><td class="num">{{ mine.chart.amounts|get_item:forloop.counter0|money }}</td></tr>{% endfor %}</table>
+        </details>
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="card mb-3">
+      <div class="card-header">Gifts in {{ year }}</div>
+      {% if mine.gifts %}
+      <ul class="list-group list-group-flush">
+        {% for g in mine.gifts|slice:":10" %}{% include "portal/_gift_row.html" %}{% endfor %}
+      </ul>
+      {% if mine.count > 10 %}
+      <details class="gift-more">
+        <summary class="list-group-item text-primary small">Show all {{ mine.count }} gifts</summary>
+        <ul class="list-group list-group-flush">{% for g in mine.gifts|slice:"10:" %}{% include "portal/_gift_row.html" %}{% endfor %}</ul>
+      </details>
+      {% endif %}
+      {% else %}
+      <div class="empty-state"><i class="bi bi-heart"></i>No gifts recorded in {{ year }} yet.</div>
+      {% endif %}
+      <div class="card-footer bg-transparent small text-body-secondary">Gifts appear here once the offering has been counted and posted, usually within a few days. If a gift is missing or wrong, please tell the church office or the treasurer.</div>
+    </div>
+  </div>
+
+  <div class="col-lg-5">
+    {% if mine.by_fund %}
+    <div class="card mb-3">
+      <div class="card-header">Where your {{ year }} gifts went</div>
+      <ul class="list-group list-group-flush">
+        {% for fund, amount in mine.by_fund %}
+        <li class="list-group-item">
+          <div class="d-flex justify-content-between"><span>{{ fund }}</span><span class="num">{{ amount|money }}</span></div>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+
+    <div class="card mb-3">
+      <div class="card-header">My pledges</div>
+      {% if mine.pledges %}
+      <ul class="list-group list-group-flush">
+        {% for p in mine.pledges %}
+        <li class="list-group-item">
+          <div class="d-flex justify-content-between gap-2"><span class="fw-semibold">{{ p.campaign }}</span>{% if not p.active %}<span class="badge text-bg-secondary">Ended</span>{% endif %}</div>
+          <div class="progress my-2" role="progressbar" aria-label="{{ p.campaign }} pledge fulfilled" aria-valuenow="{{ p.percent|floatformat:0 }}" aria-valuemin="0" aria-valuemax="100"><div class="progress-bar" style="width: {{ p.percent|floatformat:0 }}%"></div></div>
+          <div class="small text-body-secondary">{{ p.fulfilled|money }} of {{ p.amount|money }} ({{ p.percent|floatformat:0 }}%){% if p.remaining %} · {{ p.remaining|money }} to go{% endif %} · {{ p.frequency }}</div>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <div class="card-body small text-body-secondary">You have no pledges.</div>
+      {% endif %}
+    </div>
+
+    {% if profile.members_see_finances %}
+    <a href="{% url 'portal:church_finances' %}" class="card text-decoration-none portal-list-item">
+      <div class="card-body d-flex align-items-center gap-3">
+        <span class="group-icon"><i class="bi bi-bar-chart-line"></i></span>
+        <div class="flex-grow-1"><div class="fw-semibold text-body">How the church uses the money</div><div class="small text-body-secondary">Income, spending, budget and funds</div></div>
+        <i class="bi bi-chevron-right text-body-secondary"></i>
+      </div>
+    </a>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+{% block scripts %}
+{% if mine.count %}
+{{ mine.chart|json_script:"data-mine" }}
+<script src="{% static 'vendor/chartjs/chart.umd.min.js' %}"></script>
+<script src="{% static 'js/portal-finance.js' %}"></script>
+{% endif %}
+{% endblock %}

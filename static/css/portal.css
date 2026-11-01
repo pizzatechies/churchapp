@@ -58,3 +58,32 @@ body.portal { background: var(--app-body-bg); padding-bottom: env(safe-area-inse
 
 .portal-footer { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 40px; color: var(--bs-secondary-color); font-size: 0.75rem; }
 .portal-footer img { height: 28px; width: auto; }
+
+.portal .group-icon { width: 40px; height: 40px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center;
+  background: var(--app-gold-soft); color: var(--app-gold-ink); font-size: 1.2rem; flex: 0 0 40px; }
+
+/* Giving: "My giving" / "Church finances" switch */
+.portal-segment { display: inline-flex; gap: 4px; padding: 4px; border-radius: 999px; background: var(--app-card-bg); border: 1px solid var(--app-border); max-width: 100%; }
+.portal-segment a { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 999px; color: var(--bs-body-color);
+  text-decoration: none; font-size: 0.88rem; white-space: nowrap; }
+.portal-segment a.active { background: var(--royal-600); color: #fff; font-weight: 600; }
+.portal-segment a:not(.active):hover { background: var(--app-accent-soft); }
+.chart-box-sm { height: 200px; }
+.share-bar { height: 6px; border-radius: 4px; background: var(--app-border); overflow: hidden; }
+.share-bar span { display: block; height: 100%; border-radius: 4px; }
+.share-a { background: var(--series-1); }
+.share-b { background: var(--series-2); }
+.progress-bar-gold { background-color: var(--series-2); }
+.min-w-0 { min-width: 0; }
+
+/* Five tabs fit a 320px-wide phone. */
+.portal-tabs a { min-width: 0; flex: 1 1 0; padding: 4px 2px; }
+
+@media print {
+  .portal-top, .portal-tabs, .portal-footer, .demo-banner, .storage-banner, .no-print { display: none !important; }
+  .portal-main { padding: 0; }
+  .statement-card { border: 0; }
+}
+.gift-more summary { cursor: pointer; list-style: none; border-top: 1px solid var(--app-border); }
+.gift-more summary::-webkit-details-marker { display: none; }
+.gift-more[open] summary { display: none; }

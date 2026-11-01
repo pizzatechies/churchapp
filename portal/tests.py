@@ -1,13 +1,24 @@
 """Ecclesia Connect, the members app. Runs with the members URLconf, exactly as deployed."""
 
-from datetime import date
+from datetime import date, timedelta
+from decimal import Decimal
+from unittest import mock
 
 from django.test import override_settings
 from django.urls import reverse
 
+from core.models import ChurchProfile
 from core.testing import ChurchTestCase
+from core.utils import today
+from giving.models import Campaign, Contribution, ContributionBatch, Donor, Pledge
+from giving.services import post_batch
+from ledger.models import Account
+from ledger.services import create_entry
 from members import services
 from members.models import Group, GroupMembership, Member, Sermon
+from portal import finances
+
+D = Decimal
 
 
 @override_settings(ROOT_URLCONF="config.urls_portal", LOGIN_REDIRECT_URL="portal:home")
@@ -29,7 +40,10 @@ class MembersAppTests(ChurchTestCase):
         response = self.client.post("/login/", {"username": "treasurer", "password": "test-pass-123"})
         self.assertContains(response, "linked to a current member record")
 
-    def test_pages_render_and_show_nothing_financial(self):
+    def test_pages_show_nothing_financial_when_giving_is_switched_off(self):
+        profile = ChurchProfile.get()
+        profile.members_see_own_giving = profile.members_see_finances = False
+        profile.save()
         self.client.force_login(self.user)
         for url in ["/", "/groups/", f"/groups/{self.women.pk}/", "/sermons/", f"/sermons/{self.sermon.pk}/", "/profile/", "/profile/password/"]:
             response = self.client.get(url)
@@ -37,6 +51,8 @@ class MembersAppTests(ChurchTestCase):
             body = response.content.decode()
             for word in ("KSh", "Giving", "Payroll", "Budget", "Donor", "Expense"):
                 self.assertNotIn(word, body, f"{word} on {url}")
+        for url in ["/giving/", "/church-finances/", "/giving/statement/2026/"]:
+            self.assertEqual(self.client.get(url).status_code, 404, url)
 
     def test_finance_urls_do_not_exist(self):
         self.client.force_login(self.user)
@@ -94,3 +110,122 @@ class MembersAppTests(ChurchTestCase):
         self.assertEqual(self.client.get("/manifest.webmanifest").status_code, 200)
         self.assertEqual(self.client.get("/sw.js").status_code, 200)
         self.assertEqual(self.client.get("/offline/").status_code, 200)
+
+
+@override_settings(ROOT_URLCONF="config.urls_portal", LOGIN_REDIRECT_URL="portal:home")
+class MembersGivingTests(ChurchTestCase):
+    """A member's own giving and the church's summary for accountability."""
+
+    def setUp(self):
+        self.member = Member.objects.create(first_name="Njeri", last_name="Mwangi", gender=Member.FEMALE)
+        self.user = services.set_portal_account(self.member, "njeri", "a-good-pass-123")
+        self.mine = Donor.objects.create(first_name="Njeri", last_name="Mwangi", envelope_number="201")
+        self.other = Donor.objects.create(first_name="Zawadi", last_name="Otieno", envelope_number="202")
+        self.day = today()
+        self.profile = ChurchProfile.get()
+        self.profile.members_see_own_giving = True
+        self.profile.members_see_finances = True
+        self.profile.member_finance_period = ChurchProfile.MEMBER_FINANCE_LIVE
+        self.profile.treasurer_name = "Grace Achieng"
+        self.profile.save()
+
+    def batch(self, gifts, post=True, when=None):
+        when = when or self.day
+        batch = ContributionBatch.objects.create(date=when, description="Sunday", deposit_account=self.checking)
+        for donor, amount in gifts:
+            Contribution.objects.create(batch=batch, donor=donor, date=when, fund=self.gen, account=self.tithes,
+                                        amount=D(amount), method=Contribution.MOBILE_MONEY, check_number="QAB12")
+        if post:
+            post_batch(batch, self.bookkeeper)
+        return batch
+
+    def spend(self, account, amount, when=None):
+        create_entry(date=when or self.day, memo="Spending", user=self.treasurer, lines=[
+            self.line(account, self.gen, debit=amount), self.line(self.checking, self.gen, credit=amount),
+        ])
+
+    def test_member_sees_only_their_own_posted_gifts(self):
+        self.member.donor = self.mine
+        self.member.save()
+        self.batch([(self.mine, "1234.00"), (self.other, "98765.00")])
+        self.batch([(self.mine, "5555.00")], post=False)  # not counted and posted yet
+        self.client.force_login(self.user)
+        page = self.client.get("/giving/")
+        self.assertContains(page, "1,234.00")
+        self.assertNotContains(page, "98,765.00")
+        self.assertNotContains(page, "Otieno")
+        self.assertNotContains(page, "5,555.00")
+        statement = self.client.get(f"/giving/statement/{self.day.year}/")
+        self.assertContains(statement, "Njeri Mwangi")
+        self.assertContains(statement, "1,234.00")
+        self.assertNotContains(statement, "98,765.00")
+        self.assertNotContains(statement, "Otieno")
+
+    def test_pledge_progress(self):
+        self.member.donor = self.mine
+        self.member.save()
+        campaign = Campaign.objects.create(name="New sanctuary", fund=self.gen, start_date=self.day - timedelta(days=30), goal=D("1000000"))
+        Pledge.objects.create(donor=self.mine, campaign=campaign, amount=D("10000"), pledge_date=self.day)
+        self.batch([(self.mine, "2500.00")])
+        self.client.force_login(self.user)
+        page = self.client.get("/giving/")
+        self.assertContains(page, "New sanctuary")
+        self.assertContains(page, "7,500.00 to go")
+
+    def test_unlinked_member_is_told_to_ask_the_office(self):
+        self.client.force_login(self.user)
+        self.assertContains(self.client.get("/giving/"), "giving record isn't linked yet")
+        self.assertEqual(self.client.get(f"/giving/statement/{self.day.year}/").status_code, 404)
+
+    def test_church_summary_shows_totals_but_no_names_or_salaries(self):
+        self.batch([(self.other, "50000.00")])
+        self.spend(Account.objects.get(number="5000"), 20000)  # Pastoral Salaries
+        self.spend(Account.objects.get(number="5010"), 5000)
+        self.spend(self.utilities, 3000)
+        self.client.force_login(self.user)
+        page = self.client.get("/church-finances/")
+        self.assertContains(page, "50,000.00")  # income
+        self.assertContains(page, "28,000.00")  # spending
+        self.assertContains(page, "22,000.00")  # surplus
+        self.assertContains(page, "Staff &amp; personnel")
+        self.assertContains(page, "25,000.00")  # all staff costs as one figure
+        self.assertNotContains(page, "Pastoral Salaries")
+        self.assertNotContains(page, "20,000.00")
+        self.assertNotContains(page, "Otieno")
+        self.assertContains(page, "Grace Achieng")
+        self.assertContains(page, "nobody can approve spending they asked for themselves")
+
+    def test_summary_only_includes_closed_periods_when_asked(self):
+        self.profile.member_finance_period = ChurchProfile.MEMBER_FINANCE_CLOSED
+        self.profile.save()
+        self.client.force_login(self.user)
+        self.assertContains(self.client.get("/church-finances/"), "closed the books for the first time")
+        self.deposit(700, when=self.day)
+        self.deposit(1100, when=self.day + timedelta(days=1))
+        self.profile.refresh_from_db()
+        self.profile.lock_date = self.day
+        self.profile.save()
+        page = self.client.get("/church-finances/")
+        self.assertContains(page, "700.00")
+        self.assertNotContains(page, "1,800.00")
+
+    def test_default_cut_off_is_the_end_of_last_month(self):
+        self.profile.member_finance_period = ChurchProfile.MEMBER_FINANCE_MONTH
+        with mock.patch("portal.finances.today", return_value=date(2026, 3, 15)):
+            self.assertEqual(finances.cutoff_date(self.profile), date(2026, 2, 28))
+        self.profile.member_finance_period = ChurchProfile.MEMBER_FINANCE_CLOSED
+        self.profile.lock_date = date(2026, 1, 31)
+        with mock.patch("portal.finances.today", return_value=date(2026, 3, 15)):
+            self.assertEqual(finances.cutoff_date(self.profile), date(2026, 1, 31))
+
+    def test_each_part_has_its_own_switch(self):
+        self.client.force_login(self.user)
+        self.profile.members_see_finances = False
+        self.profile.save()
+        self.assertRedirects(self.client.get("/church-finances/"), "/giving/")
+        self.assertNotContains(self.client.get("/giving/"), "Church finances")
+        self.profile.members_see_finances = True
+        self.profile.members_see_own_giving = False
+        self.profile.save()
+        self.assertRedirects(self.client.get("/giving/"), "/church-finances/")
+        self.assertContains(self.client.get("/"), "Giving")

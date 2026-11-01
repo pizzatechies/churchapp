@@ -178,3 +178,59 @@ class SermonTests(ChurchTestCase):
             self.assertEqual(response["Content-Range"], "bytes 10-19/100")
             self.assertEqual(b"".join(response.streaming_content), b"0123456789")
             self.assertEqual(ranged_file_response(RequestFactory().get("/"), s.audio_file).status_code, 200)
+
+
+class GivingLinkTests(ChurchTestCase):
+    """Linking members to their giving records, so they can see their own giving in the members app."""
+
+    def setUp(self):
+        from giving.models import Donor
+
+        self.member = make_member("Akinyi", "Odhiambo", email="akinyi@example.com", phone="0712 345 678")
+        self.by_phone = Donor.objects.create(first_name="A.", last_name="Odhiambo", phone="+254 712 345 678")
+        self.unrelated = Donor.objects.create(first_name="Peter", last_name="Kariuki")
+
+    def test_suggestions_match_phone_numbers_in_any_format(self):
+        self.assertEqual(services.suggest_donors(self.member), [(self.by_phone, "phone")])
+
+    def test_administrator_links_creates_and_unlinks(self):
+        from giving.models import Donor
+
+        self.client.force_login(self.users["Administrator"])
+        url = reverse("members:member_giving", args=[self.member.pk])
+        page = self.client.get(self.member.get_absolute_url())
+        self.assertContains(page, "same phone")
+        self.client.post(url, {"action": "link", "donor": self.by_phone.pk})
+        self.member.refresh_from_db()
+        self.assertEqual(self.member.donor, self.by_phone)
+        self.by_phone.refresh_from_db()
+        self.assertTrue(self.by_phone.is_member)
+        other = make_member("Brian", "Otieno")
+        response = self.client.post(reverse("members:member_giving", args=[other.pk]), {"action": "link", "donor": self.by_phone.pk})
+        self.assertRedirects(response, other.get_absolute_url(), fetch_redirect_response=False)
+        other.refresh_from_db()
+        self.assertIsNone(other.donor)  # one giving record per member
+        self.client.post(url, {"action": "unlink"})
+        self.client.post(url, {"action": "create"})
+        self.member.refresh_from_db()
+        self.assertEqual(self.member.donor.email, "akinyi@example.com")
+        self.assertEqual(Donor.objects.count(), 3)
+
+    def test_linking_needs_both_registers(self):
+        url = reverse("members:member_giving", args=[self.member.pk])
+        for role in ("Church Secretary", "Offering Counter", "Pastor"):
+            self.client.force_login(self.users[role])
+            self.assertEqual(self.client.post(url, {"action": "create"}).status_code, 403, role)
+            self.assertEqual(self.client.get(reverse("members:link_giving")).status_code, 403, role)
+        self.member.refresh_from_db()
+        self.assertIsNone(self.member.donor)
+
+    def test_bulk_linking_preselects_email_and_phone_matches(self):
+        services.set_portal_account(self.member, "akinyi", "a-good-pass-123")
+        self.client.force_login(self.users["Administrator"])
+        page = self.client.get(reverse("members:link_giving"))
+        self.assertContains(page, f'<option value="{self.by_phone.pk}" selected>')
+        self.client.post(reverse("members:link_giving"), {f"m-{self.member.pk}": str(self.by_phone.pk)})
+        self.member.refresh_from_db()
+        self.assertEqual(self.member.donor, self.by_phone)
+        self.assertContains(self.client.get(reverse("members:link_giving")), "Every member with an app login is linked")

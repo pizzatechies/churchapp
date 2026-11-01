@@ -2,7 +2,8 @@
 Settings for Ecclesia Connect, the members app.
 
 It shares the database and code with the admin app but has its own URLs,
-templates, login and session cookie, and contains no financial screens.
+templates, login and session cookie. Its only money pages are a member's own giving
+and the church's summary totals, each switched on in Church settings.
 Run it with:  DJANGO_SETTINGS_MODULE=config.settings_portal
 """
 
@@ -13,7 +14,7 @@ WSGI_APPLICATION = "config.wsgi_portal.application"
 
 APP_NAME = "Ecclesia Connect"
 APP_SHORT_NAME = "Ecclesia"
-APP_TAGLINE = "Fellowships, groups & sermons"
+APP_TAGLINE = "Fellowships, sermons & giving"
 
 # Separate cookies so members and staff sessions never mix, even on one domain.
 SESSION_COOKIE_NAME = "connect_sessionid"

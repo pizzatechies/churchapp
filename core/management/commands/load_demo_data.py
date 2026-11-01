@@ -156,6 +156,8 @@ class Command(BaseCommand):
         profile.tax_id = "P051234567X"
         profile.treasurer_name = "Esther Wambui"
         profile.expense_approval_threshold = D("50000")
+        profile.members_see_own_giving = True
+        profile.members_see_finances = True
         profile.save()
 
         checking, savings = self.acct("1010"), self.acct("1020")
@@ -385,7 +387,8 @@ class Command(BaseCommand):
         envelope = 101
         givers = [m for m in members if m.adult and m.status != "transferred"]
         for m in givers:
-            if self.rng.random() > 0.72:
+            # Everyone with a members-app login gives, so the demo shows "My giving".
+            if self.rng.random() > 0.72 and not m.user_id:
                 continue
             d = Donor.objects.create(
                 first_name=m.first_name, last_name=m.last_name, envelope_number=str(envelope) if self.rng.random() < 0.6 else None,

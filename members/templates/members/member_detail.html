@@ -50,7 +50,7 @@
       {% if member.date_joined %}<dt>Joined</dt><dd>{{ member.date_joined|date:"M Y" }}</dd>{% endif %}
       <dt>Baptized</dt><dd>{% if member.baptized %}Yes{% if member.baptism_date %}, {{ member.baptism_date|date:"M j, Y" }}{% endif %}{% else %}No{% endif %}</dd>
       {% if member.emergency_contact_name %}<dt>Emergency</dt><dd>{{ member.emergency_contact_name }}<br><span class="small">{{ member.emergency_contact_phone }}</span></dd>{% endif %}
-      {% if can_see_giving and member.donor %}<dt>Giving</dt><dd><a href="{{ member.donor.get_absolute_url }}">Giving record</a></dd>{% endif %}
+      {% if can_see_giving and member.donor and not can_link_giving %}<dt>Giving</dt><dd><a href="{{ member.donor.get_absolute_url }}">Giving record</a></dd>{% endif %}
     </dl></div></div>
     <div class="card"><div class="card-header"><i class="bi bi-phone"></i> {{ brand.product_name }} Connect (members app)</div><div class="card-body">
       {% if member.user and member.user.is_active %}
@@ -66,6 +66,31 @@
       </form>
       {% endif %}
     </div></div>
+    {% if can_link_giving %}
+    <div class="card mt-3"><div class="card-header"><i class="bi bi-heart"></i> Giving record</div><div class="card-body">
+      {% if member.donor %}
+        <p class="mb-2"><i class="bi bi-link-45deg text-positive"></i> Linked to {% if can_see_giving %}<a href="{{ member.donor.get_absolute_url }}">{{ member.donor.display_name }}</a>{% else %}<strong>{{ member.donor.display_name }}</strong>{% endif %}{% if member.donor.envelope_number %} <span class="small text-body-secondary">(envelope {{ member.donor.envelope_number }})</span>{% endif %}.</p>
+        <p class="small text-body-secondary mb-2">{% if church.members_see_own_giving %}{{ member.first_name }} can see their own gifts, pledges and statements in the members app.{% else %}Members can't see their giving yet: switch it on in Church settings.{% endif %}</p>
+        <form method="post" action="{% url 'members:member_giving' member.pk %}" data-confirm="Unlink {{ member.first_name }} from this giving record? Their gifts stay recorded.">{% csrf_token %}<button class="btn btn-sm btn-outline-danger" name="action" value="unlink">Unlink</button></form>
+      {% else %}
+        <p class="small text-body-secondary mb-2">Link {{ member.first_name }} to their giving record so they can see their own giving in the members app.</p>
+        {% for donor, reason in donor_suggestions %}
+        <form method="post" action="{% url 'members:member_giving' member.pk %}" class="mb-2">{% csrf_token %}<input type="hidden" name="donor" value="{{ donor.pk }}">
+          <button class="btn btn-sm btn-outline-primary w-100 text-start" name="action" value="link"><i class="bi bi-link-45deg"></i> Link to {{ donor.display_name }}{% if donor.envelope_number %} ({{ donor.envelope_number }}){% endif %} <span class="small text-body-secondary">· same {{ reason }}</span></button>
+        </form>
+        {% endfor %}
+        <form method="post" action="{% url 'members:member_giving' member.pk %}" class="row g-2 mb-2">{% csrf_token %}
+          <div class="col-12"><label class="form-label small" for="donor-select">Existing giving record</label>
+            <select name="donor" id="donor-select" class="form-select form-select-sm" required>
+              <option value="">Choose…</option>
+              {% for d in donor_choices %}<option value="{{ d.pk }}">{{ d.display_name }}{% if d.envelope_number %} ({{ d.envelope_number }}){% endif %}</option>{% endfor %}
+            </select></div>
+          <div class="col-12"><button class="btn btn-sm btn-primary" name="action" value="link">Link</button></div>
+        </form>
+        <form method="post" action="{% url 'members:member_giving' member.pk %}">{% csrf_token %}<button class="btn btn-sm btn-link px-0" name="action" value="create"><i class="bi bi-plus-circle"></i> New giving record from these details</button></form>
+      {% endif %}
+    </div></div>
+    {% endif %}
   </div>
 </div>
 {% endblock %}

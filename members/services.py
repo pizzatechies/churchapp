@@ -133,3 +133,75 @@ def membership_stats(members=None):
         "with_portal": sum(1 for m in current if m.user_id),
         "groups": Group.with_counts().filter(is_active=True).order_by("group_type", "name"),
     }
+
+
+# --------------------------------------------------------- giving records
+
+def _digits(phone):
+    """Last nine digits, so 0712 345 678 and +254 712 345 678 match."""
+    d = "".join(ch for ch in (phone or "") if ch.isdigit())
+    return d[-9:] if len(d) >= 9 else ""
+
+
+def donor_match(member, donor):
+    """Why this donor looks like this member ("email", "phone", "name"), or None."""
+    if member.email and donor.email and member.email.strip().lower() == donor.email.strip().lower():
+        return "email"
+    if _digits(member.phone) and _digits(member.phone) == _digits(donor.phone):
+        return "phone"
+    if (member.first_name.strip().lower(), member.last_name.strip().lower()) == (
+        donor.first_name.strip().lower(), donor.last_name.strip().lower()
+    ):
+        return "name"
+    return None
+
+
+MATCH_RANK = {"email": 0, "phone": 1, "name": 2}
+
+
+def unlinked_donors():
+    from giving.models import Donor
+
+    return Donor.objects.filter(is_active=True, member__isnull=True)
+
+
+def suggest_donors(member, donors=None):
+    """[(donor, reason)] of unlinked giving records that look like this member, best first."""
+    donors = list(unlinked_donors()) if donors is None else donors
+    found = [(d, r) for d in donors if (r := donor_match(member, d))]
+    return sorted(found, key=lambda dr: (MATCH_RANK[dr[1]], dr[0].sort_name))
+
+
+@transaction.atomic
+def link_donor(member, donor):
+    from giving.models import Donor
+
+    donor = Donor.objects.select_for_update().get(pk=donor.pk)
+    other = type(member).objects.filter(donor=donor).exclude(pk=member.pk).first()
+    if other:
+        raise MembershipError(f"That giving record already belongs to {other.full_name}.")
+    member.donor = donor
+    member.save(update_fields=["donor", "updated_at"])
+    if not donor.is_member:
+        donor.is_member = True
+        donor.member_since = donor.member_since or member.date_joined
+        donor.save(update_fields=["is_member", "member_since"])
+    return donor
+
+
+@transaction.atomic
+def create_donor_for(member):
+    """Start a giving record from the member's details and link it."""
+    from giving.models import Donor
+
+    if member.donor_id:
+        raise MembershipError(f"{member.full_name} already has a giving record.")
+    donor = Donor.objects.create(
+        donor_type=Donor.INDIVIDUAL, first_name=member.first_name, last_name=member.last_name,
+        email=member.email, phone=member.phone,
+        address_line1=member.postal_address or member.residence, city=member.town, state=member.county,
+        country=member.country, is_member=True, member_since=member.date_joined,
+    )
+    member.donor = donor
+    member.save(update_fields=["donor", "updated_at"])
+    return donor

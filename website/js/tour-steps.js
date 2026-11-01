@@ -23,7 +23,7 @@ window.ECCLESIA_TOUR = {
   ],
   connect: [
     { id: "home", title: "Each member sees their own groups",
-      text: "Ecclesia Connect opens on the member's groups and fellowships and the latest sermons. There is nothing financial in this app at all." },
+      text: "Ecclesia Connect opens on the member's groups and fellowships and the latest sermons. Members can also see their own giving and, if the church switches it on, a summary of the church's finances." },
     { id: "groups", title: "Find a fellowship and ask to join",
       text: "Members browse the church's groups, see when and where they meet and who leads them, and ask to join. Leaders approve requests in Ecclesia Admin." },
     { id: "group", title: "A home for every fellowship",

@@ -35,6 +35,15 @@
           {% include "includes/field.html" with field=form.treasurer_name col="col-md-6" %}
           {% include "includes/field.html" with field=form.statement_footer col="col-12" %}
         </div>
+        <h6 class="mt-2 mb-3 text-body-secondary text-uppercase small fw-semibold" id="members-app">Members app: giving &amp; accountability</h6>
+        <div class="row">
+          {% include "includes/field.html" with field=form.members_see_own_giving col="col-md-6" %}
+          {% include "includes/field.html" with field=form.members_see_finances col="col-md-6" %}
+          {% include "includes/field.html" with field=form.member_finance_period col="col-md-6" %}
+          <div class="col-md-6 mb-3 small text-body-secondary align-self-end">
+            {% if unlinked_members %}<i class="bi bi-link-45deg"></i> {{ unlinked_members }} current member{{ unlinked_members|pluralize }} with a members-app login {{ unlinked_members|pluralize:"is,are" }} not linked to a giving record yet.{% if caps.view_members %} <a href="{% url 'members:link_giving' %}">Link them</a>.{% endif %}{% endif %}
+          </div>
+        </div>
       </div>
       <div class="card-footer bg-transparent"><button class="btn btn-primary">Save settings</button></div>
     </form>

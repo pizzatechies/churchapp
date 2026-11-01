@@ -4,6 +4,7 @@ import csv
 import io
 
 from django.contrib import messages
+from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 from django.db import transaction
 from django.db.models import Count, Q
@@ -90,6 +91,99 @@ def member_detail(request, pk):
         "portal_form": PortalAccountForm(initial={"username": member.user.username if member.user else _suggest_username(member)}),
         "can_manage": has_cap(request.user, "manage_members"),
         "can_see_giving": has_cap(request.user, "view_donors"),
+        "can_link_giving": has_cap(request.user, "manage_giving"),
+        **(_giving_link_context(member) if has_cap(request.user, "manage_giving") else {}),
+    })
+
+
+def _giving_link_context(member):
+    if member.donor_id:
+        return {}
+    donors = list(services.unlinked_donors().order_by("sort_name"))
+    return {"donor_suggestions": services.suggest_donors(member, donors)[:3], "donor_choices": donors}
+
+
+def _can_link_giving(user):
+    # Linking touches both registers: the member record and the confidential giving record.
+    return has_cap(user, "view_members") and has_cap(user, "manage_giving")
+
+
+@require_POST
+def member_giving(request, pk):
+    """Link a member to their giving record so they can see their own giving in the members app."""
+    from giving.models import Donor
+
+    if not _can_link_giving(request.user):
+        raise PermissionDenied
+    member = get_object_or_404(Member, pk=pk)
+    action = request.POST.get("action")
+    try:
+        if action == "unlink":
+            member.donor = None
+            member.save(update_fields=["donor", "updated_at"])
+            messages.success(request, f"{member.first_name} is no longer linked to a giving record.")
+        elif action == "create":
+            services.create_donor_for(member)
+            messages.success(request, f"A giving record was created for {member.full_name} and linked.")
+        else:
+            donor = get_object_or_404(Donor, pk=request.POST.get("donor") or 0)
+            services.link_donor(member, donor)
+            messages.success(request, f"{member.full_name} is now linked to the giving record “{donor.display_name}”.")
+    except MembershipError as e:
+        messages.error(request, str(e))
+    return redirect(member.get_absolute_url())
+
+
+def link_giving(request):
+    """Match many members to giving records at once, e.g. when switching on giving in the members app."""
+    from giving.models import Donor
+
+    if not _can_link_giving(request.user):
+        raise PermissionDenied
+    with_login = request.GET.get("all") != "1"
+    members = Member.objects.filter(status__in=Member.CURRENT, donor__isnull=True).select_related("user")
+    if with_login:
+        members = members.filter(user__isnull=False, user__is_active=True)
+    members = list(members.order_by("last_name", "first_name")[:300])
+    donors = list(services.unlinked_donors().order_by("sort_name"))
+
+    if request.method == "POST":
+        linked = created = 0
+        errors = []
+        by_id = {m.pk: m for m in members}
+        donors_by_id = {d.pk: d for d in donors}
+        for key, value in request.POST.items():
+            if not key.startswith("m-") or not value:
+                continue
+            member = by_id.get(int(key[2:]) if key[2:].isdigit() else 0)
+            if member is None:
+                continue
+            try:
+                if value == "new":
+                    services.create_donor_for(member)
+                    created += 1
+                elif value.isdigit():
+                    donor = donors_by_id.pop(int(value), None)
+                    if donor is None:
+                        raise MembershipError("that giving record was chosen for someone else, or is already linked.")
+                    services.link_donor(member, donor)
+                    linked += 1
+            except MembershipError as e:
+                errors.append(f"{member.full_name}: {e}")
+        for e in errors:
+            messages.error(request, e)
+        if linked or created:
+            messages.success(request, f"Linked {linked} member{'s' if linked != 1 else ''} to existing giving records"
+                                      f" and created {created} new giving record{'s' if created != 1 else ''}.")
+        return redirect(request.get_full_path())
+
+    rows = []
+    for m in members:
+        suggestions = services.suggest_donors(m, donors)
+        rows.append({"member": m, "suggestions": suggestions[:3],
+                     "default": suggestions[0][0].pk if suggestions and suggestions[0][1] in ("email", "phone") else ""})
+    return render(request, "members/link_giving.html", {
+        "rows": rows, "donors": donors, "with_login": with_login, "donor_count": Donor.objects.filter(is_active=True).count(),
     })
 
 
