@@ -206,8 +206,11 @@
         currentUrl = saved;
         cancelTo = "offline";
         current = check(saved, function () { showWaking(saved); });
-        current.then(function () { afterSplash(function () { open(saved); }); })
-          .catch(function (err) {
+        current.then(function () {
+          // Save before opening: the desktop app only shows pages from the saved server,
+          // and an address built into the app hasn't been saved yet.
+          return save(saved).then(function () { afterSplash(function () { open(saved); }); });
+        }).catch(function (err) {
             if (err.kind === "cancelled") return;
             afterSplash(function () { showOffline(saved); });
           });
