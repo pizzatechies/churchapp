@@ -42,6 +42,9 @@ services:
         value: Africa/Nairobi
       - key: WEB_CONCURRENCY
         value: "2"
+      # Sermon uploads over a slow connection can take several minutes.
+      - key: GUNICORN_TIMEOUT
+        value: "600"
       - key: ADMIN_USERNAME
         sync: false
       - key: ADMIN_PASSWORD

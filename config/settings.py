@@ -163,15 +163,24 @@ S3_BUCKET = os.environ.get("S3_BUCKET", "").strip()
 if S3_BUCKET.lower() in {"none", "-"}:
     S3_BUCKET = ""
 if S3_BUCKET:
+    S3_ENDPOINT_URL = os.environ.get("S3_ENDPOINT_URL", "").strip() or None
+    # Some S3-compatible services reject the checksums newer boto3 adds to every upload;
+    # send them only when the service requires them.
+    os.environ.setdefault("AWS_REQUEST_CHECKSUM_CALCULATION", "when_required")
+    os.environ.setdefault("AWS_RESPONSE_CHECKSUM_VALIDATION", "when_required")
     STORAGES["default"] = {
         "BACKEND": "storages.backends.s3.S3Storage",
         "OPTIONS": {
             "bucket_name": S3_BUCKET,
-            "endpoint_url": os.environ.get("S3_ENDPOINT_URL") or None,
-            "region_name": os.environ.get("S3_REGION") or None,
+            "endpoint_url": S3_ENDPOINT_URL,
+            # Cloudflare R2 expects the region "auto".
+            "region_name": os.environ.get("S3_REGION") or ("auto" if S3_ENDPOINT_URL and "r2.cloudflarestorage.com" in S3_ENDPOINT_URL else None),
             "access_key": os.environ.get("S3_ACCESS_KEY_ID"),
             "secret_key": os.environ.get("S3_SECRET_ACCESS_KEY"),
             "default_acl": None,
+            # Signed links in the current format (Signature Version 4), which R2, B2 and
+            # newer AWS regions require.
+            "signature_version": "s3v4",
             "querystring_auth": True,
             "querystring_expire": 3600,
             "file_overwrite": False,

@@ -48,7 +48,16 @@ Cloudflare R2 includes 10 GB free each month (Cloudflare asks for a card to turn
 
 ## Good to know
 
-- **Adding file storage later:** in Render, open **ecclesia-admin → Environment**, fill in the four `S3_` values and save. Then do the same on **ecclesia-members**.
+- **Adding file storage later:** create the bucket and token as in Part 1. Then in Render open **ecclesia-admin → Environment**, set the four values below, and click **Save, rebuild, and deploy**. Do the same on **ecclesia-members**. The red "uploads are only kept until this server restarts" bar disappears once it works.
+
+  | Key | Value |
+  |---|---|
+  | `S3_BUCKET` | the bucket name, e.g. `ecclesia-files` |
+  | `S3_ENDPOINT_URL` | the S3 endpoint, e.g. `https://<account id>.r2.cloudflarestorage.com` (without the bucket name on the end) |
+  | `S3_ACCESS_KEY_ID` | the token's Access Key ID |
+  | `S3_SECRET_ACCESS_KEY` | the token's Secret Access Key |
+
+  On **ecclesia-admin**, also make sure `GUNICORN_TIMEOUT` is `600`, so long sermon uploads aren't cut off.
 - **Backups:** download a full backup regularly from **Administration → Backup** in Ecclesia Admin. It includes the books, members, groups and sermons, and saves to your computer.
 - **Your own web address:** in Render, open a service → **Settings → Custom Domains**. Add the new address to `ALLOWED_HOSTS` and, with `https://` in front, to `CSRF_TRUSTED_ORIGINS` in that service's **Environment**.
 - **Always on, no sleeping:** paid Render plans keep the apps awake. Use the Blueprint file [`render-paid.yaml`](render-paid.yaml) for that.
