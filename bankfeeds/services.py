@@ -33,7 +33,10 @@ def import_statement(connection, file_name, content, user=None):
     lines = parse_statement(file_name, content, month_first=month_first)
     existing = set(BankTransaction.objects.filter(account=connection.account, external_id__in=[l.external_id for l in lines])
                    .values_list("external_id", flat=True))
-    new = [l for l in lines if l.external_id not in existing]
+    # Payments that already arrived live from M-Pesa carry the same receipt number as the portal statement.
+    live_refs = set(BankTransaction.objects.filter(account=connection.account, source=BankTransaction.LIVE)
+                    .exclude(reference="").values_list("reference", flat=True))
+    new = [l for l in lines if l.external_id not in existing and not (l.reference and l.reference in live_refs)]
     closing = next((Decimal(l.raw["closing_balance"]) for l in lines if l.raw.get("closing_balance")), None)
     with_balance = [l for l in lines if l.balance is not None]
     if closing is None and with_balance:
@@ -306,6 +309,9 @@ def receive_c2b(connection, payload):
         raise FeedError("The amount isn't a number.")
     if amount <= 0:
         raise FeedError("The amount must be positive.")
+    if BankTransaction.objects.filter(account=connection.account, reference=trans_id).exclude(external_id=f"m-{trans_id}").exists():
+        # Already uploaded from a statement before the live notice arrived.
+        return BankTransaction.objects.filter(account=connection.account, reference=trans_id).first()
     name = " ".join(p for p in (str(payload.get(k) or "").strip() for k in ("FirstName", "MiddleName", "LastName")) if p)
     txn, created = BankTransaction.objects.get_or_create(
         account=connection.account, external_id=f"m-{trans_id}",

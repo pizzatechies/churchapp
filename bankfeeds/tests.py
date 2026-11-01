@@ -206,6 +206,12 @@ class MpesaTests(ChurchTestCase):
         second = BankTransaction.objects.get(reference="SC12ABC999").contribution
         self.assertEqual((second.donor, second.fund, second.batch), (None, self.gen, gift.batch))
 
+    def test_portal_statement_does_not_repeat_live_payments(self):
+        self.payment()
+        imp = services.import_statement(self.connection, "portal.csv", MPESA_CSV.encode())
+        self.assertEqual((imp.added, imp.skipped), (0, 1))
+        self.assertEqual(BankTransaction.objects.count(), 1)
+
     def test_callbacks_reject_strangers(self):
         bad = self.client.post(reverse("c2b_confirm", args=["not-the-token"]), "{}", content_type="application/json")
         self.assertEqual(bad.status_code, 404)
