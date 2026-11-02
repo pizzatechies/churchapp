@@ -96,7 +96,7 @@ One Ecclesia server hosts many churches. **Each church has its own PostgreSQL sc
 
 | Address | Who | What |
 |---|---|---|
-| `<admin app>/platform/` | Pizza Technologies' super admins | Onboard churches, plans, payments, usage, suspend/reactivate |
+| `<admin app>/platform/` | Super admins (Pizza Technologies) | The **super admin console**: administrator of every church |
 | `<admin app>/church/<name>/` | That church's staff | Ecclesia Admin for that church |
 | `<members app>/church/<name>/` | That church's members | Ecclesia Connect for that church |
 | `<admin app>/` and `<members app>/` | The church marked "served at the main addresses" | Keeps apps and bookmarks from before multi-church working |
@@ -104,6 +104,12 @@ One Ecclesia server hosts many churches. **Each church has its own PostgreSQL sc
 **Onboarding a church** (Platform console → *Onboard a church*): name, web address name, country, plan (Seed KSh 10,000 · Harvest KSh 20,000 · Kingdom KSh 30,000 a month; yearly = 10 months' price), trial length, contact, and the first administrator's username and email. Ecclesia creates the church's schema with the default chart of accounts for its country, creates the administrator, and shows a **temporary password once**. The administrator must choose their own password at first sign-in.
 
 **Monitoring:** the console lists every church with its plan, status (trial, active, overdue, suspended), paid-up date, members and staff against the plan's limits, storage, and last activity; plus monthly recurring revenue and money collected. It shows **counts only, never names or amounts from a church's books**. Record payments (M-Pesa code, months paid) on a church's page to extend its paid-up date; churches see a reminder a week before and when overdue, and their administrators see their plan, usage and payments under *Administration → Subscription*.
+
+**Super admin powers over every church:**
+- **Enter any church as its administrator**: *Enter* on the church list, or *Enter as administrator* on a church's page, with an optional reason. A one-time, two-minute link signs you in to that church's admin app with full rights, under your own support login (`support.<your username>`, which has no password and can't be used any other way). A purple banner shows while you're inside; *Leave and return to the console* signs you out of the church. Each visit is recorded in the church's own audit trail and Subscription page, and in the console's *Support log*. Support logins never count towards the plan's staff logins.
+- **Manage any church's logins** from its page: add a staff login with a role (a temporary password is shown once), change roles, disable or enable logins, and issue a new temporary password.
+- **People**: find a login in any church by username, name or email, and issue a new password.
+- **Announcements**: post a notice (information, important or urgent) across the top of the staff app, the members app or both, in every church or chosen ones, until a date or until switched off.
 
 **Plan limits** are enforced where records are added: members (Seed 300, Harvest 1,000) and staff logins (Seed 5, Harvest 15); Kingdom is unlimited and can add the church's own web addresses. Edit prices and limits under *Plans*.
 

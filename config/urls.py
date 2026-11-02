@@ -4,6 +4,7 @@ from django.urls import include, path
 
 from bankfeeds.urls import callback_urlpatterns as bank_feed_callbacks
 from core import accounts
+from tenants import church_views
 
 admin.site.site_header = "Ecclesia – database administration"
 admin.site.site_title = "Ecclesia"
@@ -12,6 +13,8 @@ urlpatterns = [
     path("accounts/login/", accounts.StaffLoginView.as_view(), name="login"),
     path("accounts/logout/", auth_views.LogoutView.as_view(), name="logout"),
     path("accounts/profile/", accounts.profile, name="profile"),
+    path("accounts/support/<str:token>/", church_views.support_enter, name="support_enter"),
+    path("accounts/support-leave/", church_views.support_leave, name="support_leave"),
     path("accounts/password/", accounts.StaffPasswordChangeView.as_view(), name="password_change"),
     path("accounts/password/done/", auth_views.PasswordChangeDoneView.as_view(), name="password_change_done"),
     path("accounts/password/reset/", accounts.StaffPasswordResetView.as_view(), name="password_reset"),

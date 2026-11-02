@@ -116,6 +116,15 @@ def settings_view(request):
     return render(request, "core/settings.html", {"form": form, "profile": profile, "unlinked_members": unlinked})
 
 
+def support_visits(church):
+    """Read from the shared schema: inside a church, "auth_user" means the church's own logins."""
+    from django_tenants.utils import schema_context
+
+    with schema_context("public"):
+        return [{"when": s.used_at, "who": s.platform_user.get_full_name() or s.platform_user.username, "reason": s.reason}
+                for s in church.support_sessions.filter(used_at__isnull=False).select_related("platform_user")[:10]]
+
+
 @require_cap("manage_settings")
 def subscription(request):
     from tenants.middleware import current_church
@@ -128,6 +137,7 @@ def subscription(request):
         collect_usage(church)
     return render(request, "core/subscription.html", {
         "account": church, "state": church.state, "limits": limits(church), "payments": church.payments.all()[:12],
+        "support_visits": support_visits(church),
     })
 
 

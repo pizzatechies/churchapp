@@ -23,6 +23,8 @@ from django.views.decorators.http import require_POST
 from . import services
 from .forms import (
     AccountForm,
+    AddLoginForm,
+    AnnouncementForm,
     ChurchCreateForm,
     ChurchEditForm,
     DomainForm,
@@ -30,8 +32,8 @@ from .forms import (
     PlanFormSet,
     TeamMemberForm,
 )
-from .models import Church, Domain, Payment, Plan, PlatformProfile
-from .security import LockoutMixin, PlatformPasswordResetForm, reset_allowed
+from .models import Announcement, Church, Domain, Payment, Plan, PlatformProfile, SupportSession
+from .security import LockoutMixin, PlatformPasswordResetForm, client_ip, reset_allowed
 
 
 def platform_admin_required(view):
@@ -226,7 +228,9 @@ def church_detail(request, pk):
         services.collect_usage(church)
     return render(request, "tenants/church_detail.html", {
         "church": church, "state": church.state, "limits": services.limits(church),
-        "addresses": app_addresses(request, church), "admins": services.church_admins(church),
+        "addresses": app_addresses(request, church), "logins": services.church_logins(church),
+        "add_login_form": AddLoginForm(), "roles": AddLoginForm().fields["role"].choices,
+        "support_sessions": church.support_sessions.select_related("platform_user")[:8],
         "payments": church.payments.select_related("recorded_by")[:24], "payment_form": PaymentForm(church=church),
         "domain_form": DomainForm(), "usage": church.usage or {},
     })
@@ -313,6 +317,95 @@ def church_domain(request, pk):
     else:
         messages.error(request, "Enter a web address such as members.yourchurch.org.")
     return redirect("platform:church_detail", pk=pk)
+
+
+# ------------------------------------------------- acting in a church
+
+@require_POST
+@platform_admin_required
+def church_enter(request, pk):
+    """Open the church's admin app as an administrator (logged in the church's audit trail)."""
+    church = get_object_or_404(Church, pk=pk)
+    try:
+        token = services.start_support_session(church, request.user, request.POST.get("reason", "").strip(), client_ip(request))
+    except services.PlatformError as e:
+        messages.error(request, str(e))
+        return redirect("platform:church_detail", pk=pk)
+    return redirect(f"/{settings.CHURCH_URL_PREFIX}/{church.slug}/accounts/support/{token}/")
+
+
+@require_POST
+@platform_admin_required
+def church_login_action(request, pk):
+    """Manage any church's logins: add, new temporary password, activate/deactivate, change role."""
+    church = get_object_or_404(Church.objects.select_related("plan"), pk=pk)
+    action = request.POST.get("action")
+    back = request.POST.get("next") or reverse("platform:church_detail", args=[pk])
+    back = back if back.startswith("/platform/") else reverse("platform:church_detail", args=[pk])
+    try:
+        if action == "add":
+            form = AddLoginForm(request.POST)
+            if not form.is_valid():
+                messages.error(request, "The login wasn't added: " + "; ".join(e for errs in form.errors.values() for e in errs))
+                return redirect(back)
+            d = form.cleaned_data
+            user, password = services.add_church_login(church, d["username"], d["email"], d["role"], d["first_name"], d["last_name"])
+            return render(request, "tenants/password_issued.html", {
+                "church": church, "username": user.username, "password": password, "addresses": app_addresses(request, church),
+                "added": True,
+            })
+        user_id = int(request.POST.get("user", 0))
+        if action == "reset":
+            username, password = services.reset_login_password(church, user_id)
+            return render(request, "tenants/password_issued.html", {
+                "church": church, "username": username, "password": password, "addresses": app_addresses(request, church),
+            })
+        if action in ("activate", "deactivate"):
+            username = services.set_login_active(church, user_id, action == "activate")
+            messages.success(request, f"{username} {'can sign in again' if action == 'activate' else 'can no longer sign in'}.")
+        elif action == "role":
+            username = services.set_login_role(church, user_id, request.POST.get("role", ""))
+            messages.success(request, f"{username} is now {request.POST.get('role')}.")
+    except services.PlatformError as e:
+        messages.error(request, str(e))
+    except (User.DoesNotExist, ValueError):
+        messages.error(request, "That login wasn't found.")
+    except Exception as e:  # noqa: BLE001 — e.g. an unknown role name
+        messages.error(request, f"That didn't work: {e}")
+    return redirect(back)
+
+
+@platform_admin_required
+def people(request):
+    q = request.GET.get("q", "").strip()
+    return render(request, "tenants/people.html", {"q": q, "results": services.find_people(q) if q else None})
+
+
+@platform_admin_required
+def announcements(request):
+    form = AnnouncementForm(request.POST or None)
+    form.fields["churches"].queryset = Church.objects.order_by("name")
+    if request.method == "POST" and request.POST.get("toggle"):
+        a = get_object_or_404(Announcement, pk=request.POST["toggle"])
+        a.is_active = not a.is_active
+        a.save(update_fields=["is_active"])
+        messages.success(request, "Announcement " + ("switched on." if a.is_active else "switched off."))
+        return redirect("platform:announcements")
+    if request.method == "POST" and form.is_valid():
+        a = form.save(commit=False)
+        a.created_by = request.user
+        a.save()
+        form.save_m2m()
+        messages.success(request, "Announcement posted. Churches see it within a minute.")
+        return redirect("platform:announcements")
+    return render(request, "tenants/announcements.html", {"form": form, "items": Announcement.objects.prefetch_related("churches")[:50]})
+
+
+@platform_admin_required
+def support_log(request):
+    return render(request, "tenants/support_log.html", {
+        "sessions": SupportSession.objects.select_related("church", "platform_user")[:200],
+    })
 
 
 # ------------------------------------------------------- money and plans

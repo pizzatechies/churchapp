@@ -6,8 +6,8 @@
     <div class="card-body p-4 p-md-5">
       <div class="text-center mb-4">
         <img src="{% static 'brand/ecclesia-logo.svg' %}" alt="" width="64" height="64" class="mb-2">
-        <h1 class="h4 mb-0">Platform console</h1>
-        <p class="text-body-secondary small mb-0">For the Ecclesia team at Pizza Technologies</p>
+        <h1 class="h4 mb-0">Super admin console</h1>
+        <p class="text-body-secondary small mb-0">Administers every church on Ecclesia</p>
       </div>
       {% if form.non_field_errors %}<div class="alert alert-danger small">{% for e in form.non_field_errors %}{{ e }}{% endfor %}</div>{% endif %}
       <form method="post">{% csrf_token %}

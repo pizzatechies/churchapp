@@ -354,3 +354,9 @@ tr.row-link { cursor: pointer; }
 @media (max-width: 575.98px) { .feed-actions { margin-left: 0; } }
 .min-w-0 { min-width: 0; }
 .mpesa-steps .step-num { flex: 0 0 22px; height: 22px; border-radius: 50%; background: var(--app-gold-soft); color: var(--app-gold-ink); font-weight: 700; font-size: 0.75rem; display: inline-flex; align-items: center; justify-content: center; margin-top: 1px; }
+.support-banner { background: #3b1f6e; color: #fff; font-size: 0.85rem; font-weight: 500; padding: 0.45rem 1rem; text-align: center; }
+.announcement { font-size: 0.85rem; font-weight: 500; padding: 0.45rem 1rem; text-align: center; border-bottom: 1px solid var(--app-border); }
+.announcement-info { background: var(--app-accent-soft); color: var(--bs-emphasis-color); }
+.announcement-warning { background: var(--app-gold-soft); color: var(--app-gold-ink); }
+.announcement-danger { background: #fdecea; color: #8a1c12; }
+[data-bs-theme="dark"] .announcement-danger { background: #3b1512; color: #f4b4ab; }

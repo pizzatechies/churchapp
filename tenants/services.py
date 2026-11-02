@@ -90,15 +90,7 @@ def church_admins(church):
 
 
 def reset_admin_password(church, user_id):
-    from core.models import AccountProfile
-
-    with tenant_context(church):
-        user = User.objects.get(pk=user_id)
-        password = temporary_password()
-        user.set_password(password)
-        user.save(update_fields=["password"])
-        AccountProfile.password_set_by_someone_else(user)
-        return user.username, password
+    return reset_login_password(church, user_id)
 
 
 # ------------------------------------------------------------------ usage
@@ -121,7 +113,8 @@ def collect_usage(church):
 
     month_start = timezone.localdate().replace(day=1)
     with tenant_context(church):
-        staff = User.objects.filter(is_active=True).filter(Q(is_superuser=True) | Q(groups__isnull=False)).distinct()
+        staff = (User.objects.filter(is_active=True).filter(Q(is_superuser=True) | Q(groups__isnull=False))
+                 .exclude(username__startswith="support.").distinct())
         files = Document.objects.aggregate(t=Sum("size"))["t"] or 0
         sermon_bytes = 0
         for s in Sermon.objects.exclude(audio_file="", video_file="", notes_file=""):
@@ -138,7 +131,8 @@ def collect_usage(church):
             "entries_this_month": JournalEntry.objects.filter(date__gte=month_start).count(),
             "gifts_this_month": Contribution.objects.filter(date__gte=month_start).count(),
             "sermons": Sermon.objects.count(),
-            "last_staff_login": _iso(User.objects.filter(member_profile__isnull=True).aggregate(m=Max("last_login"))["m"]),
+            "last_staff_login": _iso(User.objects.filter(member_profile__isnull=True).exclude(username__startswith="support.")
+                                     .aggregate(m=Max("last_login"))["m"]),
             "last_member_login": _iso(User.objects.filter(member_profile__isnull=False).aggregate(m=Max("last_login"))["m"]),
             "last_activity": _iso(AuditLog.objects.aggregate(m=Max("timestamp"))["m"]),
             "files_bytes": int(files) + sermon_bytes,
@@ -181,3 +175,163 @@ def in_public(fn):
         with schema_context("public"):
             return fn(*args, **kwargs)
     return wrapper
+
+
+# ------------------------------------------------------- super admin powers
+
+def start_support_session(church, platform_user, reason="", ip=None):
+    """Prepare a one-time, two-minute sign-in to the church as an administrator. Returns the signed token."""
+    from django.core import signing
+
+    from .models import SupportSession
+
+    if not church.is_accessible:
+        raise PlatformError(f"{church.name} is {church.get_status_display().lower()}. Reactivate it first.")
+    session = SupportSession.objects.create(church=church, platform_user=platform_user, reason=reason[:200],
+                                            nonce=secrets.token_urlsafe(32), ip=ip)
+    with tenant_context(church):
+        _support_user(church, platform_user)
+    connection.set_schema_to_public()
+    return signing.dumps({"s": session.pk, "n": session.nonce}, salt=f"support:{church.schema_name}")
+
+
+def _support_user(church, platform_user):
+    """In the church's schema: the super admin's own administrator login. It has no password, so it can only be
+    reached from the console, and every change made with it is attributed to them by name in the audit trail."""
+    from .models import SUPPORT_USERNAME_PREFIX
+
+    username = f"{SUPPORT_USERNAME_PREFIX}{platform_user.username}"[:150]
+    user, _ = User.objects.get_or_create(username=username)
+    user.first_name = (platform_user.get_full_name() or platform_user.username)[:150]
+    user.last_name = "(Ecclesia support)"
+    user.email = ""
+    user.is_active = user.is_staff = user.is_superuser = True
+    user.set_unusable_password()
+    user.save()
+    return user
+
+
+def is_support_login(user):
+    from .models import SUPPORT_USERNAME_PREFIX
+
+    return bool(user and user.username.startswith(SUPPORT_USERNAME_PREFIX))
+
+
+def church_logins(church):
+    """Every staff login in a church (not member-only logins, not support logins)."""
+    from .models import SUPPORT_USERNAME_PREFIX
+
+    with tenant_context(church):
+        users = (User.objects.filter(Q(is_superuser=True) | Q(groups__isnull=False)).exclude(username__startswith=SUPPORT_USERNAME_PREFIX)
+                 .distinct().prefetch_related("groups").order_by("-is_active", "username"))
+        rows = [{"id": u.pk, "username": u.username, "name": u.get_full_name(), "email": u.email, "is_active": u.is_active,
+                 "last_login": u.last_login, "roles": sorted(g.name for g in u.groups.all()) or (["Superuser"] if u.is_superuser else [])}
+                for u in users]
+    connection.set_schema_to_public()
+    return rows
+
+
+def add_church_login(church, username, email, role, first_name="", last_name=""):
+    from core.limits import staff_limit_message
+    from core.models import AccountProfile
+
+    with tenant_context(church):
+        if User.objects.filter(username__iexact=username).exists():
+            raise PlatformError(f"{church.name} already has a login called “{username}”.")
+        limit = staff_limit_message()
+        if limit:
+            raise PlatformError(limit)
+        password = temporary_password()
+        user = User.objects.create_user(username, email, password, first_name=first_name, last_name=last_name,
+                                        is_staff=role == "Administrator")
+        user.groups.add(Group.objects.get(name=role))
+        AccountProfile.password_set_by_someone_else(user)
+    connection.set_schema_to_public()
+    return user, password
+
+
+def set_login_active(church, user_id, active):
+    from core.limits import staff_limit_message
+
+    with tenant_context(church):
+        user = User.objects.get(pk=user_id)
+        if active and not user.is_active:
+            limit = staff_limit_message()
+            if limit:
+                raise PlatformError(limit)
+        user.is_active = active
+        user.save(update_fields=["is_active"])
+        username = user.username
+    connection.set_schema_to_public()
+    return username
+
+
+def set_login_role(church, user_id, role):
+    with tenant_context(church):
+        user = User.objects.get(pk=user_id)
+        user.groups.set([Group.objects.get(name=role)])
+        user.is_staff = role == "Administrator"
+        user.save(update_fields=["is_staff"])
+        username = user.username
+    connection.set_schema_to_public()
+    return username
+
+
+def find_people(query, limit_per_church=10):
+    """Logins matching a username, name or email, in every church. For support: "which church is this person in?"."""
+    from .models import SUPPORT_USERNAME_PREFIX
+
+    query = query.strip()
+    results = []
+    if len(query) < 2:
+        return results
+    for church in Church.objects.select_related("plan").order_by("name"):
+        with tenant_context(church):
+            users = (User.objects.filter(Q(username__icontains=query) | Q(email__icontains=query) | Q(first_name__icontains=query)
+                                         | Q(last_name__icontains=query))
+                     .exclude(username__startswith=SUPPORT_USERNAME_PREFIX).prefetch_related("groups")[:limit_per_church])
+            for u in users:
+                member = getattr(u, "member_profile", None)
+                results.append({"church": church, "id": u.pk, "username": u.username, "name": u.get_full_name(), "email": u.email,
+                                "is_active": u.is_active, "last_login": u.last_login,
+                                "kind": "Staff" if (u.is_superuser or u.groups.exists()) else ("Member" if member else "Login"),
+                                "roles": ", ".join(sorted(g.name for g in u.groups.all()))})
+    connection.set_schema_to_public()
+    return results
+
+
+def reset_login_password(church, user_id):
+    """A new temporary password for any login in the church (staff or member)."""
+    from core.models import AccountProfile
+
+    with tenant_context(church):
+        user = User.objects.get(pk=user_id)
+        if is_support_login(user):
+            raise PlatformError("Support logins don't have passwords.")
+        password = temporary_password()
+        user.set_password(password)
+        user.save(update_fields=["password"])
+        AccountProfile.password_set_by_someone_else(user)
+        username = user.username
+    connection.set_schema_to_public()
+    return username, password
+
+
+def current_announcements(church, members_app=False):
+    """Platform notices for this church and app, cached for a minute."""
+    from django.core.cache import cache
+
+    from .models import Announcement
+
+    key = f"announcements:{'members' if members_app else 'staff'}"
+    cached = cache.get(key)
+    if cached is not None:
+        return cached
+    now = timezone.now()
+    audiences = [Announcement.EVERYONE, Announcement.MEMBERS if members_app else Announcement.STAFF]
+    qs = (Announcement.objects.filter(is_active=True, starts_at__lte=now, audience__in=audiences)
+          .filter(Q(ends_at__isnull=True) | Q(ends_at__gt=now))
+          .filter(Q(churches__isnull=True) | Q(churches=church)).distinct())
+    items = [{"message": a.message, "level": a.level} for a in qs[:3]]
+    cache.set(key, items, 60)
+    return items

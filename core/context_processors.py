@@ -27,9 +27,14 @@ def church(request):
         return {"brand": brand(), "native_app": native_app, "demo_mode": settings.DEMO_MODE, "on_platform": True,
                 "must_change_password": must_change}
     tenant = getattr(request, "church", None)
+    announcements = []
+    if tenant is not None:
+        from tenants.services import current_announcements
+
+        announcements = current_announcements(tenant, members_app=settings.APP_NAME.endswith("Connect"))
     if not user or not user.is_authenticated:
         return {"church": ChurchProfile.cached(), "brand": brand(), "native_app": native_app, "demo_mode": settings.DEMO_MODE,
-                "tenant": tenant}
+                "tenant": tenant, "announcements": announcements}
     return {
         "brand": brand(),
         "native_app": native_app,
@@ -41,4 +46,5 @@ def church(request):
         "period_choices": PERIOD_CHOICES,
         "tenant": tenant,
         "must_change_password": must_change,
+        "announcements": announcements,
     }

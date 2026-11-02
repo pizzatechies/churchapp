@@ -192,3 +192,84 @@ class PasswordTests(ChurchTestCase):
         response = self.client.post(reverse("login"), {"username": "treasurer", "password": "test-pass-123"})
         self.assertContains(response, "sign-in is paused")
         self.assertNotIn("_auth_user_id", self.client.session)
+
+
+class SuperAdminConsoleTests(ChurchTestCase):
+    """The super admin is administrator of every church: enter it, manage its logins, find people, announce."""
+
+    def setUp(self):
+        from django.core.cache import cache
+
+        cache.clear()
+        self.owner = make_super_admin()
+        self.church = Church.objects.get(slug="test")
+        self.client.post("/platform/login/", {"username": "owner", "password": PLATFORM_PASSWORD})
+
+    def test_enter_any_church_as_its_administrator(self):
+        from core.limits import staff_count
+        from core.models import AuditLog
+
+        before = staff_count()
+        response = self.client.post(f"/platform/churches/{self.church.pk}/enter/", {"reason": "Help with payroll"})
+        link = response["Location"]
+        self.assertTrue(link.startswith("/church/test/accounts/support/"))
+        dashboard = self.client.get(link, follow=True)
+        self.assertContains(dashboard, "Ecclesia support access")
+        self.assertEqual(dashboard.context["user"].username, "support.owner")
+        self.assertTrue(dashboard.context["user"].is_superuser)
+        self.assertEqual(self.client.get("/church/test/settings/users/").status_code, 200)
+        connection.set_tenant(self.church)
+        log = AuditLog.objects.get(model="support access")
+        self.assertEqual(log.changes, {"super_admin": "owner", "reason": "Help with payroll"})
+        self.assertEqual(staff_count(), before)  # support logins never use up the plan's staff logins
+        self.assertFalse(User.objects.get(username="support.owner").has_usable_password())
+        # The link works once.
+        self.client.logout()
+        self.assertEqual(self.client.get(link).status_code, 403)
+        # Leaving returns to the console, and the visit shows in the church's own Subscription page.
+        self.client.post("/platform/login/", {"username": "owner", "password": PLATFORM_PASSWORD})
+        self.client.get(self.client.post(f"/platform/churches/{self.church.pk}/enter/")["Location"])
+        response = self.client.post("/church/test/accounts/support-leave/")
+        self.assertRedirects(response, f"/platform/churches/{self.church.pk}/", fetch_redirect_response=False)
+        self.assertContains(self.client.get("/platform/support-log/"), "Help with payroll")
+        self.client.force_login(self.admin)
+        self.assertContains(self.client.get(reverse("subscription")), "Help with payroll")
+
+    def test_only_super_admins_can_enter(self):
+        self.client.post("/platform/logout/")
+        response = self.client.post(f"/platform/churches/{self.church.pk}/enter/")
+        self.assertTrue(response["Location"].startswith("/platform/login/"))
+        self.assertEqual(self.client.get("/church/test/accounts/support/forged-token/").status_code, 403)
+
+    def test_manage_any_churchs_logins(self):
+        url = f"/platform/churches/{self.church.pk}/logins/"
+        page = self.client.post(url, {"action": "add", "username": "new.clerk", "email": "clerk@example.com", "role": "Bookkeeper"})
+        self.assertContains(page, "new.clerk was added")
+        connection.set_tenant(self.church)
+        clerk = User.objects.get(username="new.clerk")
+        self.assertTrue(clerk.groups.filter(name="Bookkeeper").exists())
+        self.assertTrue(AccountProfile.objects.get(user=clerk).must_change_password)
+        self.client.post(url, {"action": "role", "user": clerk.pk, "role": "Treasurer"})
+        self.client.post(url, {"action": "deactivate", "user": clerk.pk})
+        clerk.refresh_from_db()
+        self.assertEqual((list(clerk.groups.values_list("name", flat=True)), clerk.is_active), (["Treasurer"], False))
+        page = self.client.post(url, {"action": "reset", "user": self.treasurer.pk})
+        self.assertContains(page, "New temporary password for treasurer")
+        self.assertContains(self.client.get(f"/platform/churches/{self.church.pk}/"), "new.clerk")
+
+    def test_find_people_in_every_church(self):
+        page = self.client.get("/platform/people/", {"q": "treasurer"})
+        self.assertContains(page, "Test Church")
+        self.assertContains(page, "treasurer@example.com")
+
+    def test_announcements_reach_the_churches(self):
+        self.client.post("/platform/announcements/", {"message": "Ecclesia will be updated on Saturday at 10pm.", "level": "warning",
+                                                      "audience": "staff"})
+        self.client.post("/platform/announcements/", {"message": "New: give by M-Pesa in the app", "level": "info", "audience": "members"})
+        from django.core.cache import cache
+
+        cache.clear()
+        self.client.force_login(self.treasurer)
+        page = self.client.get(reverse("dashboard"))
+        self.assertContains(page, "Ecclesia will be updated on Saturday")
+        self.assertNotContains(page, "give by M-Pesa")

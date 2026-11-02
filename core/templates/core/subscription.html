@@ -42,6 +42,12 @@
     </div>
   </div>
   <div class="col-xl-4">
+    <div class="card mb-3"><div class="card-header"><i class="bi bi-life-preserver"></i> Ecclesia support visits</div>
+      <ul class="list-group list-group-flush small">
+        {% for v in support_visits %}<li class="list-group-item">{{ v.when|date:"j M Y, H:i" }} · {{ v.who }}{% if v.reason %}<div class="text-body-secondary">{{ v.reason }}</div>{% endif %}</li>
+        {% empty %}<li class="list-group-item text-body-secondary">None. When the Ecclesia team signs in to help, it's listed here and in the audit trail.</li>{% endfor %}
+      </ul>
+    </div>
     <div class="card"><div class="card-header"><i class="bi bi-phone"></i> How to pay</div><div class="card-body small">
       <p>Pay Pizza Technologies by M-Pesa or bank transfer, using <strong>{{ account.slug|upper }}</strong> as the account/reference, then send the confirmation to:</p>
       <ul class="list-unstyled mb-3">

@@ -2,7 +2,7 @@
 {% block title %}Team{% endblock %}
 {% block content %}
 <h1 class="h3 mb-0">Platform team</h1>
-<p class="text-body-secondary small">People who can sign in to this console. They can see every church's plan, payments and usage counts, but not inside any church's books.</p>
+<p class="text-body-secondary small">Super admins: they can onboard and manage every church, and enter any church as its administrator (each visit is in the <a href="{% url 'platform:support_log' %}">support log</a>).</p>
 {% if issued %}{% with username=issued.username password=issued.password %}
 <div class="card border-warning mb-3"><div class="card-header bg-warning-subtle"><i class="bi bi-key"></i> Shown only this once</div><div class="card-body">
   <p class="mb-2">Username <code>{{ username }}</code>, temporary password:</p>

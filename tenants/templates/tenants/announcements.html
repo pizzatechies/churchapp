@@ -1,0 +1,28 @@
+{% extends "tenants/base.html" %}
+{% block title %}Announcements{% endblock %}
+{% block content %}
+<h1 class="h3 mb-0">Announcements</h1>
+<p class="text-body-secondary small">A notice across the top of the apps, e.g. planned maintenance or a new feature. Churches see it within a minute.</p>
+<div class="row g-3">
+  <div class="col-lg-5">
+    <form method="post" class="card" novalidate>{% csrf_token %}<div class="card-header">New announcement</div><div class="card-body"><div class="row">
+      {% include "includes/field.html" with field=form.message col="col-12" %}
+      {% include "includes/field.html" with field=form.level col="col-6" %}
+      {% include "includes/field.html" with field=form.audience col="col-6" %}
+      {% include "includes/field.html" with field=form.ends_at col="col-12" %}
+      <div class="col-12 mb-2"><details><summary class="small text-primary">Only some churches…</summary><div class="mt-2 small announcement-churches">{{ form.churches }}</div></details></div>
+    </div><button class="btn btn-primary">Post announcement</button></div></form>
+  </div>
+  <div class="col-lg-7">
+    <div class="card table-card"><table class="table table-sm align-middle mb-0">
+      <thead><tr><th>Message</th><th>Shown to</th><th>Until</th><th></th></tr></thead>
+      <tbody>{% for a in items %}<tr class="{% if not a.is_showing %}text-body-tertiary{% endif %}">
+        <td><span class="badge text-bg-{{ a.level }}">{{ a.get_level_display }}</span> {{ a.message }}</td>
+        <td class="small">{{ a.get_audience_display }}<div class="text-body-secondary">{% for c in a.churches.all %}{{ c.name }}{% if not forloop.last %}, {% endif %}{% empty %}Every church{% endfor %}</div></td>
+        <td class="small">{{ a.ends_at|date:"j M Y H:i"|default:"Until switched off" }}</td>
+        <td class="text-end"><form method="post">{% csrf_token %}<button class="btn btn-sm btn-link" name="toggle" value="{{ a.pk }}">{% if a.is_active %}Switch off{% else %}Switch on{% endif %}</button></form></td>
+      </tr>{% empty %}<tr><td colspan="4"><div class="empty-state"><i class="bi bi-megaphone"></i>No announcements yet.</div></td></tr>{% endfor %}</tbody>
+    </table></div>
+  </div>
+</div>
+{% endblock %}

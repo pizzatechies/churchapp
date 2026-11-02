@@ -1,0 +1,28 @@
+{% extends "tenants/base.html" %}
+{% block title %}People{% endblock %}
+{% block content %}
+<h1 class="h3 mb-0">People</h1>
+<p class="text-body-secondary small">Find a login in any church by username, name or email, for example when someone calls for help signing in.</p>
+<form method="get" class="d-flex gap-2 mb-3" style="max-width:520px">
+  <input name="q" value="{{ q }}" class="form-control" placeholder="Username, name or email" aria-label="Search" autofocus>
+  <button class="btn btn-primary">Search</button>
+</form>
+{% if results is not None %}
+<div class="card table-card"><div class="table-responsive"><table class="table table-sm align-middle mb-0">
+  <thead><tr><th>Church</th><th>Login</th><th>Type</th><th>Last sign-in</th><th class="text-end"></th></tr></thead>
+  <tbody>
+  {% for r in results %}
+    <tr class="{% if not r.is_active %}text-body-tertiary{% endif %}">
+      <td><a href="{% url 'platform:church_detail' r.church.pk %}">{{ r.church.name }}</a></td>
+      <td><strong>{{ r.username }}</strong>{% if not r.is_active %} <span class="badge text-bg-light border">disabled</span>{% endif %}<div class="small text-body-secondary">{{ r.name }}{% if r.name and r.email %} · {% endif %}{{ r.email }}</div></td>
+      <td class="small">{{ r.kind }}{% if r.roles %}<div class="text-body-secondary">{{ r.roles }}</div>{% endif %}</td>
+      <td class="small">{% if r.last_login %}{{ r.last_login|timesince }} ago{% else %}Never{% endif %}</td>
+      <td class="text-end"><form method="post" action="{% url 'platform:church_login_action' r.church.pk %}" data-confirm="Give {{ r.username }} ({{ r.church.name }}) a new temporary password?">{% csrf_token %}
+        <input type="hidden" name="user" value="{{ r.id }}"><input type="hidden" name="next" value="{{ request.get_full_path }}">
+        <button class="btn btn-sm btn-outline-secondary" name="action" value="reset"><i class="bi bi-key"></i> New password</button></form></td>
+    </tr>
+  {% empty %}<tr><td colspan="5"><div class="empty-state"><i class="bi bi-person-x"></i>Nobody matches “{{ q }}”.</div></td></tr>{% endfor %}
+  </tbody>
+</table></div></div>
+{% endif %}
+{% endblock %}

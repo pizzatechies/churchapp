@@ -214,3 +214,64 @@ class FailedLogin(models.Model):
 
     class Meta:
         indexes = [models.Index(fields=["schema", "username", "created_at"]), models.Index(fields=["ip", "created_at"])]
+
+
+SUPPORT_USERNAME_PREFIX = "support."
+
+
+class SupportSession(models.Model):
+    """A super admin entering a church as its administrator. Logged here and in the church's own audit trail."""
+
+    church = models.ForeignKey(Church, on_delete=models.CASCADE, related_name="support_sessions")
+    platform_user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="support_sessions")
+    reason = models.CharField(max_length=200, blank=True)
+    nonce = models.CharField(max_length=64, unique=True)
+    ip = models.GenericIPAddressField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    used_at = models.DateTimeField(null=True, blank=True)
+    ended_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.platform_user} in {self.church}"
+
+    @property
+    def church_username(self):
+        return f"{SUPPORT_USERNAME_PREFIX}{self.platform_user.username}"[:150]
+
+
+class Announcement(models.Model):
+    """A notice from the platform team shown across churches, e.g. planned maintenance."""
+
+    INFO = "info"
+    WARNING = "warning"
+    URGENT = "danger"
+    LEVEL_CHOICES = [(INFO, "Information"), (WARNING, "Important"), (URGENT, "Urgent")]
+    STAFF = "staff"
+    MEMBERS = "members"
+    EVERYONE = "everyone"
+    AUDIENCE_CHOICES = [(STAFF, "Church staff (admin app)"), (MEMBERS, "Members (members app)"), (EVERYONE, "Staff and members")]
+
+    message = models.CharField(max_length=300)
+    level = models.CharField(max_length=10, choices=LEVEL_CHOICES, default=INFO)
+    audience = models.CharField(max_length=10, choices=AUDIENCE_CHOICES, default=STAFF)
+    churches = models.ManyToManyField(Church, blank=True, related_name="announcements",
+                                      help_text="Leave empty to show it in every church.")
+    starts_at = models.DateTimeField(default=timezone.now)
+    ends_at = models.DateTimeField(null=True, blank=True, help_text="Leave empty to show it until you switch it off.")
+    is_active = models.BooleanField(default=True)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-starts_at"]
+
+    def __str__(self):
+        return self.message[:60]
+
+    @property
+    def is_showing(self):
+        now = timezone.now()
+        return self.is_active and self.starts_at <= now and (self.ends_at is None or self.ends_at > now)

@@ -117,3 +117,32 @@ class AccountForm(StyledModelForm):
     class Meta:
         model = User
         fields = ["first_name", "last_name", "email"]
+
+
+class AddLoginForm(StyledForm):
+    username = forms.CharField(max_length=150)
+    first_name = forms.CharField(max_length=150, required=False)
+    last_name = forms.CharField(max_length=150, required=False)
+    email = forms.EmailField(required=False)
+    role = forms.ChoiceField(choices=[])
+
+    def __init__(self, *args, **kwargs):
+        from core.permissions import ROLES
+
+        super().__init__(*args, **kwargs)
+        self.fields["role"].choices = [(r, r) for r in ROLES]
+
+    def clean_username(self):
+        username = self.cleaned_data["username"].strip()
+        if not re.match(r"^[\w.@+-]+$", username) or username.startswith("support."):
+            raise forms.ValidationError("Use letters, numbers and . @ + - _ only.")
+        return username
+
+
+class AnnouncementForm(StyledModelForm):
+    class Meta:
+        from .models import Announcement
+
+        model = Announcement
+        fields = ["message", "level", "audience", "churches", "ends_at"]
+        widgets = {"churches": forms.CheckboxSelectMultiple, "ends_at": forms.DateTimeInput(attrs={"type": "datetime-local"})}

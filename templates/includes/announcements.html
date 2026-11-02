@@ -1,0 +1,3 @@
+{% for a in announcements %}
+<div class="announcement announcement-{{ a.level }} d-print-none" role="status"><i class="bi {% if a.level == 'danger' %}bi-exclamation-octagon{% elif a.level == 'warning' %}bi-exclamation-triangle{% else %}bi-megaphone{% endif %}"></i> {{ a.message }}</div>
+{% endfor %}

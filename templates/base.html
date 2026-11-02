@@ -122,6 +122,11 @@
     </header>
 
     {% include "includes/demo_banner.html" %}
+    {% if request.session.support_session %}
+    <div class="support-banner d-print-none" role="status"><i class="bi bi-life-preserver"></i> Ecclesia support access: you're working in {{ church.name }} as an administrator. Changes are recorded under your name.
+      <form method="post" action="{% url 'support_leave' %}" class="d-inline">{% csrf_token %}<button class="btn btn-sm btn-light ms-2 py-0">Leave and return to the console</button></form></div>
+    {% endif %}
+    {% include "includes/announcements.html" %}
     {% if tenant and caps.manage_settings %}{% with st=tenant.state.0 %}{% if st == 'overdue' %}
     <div class="storage-banner d-print-none" role="alert"><i class="bi bi-exclamation-circle"></i> Your Ecclesia subscription was due on {{ tenant.due_date|date:"j F Y" }}. Please pay to avoid an interruption. <a href="{% url 'subscription' %}">Details</a></div>
     {% elif tenant.payment_due_soon %}

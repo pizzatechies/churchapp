@@ -25,7 +25,9 @@ def member_limit_message(adding=1):
 
 
 def staff_count():
-    return User.objects.filter(is_active=True).filter(Q(is_superuser=True) | Q(groups__isnull=False)).distinct().count()
+    # Ecclesia support logins (super admins helping the church) never use up the church's staff logins.
+    return (User.objects.filter(is_active=True).filter(Q(is_superuser=True) | Q(groups__isnull=False))
+            .exclude(username__startswith="support.").distinct().count())
 
 
 def staff_limit_message(adding=1):

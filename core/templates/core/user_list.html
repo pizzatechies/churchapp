@@ -11,7 +11,7 @@
         <tbody>
         {% for u in users %}
           <tr data-href="{% url 'user_edit' u.pk %}">
-            <td><a href="{% url 'user_edit' u.pk %}">{{ u.username }}</a><div class="small text-body-secondary">{{ u.get_full_name }}</div></td>
+            <td><a href="{% url 'user_edit' u.pk %}">{{ u.username }}</a>{% if u.username|slice:":8" == "support." %} <span class="badge badge-gold" title="A Pizza Technologies super admin's login for helping your church. It has no password and is only used from the Ecclesia console; each visit is in the audit trail.">Ecclesia support</span>{% endif %}<div class="small text-body-secondary">{{ u.get_full_name }}</div></td>
             <td>{{ u.email }}</td>
             <td>{% if u.is_superuser %}<span class="badge text-bg-dark">Superuser</span> {% endif %}{% for g in u.groups.all %}<span class="badge text-bg-light border">{{ g.name }}</span> {% empty %}{% if not u.is_superuser %}<span class="text-body-secondary small">None</span>{% endif %}{% endfor %}</td>
             <td class="small">{{ u.last_login|date:"M j, Y H:i"|default:"Never" }}</td>

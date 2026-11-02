@@ -7,8 +7,13 @@
     <h1 class="h3 mb-1">{{ church.name }} {% state_badge state.0 state.1 %}</h1>
     <div class="text-body-secondary small">{{ church.plan.name }} plan · {{ church.get_billing_cycle_display }} · KSh {{ church.price|floatformat:0|intcomma }} · joined {{ church.created_at|date:"j M Y" }}{% if church.is_default %} · served at the main addresses{% endif %}</div>
   </div>
-  <div class="d-flex gap-2 flex-wrap">
-    <a href="{{ addresses.admin }}" target="_blank" rel="noopener" class="btn btn-outline-secondary"><i class="bi bi-box-arrow-up-right"></i> Staff app</a>
+  <div class="d-flex gap-2 flex-wrap align-items-start">
+    {% if church.is_accessible %}
+    <form method="post" action="{% url 'platform:church_enter' church.pk %}" class="d-flex gap-2" target="_self">{% csrf_token %}
+      <input name="reason" class="form-control" placeholder="Reason (recorded)" aria-label="Reason" style="max-width:200px">
+      <button class="btn btn-primary text-nowrap"><i class="bi bi-door-open"></i> Enter as administrator</button>
+    </form>
+    {% endif %}
     <a href="{% url 'platform:church_edit' church.pk %}" class="btn btn-outline-primary"><i class="bi bi-pencil"></i> Edit</a>
   </div>
 </div>
@@ -45,6 +50,43 @@
     </div>
 
     <div class="card table-card mb-3">
+      <div class="card-header d-flex justify-content-between flex-wrap gap-2"><span>Staff logins</span><span class="small fw-normal text-body-secondary">Passwords are stored scrambled; you can only issue a new temporary one.</span></div>
+      <div class="table-responsive"><table class="table table-sm align-middle mb-0">
+        <thead><tr><th>Login</th><th>Role</th><th>Last sign-in</th><th class="text-end"></th></tr></thead>
+        <tbody>
+        {% for u in logins %}
+          <tr class="{% if not u.is_active %}text-body-tertiary{% endif %}">
+            <td><strong>{{ u.username }}</strong>{% if not u.is_active %} <span class="badge text-bg-light border">disabled</span>{% endif %}<div class="small text-body-secondary">{{ u.name }}{% if u.name and u.email %} · {% endif %}{{ u.email }}</div></td>
+            <td>
+              <form method="post" action="{% url 'platform:church_login_action' church.pk %}" class="d-flex gap-1">{% csrf_token %}
+                <input type="hidden" name="action" value="role"><input type="hidden" name="user" value="{{ u.id }}">
+                <select name="role" class="form-select form-select-sm" aria-label="Role for {{ u.username }}" onchange="this.form.submit()" style="min-width:150px">
+                  {% for value, label in roles %}<option value="{{ value }}" {% if value in u.roles %}selected{% endif %}>{{ label }}</option>{% endfor %}
+                  {% if u.roles|length > 1 or "Superuser" in u.roles %}<option selected disabled>{{ u.roles|join:", " }}</option>{% endif %}
+                </select>
+              </form>
+            </td>
+            <td class="small">{% if u.last_login %}{{ u.last_login|timesince }} ago{% else %}Never{% endif %}</td>
+            <td class="text-end text-nowrap">
+              <form method="post" action="{% url 'platform:church_login_action' church.pk %}" class="d-inline" data-confirm="Give {{ u.username }} a new temporary password? Their current password stops working.">{% csrf_token %}<input type="hidden" name="user" value="{{ u.id }}"><button class="btn btn-sm btn-outline-secondary" name="action" value="reset"><i class="bi bi-key"></i> New password</button></form>
+              <form method="post" action="{% url 'platform:church_login_action' church.pk %}" class="d-inline">{% csrf_token %}<input type="hidden" name="user" value="{{ u.id }}">
+                {% if u.is_active %}<button class="btn btn-sm btn-link text-danger" name="action" value="deactivate">Disable</button>{% else %}<button class="btn btn-sm btn-link" name="action" value="activate">Enable</button>{% endif %}</form>
+            </td>
+          </tr>
+        {% empty %}<tr><td colspan="4" class="small text-body-secondary p-3">No staff logins.</td></tr>{% endfor %}
+        </tbody>
+      </table></div>
+      <form method="post" action="{% url 'platform:church_login_action' church.pk %}" class="card-body border-top row g-2 align-items-end">{% csrf_token %}
+        <input type="hidden" name="action" value="add">
+        <div class="col-6 col-md-3"><label class="form-label small mb-0">Username</label>{{ add_login_form.username }}</div>
+        <div class="col-6 col-md-3"><label class="form-label small mb-0">Email</label>{{ add_login_form.email }}</div>
+        <div class="col-6 col-md-2"><label class="form-label small mb-0">First name</label>{{ add_login_form.first_name }}</div>
+        <div class="col-6 col-md-2"><label class="form-label small mb-0">Role</label>{{ add_login_form.role }}</div>
+        <div class="col-12 col-md-2"><button class="btn btn-outline-primary w-100">Add login</button></div>
+      </form>
+    </div>
+
+    <div class="card table-card mb-3">
       <div class="card-header">Payments</div>
       <div class="table-responsive"><table class="table table-sm mb-0">
         <thead><tr><th>Date</th><th class="num">Amount</th><th>Method</th><th>Reference</th><th>Pays for</th><th>By</th></tr></thead>
@@ -76,24 +118,20 @@
       {% endif %}
     </div></div>
 
-    <div class="card mb-3"><div class="card-header">Administrators</div>
-      <ul class="list-group list-group-flush small">
-        {% for a in admins %}
-        <li class="list-group-item d-flex justify-content-between align-items-center gap-2">
-          <div><strong>{{ a.username }}</strong>{% if a.email %}<div class="text-body-secondary">{{ a.email }}</div>{% endif %}<div class="text-body-secondary">{% if a.last_login %}Signed in {{ a.last_login|timesince }} ago{% else %}Never signed in{% endif %}</div></div>
-          <form method="post" action="{% url 'platform:church_reset_admin' church.pk %}" data-confirm="Give {{ a.username }} a new temporary password? Their current password stops working.">{% csrf_token %}<button class="btn btn-sm btn-outline-secondary" name="user" value="{{ a.id }}"><i class="bi bi-key"></i> New password</button></form>
-        </li>
-        {% empty %}<li class="list-group-item text-body-secondary">No active administrators.</li>{% endfor %}
-      </ul>
-      <div class="card-footer small text-body-secondary bg-transparent">Passwords are stored scrambled (hashed) and can't be viewed by anyone. You can only issue a new temporary one.</div>
-    </div>
-
     <div class="card mb-3"><div class="card-header">Contact</div><div class="card-body small">
       <div>{{ church.contact_name|default:"—" }}</div>
       {% if church.contact_phone %}<div><a href="tel:{{ church.contact_phone }}">{{ church.contact_phone }}</a></div>{% endif %}
       {% if church.contact_email %}<div><a href="mailto:{{ church.contact_email }}">{{ church.contact_email }}</a></div>{% endif %}
       {% if church.notes %}<p class="mt-2 mb-0 text-body-secondary">{{ church.notes|linebreaksbr }}</p>{% endif %}
     </div></div>
+
+    <div class="card mb-3"><div class="card-header">Support access</div>
+      <ul class="list-group list-group-flush small">
+        {% for ss in support_sessions %}<li class="list-group-item"><strong>{{ ss.platform_user.username }}</strong> · {{ ss.created_at|date:"j M Y, H:i" }}{% if not ss.used_at %} <span class="text-body-secondary">(link not used)</span>{% endif %}{% if ss.reason %}<div class="text-body-secondary">{{ ss.reason }}</div>{% endif %}</li>
+        {% empty %}<li class="list-group-item text-body-secondary">No one from the platform team has entered this church.</li>{% endfor %}
+      </ul>
+      <div class="card-footer bg-transparent small text-body-secondary">Each visit is also written to the church's own audit trail, which its administrators can see.</div>
+    </div>
 
     <div class="card"><div class="card-header">Access</div><div class="card-body">
       {% if church.is_accessible %}

@@ -2,7 +2,7 @@
 {% block title %}Churches{% endblock %}
 {% block content %}
 <div class="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-3">
-  <div><h1 class="h3 mb-0">Churches</h1><p class="text-body-secondary mb-0 small">Every church on Ecclesia, its plan, payments and how it's using the system.</p></div>
+  <div><h1 class="h3 mb-0">Churches</h1><p class="text-body-secondary mb-0 small">Every church on Ecclesia: its plan, payments and usage. Enter any church as its administrator.</p></div>
   <div class="d-flex gap-2">
     <form method="post">{% csrf_token %}<button class="btn btn-outline-secondary" name="refresh" value="1"><i class="bi bi-arrow-clockwise"></i> Refresh usage</button></form>
     <a href="{% url 'platform:church_create' %}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Onboard a church</a>
@@ -38,7 +38,7 @@
 <div class="card table-card">
   <div class="table-responsive">
   <table class="table table-hover align-middle mb-0">
-    <thead><tr><th>Church</th><th>Plan</th><th>Status</th><th>Paid until</th><th class="num">Members</th><th class="num">Staff</th><th class="num">Storage</th><th>Last activity</th></tr></thead>
+    <thead><tr><th>Church</th><th>Plan</th><th>Status</th><th>Paid until</th><th class="num">Members</th><th class="num">Staff</th><th class="num">Storage</th><th>Last activity</th><th></th></tr></thead>
     <tbody>
     {% for r in rows %}{% with c=r.church %}
       <tr data-href="{% url 'platform:church_detail' c.pk %}">
@@ -50,13 +50,14 @@
         <td class="num small {% if over %}text-negative fw-semibold{% endif %}">{% if forloop.last %}{{ used }} GB{% else %}{{ used|intcomma }}{% endif %}{% if allowed %}<span class="text-body-secondary"> / {{ allowed|intcomma }}</span>{% endif %}</td>
         {% endfor %}
         <td class="small">{% if c.usage.last_activity %}{{ c.usage.last_activity|iso_date|timesince }} ago{% elif c.last_seen_at %}Visited {{ c.last_seen_at|timesince }} ago{% else %}<span class="text-body-secondary">Not yet</span>{% endif %}</td>
+        <td class="text-end">{% if c.is_accessible %}<form method="post" action="{% url 'platform:church_enter' c.pk %}">{% csrf_token %}<button class="btn btn-sm btn-outline-primary text-nowrap" title="Open {{ c.name }}'s admin app as an administrator"><i class="bi bi-door-open"></i> Enter</button></form>{% endif %}</td>
       </tr>
     {% endwith %}{% empty %}
-      <tr><td colspan="8"><div class="empty-state"><i class="bi bi-buildings"></i>{% if q or state %}No churches match.{% else %}No churches yet. <a href="{% url 'platform:church_create' %}">Onboard the first one</a>.{% endif %}</div></td></tr>
+      <tr><td colspan="9"><div class="empty-state"><i class="bi bi-buildings"></i>{% if q or state %}No churches match.{% else %}No churches yet. <a href="{% url 'platform:church_create' %}">Onboard the first one</a>.{% endif %}</div></td></tr>
     {% endfor %}
     </tbody>
   </table>
   </div>
 </div>
-<p class="small text-body-secondary mt-2 mb-0"><i class="bi bi-shield-check"></i> For each church's privacy, the console shows counts only: never names, gifts or amounts from a church's books.</p>
+<p class="small text-body-secondary mt-2 mb-0"><i class="bi bi-shield-check"></i> The list shows counts only. To work inside a church, use <strong>Enter</strong>: you become its administrator, and the visit is recorded in its audit trail and the <a href="{% url 'platform:support_log' %}">support log</a>.</p>
 {% endblock %}
