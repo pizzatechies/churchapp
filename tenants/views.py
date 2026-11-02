@@ -477,3 +477,18 @@ def find_church(request):
     return render(request, "tenants/find_church.html", {
         "slug": slug, "not_found": bool(slug), "members_app": settings.APP_NAME.endswith("Connect"),
     })
+
+
+# ------------------------------------------------------- error pages
+# Outside a church there's no church layout to use, so these render the console's own simple pages.
+
+def error_404(request, exception=None):
+    return render(request, "tenants/error.html", {"title": "Page not found", "message": "That address doesn't exist."}, status=404)
+
+
+def error_403(request, exception=None):
+    return render(request, "tenants/error.html", {"title": "Not allowed", "message": "You don't have access to this page."}, status=403)
+
+
+def error_500(request):
+    return render(request, "tenants/error.html", {"title": "Something went wrong", "message": "Please try again in a moment."}, status=500)

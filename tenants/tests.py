@@ -273,3 +273,12 @@ class SuperAdminConsoleTests(ChurchTestCase):
         page = self.client.get(reverse("dashboard"))
         self.assertContains(page, "Ecclesia will be updated on Saturday")
         self.assertNotContains(page, "give by M-Pesa")
+
+
+class ErrorPageTests(ChurchTestCase):
+    def test_unknown_addresses_are_not_found_rather_than_errors(self):
+        for path in ["/platform/nope/", "/church/nope/", "/nope/", "/church/test/nope/"]:
+            self.assertEqual(self.client.get(path).status_code, 404, path)
+        with override_settings(ROOT_URLCONF="config.urls_portal", PUBLIC_SCHEMA_URLCONF="config.urls_portal_public"):
+            for path in ["/platform/nope/", "/church/test/settings/users/"]:
+                self.assertEqual(self.client.get(path).status_code, 404, path)

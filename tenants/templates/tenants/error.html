@@ -1,0 +1,4 @@
+{% extends "tenants/base.html" %}{% load static %}
+{% block title %}{{ title }}{% endblock %}
+{% block anonymous %}{% include "tenants/_error.html" %}{% endblock %}
+{% block content %}{% include "tenants/_error.html" %}{% endblock %}
