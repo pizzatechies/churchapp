@@ -40,14 +40,20 @@ def _callback_urls(request, connection):
 
 # ----------------------------------------------------------------- linking
 
+def _is_mpesa_named(account):
+    name = f"{account.name} {account.bank_name}".lower()
+    return "pesa" in name or "paybill" in name or "till" in name
+
+
 @require_cap("manage_settings")
 def link(request, account_pk):
     account = _feed_account(account_pk)
     connection = getattr(account, "bank_connection", None)
+    wants_mpesa = request.GET.get("method") == BankConnection.MPESA or _is_mpesa_named(account)
     form = BankConnectionForm(request.POST or None, instance=connection, initial=None if connection else {
         "default_fund": Fund.default(),
         "default_income_account": Account.objects.filter(type=Account.INCOME, subtype="contributions", is_active=True).first(),
-        "method": BankConnection.MPESA if "pesa" in account.name.lower() else BankConnection.STATEMENT,
+        "method": BankConnection.MPESA if wants_mpesa else BankConnection.STATEMENT,
     })
     if request.method == "POST" and form.is_valid():
         connection = form.save(commit=False)
@@ -55,12 +61,17 @@ def link(request, account_pk):
         if not connection.pk:
             connection.created_by = request.user
         connection.save()
-        messages.success(request, f"{account.name} is linked." + (" Next, register the payment address with Safaricom." if connection.is_live else ""))
+        messages.success(request, f"{account.name} is linked." + (" Next, register the payment address with Safaricom (step 3)." if connection.is_live else ""))
         return redirect(reverse("bankfeeds:link", args=[account.pk]) if connection.is_live else connection.get_absolute_url())
+    live = connection and connection.is_live
     return render(request, "bankfeeds/link.html", {
         "account": account, "connection": connection, "form": form,
-        "urls": _callback_urls(request, connection) if connection and connection.is_live else None,
-        "daraja_ready": daraja.configured(), "environment": settings.MPESA_ENVIRONMENT,
+        "urls": _callback_urls(request, connection) if live else None,
+        "daraja_ready": daraja.configured(), "env_environment": settings.MPESA_ENVIRONMENT,
+        "bank_account_as_mpesa": live and not _is_mpesa_named(account),
+        "mpesa_accounts": Account.objects.filter(subtype="bank", is_active=True, bank_connection__isnull=True).exclude(pk=account.pk),
+        "sleeps": settings.ON_FREE_HOSTING,
+        "line_count": connection.transactions.count() if connection else 0,
     })
 
 
@@ -78,16 +89,98 @@ def unlink(request, account_pk):
 @require_cap("manage_settings")
 def register(request, account_pk):
     connection = get_object_or_404(BankConnection, account_id=account_pk, method=BankConnection.MPESA)
+    environment = request.POST.get("environment") or connection.environment
+    if environment not in dict(BankConnection.ENVIRONMENT_CHOICES):
+        environment = BankConnection.PRODUCTION
     urls = _callback_urls(request, connection)
     try:
-        daraja.register_urls(connection.shortcode, urls["confirm"], urls["validate"])
+        daraja.register_urls(connection.shortcode, urls["confirm"], urls["validate"],
+                             key=request.POST.get("consumer_key"), secret=request.POST.get("consumer_secret"), environment=environment)
     except daraja.DarajaError as e:
         messages.error(request, f"Safaricom didn't accept the registration: {e}")
     else:
-        connection.registered_at = timezone.now()
-        connection.save(update_fields=["registered_at"])
-        messages.success(request, f"Registered with Safaricom. Payments to {connection.shortcode} will now appear in the bank feed.")
+        connection.registered_at, connection.environment = timezone.now(), environment
+        connection.save(update_fields=["registered_at", "environment"])
+        messages.success(request, f"Registered with Safaricom. Payments to {connection.shortcode} will now appear in the bank feed."
+                         + (" Use “Simulate a payment” to try it." if environment == BankConnection.SANDBOX else ""))
     return redirect("bankfeeds:link", account_pk=account_pk)
+
+
+@require_POST
+@require_cap("manage_settings")
+def mark_registered(request, account_pk):
+    """For churches that registered the addresses on the Daraja portal themselves."""
+    connection = get_object_or_404(BankConnection, account_id=account_pk, method=BankConnection.MPESA)
+    connection.registered_at = timezone.now()
+    connection.save(update_fields=["registered_at"])
+    messages.success(request, "Noted as registered. The first payment to arrive will confirm it.")
+    return redirect("bankfeeds:link", account_pk=account_pk)
+
+
+@require_POST
+@require_cap("manage_settings")
+def check_address(request, account_pk):
+    """Call our own payment address over the internet, as Safaricom will."""
+    connection = get_object_or_404(BankConnection, account_id=account_pk, method=BankConnection.MPESA)
+    url = _callback_urls(request, connection)["confirm"]
+    try:
+        daraja.check_addresses(url, url, connection.environment)
+        daraja.self_check(url)
+    except daraja.DarajaError as e:
+        connection.last_check_ok, connection.last_check_note = False, str(e)[:255]
+        messages.error(request, str(e))
+    else:
+        connection.last_check_ok, connection.last_check_note = True, "The payment address answered correctly from the internet."
+        messages.success(request, "The payment address works: Safaricom will be able to reach it.")
+    connection.last_check_at = timezone.now()
+    connection.save(update_fields=["last_check_at", "last_check_ok", "last_check_note"])
+    return redirect("bankfeeds:link", account_pk=account_pk)
+
+
+@require_POST
+@require_cap("manage_settings")
+def simulate(request, account_pk):
+    connection = get_object_or_404(BankConnection, account_id=account_pk, method=BankConnection.MPESA)
+    if connection.environment != BankConnection.SANDBOX:
+        messages.error(request, "Test payments only work in Safaricom's sandbox. Make a small real payment to try a live Paybill.")
+        return redirect("bankfeeds:link", account_pk=account_pk)
+    try:
+        daraja.simulate_payment(connection.shortcode, request.POST.get("amount") or 10, request.POST.get("reference") or "TEST",
+                                key=request.POST.get("consumer_key"), secret=request.POST.get("consumer_secret"))
+    except daraja.DarajaError as e:
+        messages.error(request, f"Safaricom didn't make the test payment: {e}")
+    else:
+        messages.success(request, "Safaricom accepted the test payment. It should appear in the bank feed within a minute.")
+    return redirect("bankfeeds:link", account_pk=account_pk)
+
+
+@require_POST
+@require_cap("manage_settings")
+def move_link(request, account_pk):
+    """Move a live M-Pesa link from the bank current account to a separate M-Pesa account."""
+    connection = get_object_or_404(BankConnection, account_id=account_pk, method=BankConnection.MPESA)
+    if connection.transactions.exists():
+        messages.error(request, "This link already has payments. Unlink it and link the M-Pesa account afresh, or keep it here.")
+        return redirect("bankfeeds:link", account_pk=account_pk)
+    target_pk = request.POST.get("target")
+    if target_pk == "new":
+        target = services.create_mpesa_account(connection.shortcode)
+    else:
+        target = get_object_or_404(Account, pk=target_pk or 0, subtype="bank", bank_connection__isnull=True)
+    connection.account = target
+    connection.save(update_fields=["account"])
+    messages.success(request, f"The live M-Pesa link now belongs to {target.name}. The payment address stays the same, so "
+                              "nothing needs to change at Safaricom.")
+    return redirect("bankfeeds:link", account_pk=target.pk)
+
+
+@require_POST
+@require_cap("manage_settings")
+def add_mpesa_account(request):
+    shortcode = "".join(c for c in request.POST.get("shortcode", "") if c.isdigit())[:7]
+    account = services.create_mpesa_account(shortcode)
+    messages.success(request, f"{account.name} was added to the chart of accounts. Now link it to M-Pesa.")
+    return redirect(f"{reverse('bankfeeds:link', args=[account.pk])}?method={BankConnection.MPESA}")
 
 
 # -------------------------------------------------------------------- feed
@@ -247,10 +340,14 @@ def c2b_confirm(request, token):
     payload = _payload(request)
     if payload is None:
         return JsonResponse({"ResultCode": 1, "ResultDesc": "Not JSON"}, status=400)
+    if payload.get("TransactionType") == daraja.TEST_TRANSACTION_TYPE:
+        # Ecclesia's own "check the payment address" call: answer, record nothing.
+        return JsonResponse({"ResultCode": 0, "ResultDesc": "Ecclesia payment address OK"})
     short = str(payload.get("BusinessShortCode") or "").strip()
     if connection.shortcode and short and short != connection.shortcode:
-        log.warning("M-Pesa payment for short code %s arrived at the address for %s; ignored.", short, connection.shortcode)
-        return JsonResponse(ACCEPTED)
+        # Tills report their store (head office) number, not the till number. The secret address
+        # already proves the notice is for this church, so keep the payment and just note it.
+        log.info("M-Pesa payment for short code %s arrived at the address for %s.", short, connection.shortcode)
     try:
         services.receive_c2b(connection, payload)
     except FeedError as e:

@@ -353,3 +353,4 @@ tr.row-link { cursor: pointer; }
 .feed-more[open] > summary { margin-bottom: 0.25rem; }
 @media (max-width: 575.98px) { .feed-actions { margin-left: 0; } }
 .min-w-0 { min-width: 0; }
+.mpesa-steps .step-num { flex: 0 0 22px; height: 22px; border-radius: 50%; background: var(--app-gold-soft); color: var(--app-gold-ink); font-weight: 700; font-size: 0.75rem; display: inline-flex; align-items: center; justify-content: center; margin-top: 1px; }

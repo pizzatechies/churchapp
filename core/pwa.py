@@ -13,6 +13,7 @@ from django.contrib.auth.decorators import login_not_required
 from django.http import HttpResponse
 from django.shortcuts import render
 from django.templatetags.static import static
+from django.urls import get_script_prefix, reverse
 from django.views.decorators.cache import cache_control
 
 from .models import ChurchProfile
@@ -24,13 +25,14 @@ THEME = "#0b1d51"
 @cache_control(max_age=3600)
 def manifest(request):
     church = ChurchProfile.cached()
+    root = get_script_prefix()
     data = {
-        "id": "/",
+        "id": root,
         "name": f"{settings.APP_NAME} · {church.name}",
         "short_name": settings.APP_SHORT_NAME,
         "description": settings.APP_TAGLINE,
-        "start_url": "/",
-        "scope": "/",
+        "start_url": root,
+        "scope": root,
         "display": "standalone",
         "orientation": "any",
         "background_color": THEME,
@@ -48,7 +50,7 @@ def manifest(request):
 
 SERVICE_WORKER = """
 const CACHE = "ecclesia-%(version)s";
-const OFFLINE_URL = "/offline/";
+const OFFLINE_URL = %(offline)s;
 const PRECACHE = %(precache)s;
 const CACHE_STATIC = %(cache_static)s;
 
@@ -94,17 +96,19 @@ self.addEventListener("fetch", (event) => {
 @login_not_required
 @cache_control(no_cache=True)
 def service_worker(request):
-    precache = ["/offline/", static("css/app.css"), static("brand/ecclesia-logo.svg"), static("brand/icons/icon-192.png")]
+    offline_url = reverse("offline")
+    precache = [offline_url, static("css/app.css"), static("brand/ecclesia-logo.svg"), static("brand/icons/icon-192.png")]
     # In production static names carry a content hash, so a new release gives a new cache.
     version = hashlib.sha256("|".join(precache).encode()).hexdigest()[:12]
     body = SERVICE_WORKER % {
         "version": version,
         "precache": json.dumps(precache),
+        "offline": json.dumps(offline_url),
         # During development static files change without changing their names: don't cache them.
         "cache_static": "false" if settings.DEBUG else "true",
     }
     response = HttpResponse(body, content_type="application/javascript")
-    response["Service-Worker-Allowed"] = "/"
+    response["Service-Worker-Allowed"] = get_script_prefix()
     return response
 
 

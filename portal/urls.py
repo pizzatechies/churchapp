@@ -18,5 +18,9 @@ urlpatterns = [
     path("church-finances/", views.church_finances, name="church_finances"),
     path("profile/", views.profile, name="profile"),
     path("profile/password/", views.PasswordChangeView.as_view(), name="password"),
+    path("password/reset/", views.PasswordResetView.as_view(), name="password_reset"),
+    path("password/reset/sent/", views.PasswordResetDoneView.as_view(), name="password_reset_done"),
+    path("password/reset/<uidb64>/<token>/", views.PasswordResetConfirmView.as_view(), name="password_reset_confirm"),
+    path("password/reset/complete/", views.PasswordResetCompleteView.as_view(), name="password_reset_complete"),
     path("app/switch-church/", views.switch_church, name="switch_church"),
 ]

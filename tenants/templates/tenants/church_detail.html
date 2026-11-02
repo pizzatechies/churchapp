@@ -1,0 +1,111 @@
+{% extends "tenants/base.html" %}{% load humanize platform %}
+{% block title %}{{ church.name }}{% endblock %}
+{% block content %}
+<nav><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{% url 'platform:dashboard' %}">Churches</a></li><li class="breadcrumb-item active">{{ church.name }}</li></ol></nav>
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+  <div>
+    <h1 class="h3 mb-1">{{ church.name }} {% state_badge state.0 state.1 %}</h1>
+    <div class="text-body-secondary small">{{ church.plan.name }} plan · {{ church.get_billing_cycle_display }} · KSh {{ church.price|floatformat:0|intcomma }} · joined {{ church.created_at|date:"j M Y" }}{% if church.is_default %} · served at the main addresses{% endif %}</div>
+  </div>
+  <div class="d-flex gap-2 flex-wrap">
+    <a href="{{ addresses.admin }}" target="_blank" rel="noopener" class="btn btn-outline-secondary"><i class="bi bi-box-arrow-up-right"></i> Staff app</a>
+    <a href="{% url 'platform:church_edit' church.pk %}" class="btn btn-outline-primary"><i class="bi bi-pencil"></i> Edit</a>
+  </div>
+</div>
+{% if not church.is_accessible %}<div class="alert alert-danger"><i class="bi bi-pause-circle"></i> {{ church.get_status_display }}: {{ church.suspended_reason }}. Its staff and members see a "paused" page.</div>
+{% elif state.0 == 'overdue' %}<div class="alert alert-warning"><i class="bi bi-exclamation-triangle"></i> Payment was due on {{ church.due_date|date:"j F Y" }} ({{ church.days_overdue }} day{{ church.days_overdue|pluralize }} ago). Their administrators see a reminder.</div>{% endif %}
+
+<div class="row g-3">
+  <div class="col-xl-8">
+    <div class="card mb-3">
+      <div class="card-header d-flex justify-content-between"><span>Usage</span><a class="small fw-normal" href="?refresh=1"><i class="bi bi-arrow-clockwise"></i> Refresh</a></div>
+      <div class="card-body">
+        <div class="row g-3">
+          {% for label, used, allowed, over in limits %}
+          <div class="col-md-4">
+            <div class="small text-body-secondary">{{ label }}</div>
+            <div class="fs-5 fw-semibold {% if over %}text-negative{% endif %}">{{ used|intcomma }}{% if allowed %} <span class="fs-6 text-body-secondary fw-normal">of {{ allowed|intcomma }}</span>{% else %} <span class="fs-6 text-body-secondary fw-normal">no limit</span>{% endif %}</div>
+            {% if allowed %}<div class="progress mt-1" role="progressbar" aria-label="{{ label }}"><div class="progress-bar {% if over %}bg-danger{% endif %}" style="width: {% widthratio used allowed 100 %}%; max-width:100%"></div></div>{% endif %}
+            {% if over %}<div class="small text-negative">Over the {{ church.plan.name }} plan's limit</div>{% endif %}
+          </div>
+          {% endfor %}
+        </div>
+        <hr>
+        <dl class="dl-grid small mb-0">
+          <dt>Members' app logins</dt><dd>{{ usage.member_logins|default:0|intcomma }}</dd>
+          <dt>This month</dt><dd>{{ usage.entries_this_month|default:0|intcomma }} journal entries · {{ usage.gifts_this_month|default:0|intcomma }} gifts recorded</dd>
+          <dt>Sermons</dt><dd>{{ usage.sermons|default:0 }}</dd>
+          <dt>Files · database</dt><dd>{{ usage.files_bytes|filesize }} · {{ usage.database_bytes|filesize }}</dd>
+          <dt>Last staff sign-in</dt><dd>{% if usage.last_staff_login %}{{ usage.last_staff_login|iso_date|timesince }} ago{% else %}Not yet{% endif %}</dd>
+          <dt>Last member sign-in</dt><dd>{% if usage.last_member_login %}{{ usage.last_member_login|iso_date|timesince }} ago{% else %}Not yet{% endif %}</dd>
+          <dt>Last change to the books</dt><dd>{% if usage.last_activity %}{{ usage.last_activity|iso_date|timesince }} ago{% else %}None yet{% endif %}</dd>
+        </dl>
+        {% if church.usage_updated_at %}<p class="small text-body-secondary mb-0 mt-2">Counted {{ church.usage_updated_at|timesince }} ago. Counts only: the console never shows names or amounts from the church's books.</p>{% endif %}
+      </div>
+    </div>
+
+    <div class="card table-card mb-3">
+      <div class="card-header">Payments</div>
+      <div class="table-responsive"><table class="table table-sm mb-0">
+        <thead><tr><th>Date</th><th class="num">Amount</th><th>Method</th><th>Reference</th><th>Pays for</th><th>By</th></tr></thead>
+        <tbody>{% for p in payments %}<tr><td>{{ p.paid_on|date:"j M Y" }}</td><td class="num">KSh {{ p.amount|floatformat:2|intcomma }}</td><td>{{ p.get_method_display }}</td><td class="small">{{ p.reference }}</td><td class="small">{{ p.covers_from|date:"j M Y" }} – {{ p.covers_to|date:"j M Y" }}</td><td class="small">{{ p.recorded_by.username }}</td></tr>
+        {% empty %}<tr><td colspan="6" class="text-body-secondary small p-3">No payments yet.</td></tr>{% endfor %}</tbody>
+      </table></div>
+      <form method="post" action="{% url 'platform:payment_add' church.pk %}" class="card-body border-top row g-2 align-items-end">{% csrf_token %}
+        <div class="col-6 col-md-2"><label class="form-label small mb-0">Date</label>{{ payment_form.paid_on }}</div>
+        <div class="col-6 col-md-2"><label class="form-label small mb-0">Amount (KSh)</label>{{ payment_form.amount }}</div>
+        <div class="col-4 col-md-1"><label class="form-label small mb-0">Months</label>{{ payment_form.months }}</div>
+        <div class="col-8 col-md-2"><label class="form-label small mb-0">Method</label>{{ payment_form.method }}</div>
+        <div class="col-7 col-md-3"><label class="form-label small mb-0">Reference</label>{{ payment_form.reference }}</div>
+        <div class="col-5 col-md-2"><button class="btn btn-primary w-100">Record payment</button></div>
+        <div class="col-12 small text-body-secondary">Paid up to {% if church.paid_until %}{{ church.paid_until|date:"j F Y" }}{% else %}— (not paid yet){% endif %}. A payment extends this by its months.</div>
+      </form>
+    </div>
+  </div>
+
+  <div class="col-xl-4">
+    <div class="card mb-3"><div class="card-header">Addresses</div><div class="card-body small">
+      <div class="mb-2"><div class="text-body-secondary">Staff app</div><a href="{{ addresses.admin }}" target="_blank" rel="noopener" class="text-break">{{ addresses.admin }}</a></div>
+      {% if addresses.members %}<div class="mb-2"><div class="text-body-secondary">Members app</div><a href="{{ addresses.members }}" target="_blank" rel="noopener" class="text-break">{{ addresses.members }}</a></div>{% endif %}
+      {% for d in church.domains.all %}
+      <form method="post" action="{% url 'platform:church_domain' church.pk %}" class="d-flex justify-content-between align-items-center">{% csrf_token %}<span><i class="bi bi-globe"></i> {{ d.domain }}</span><button class="btn btn-sm btn-link text-danger p-0" name="remove" value="{{ d.pk }}">Remove</button></form>
+      {% endfor %}
+      {% if church.plan.custom_domains %}
+      <form method="post" action="{% url 'platform:church_domain' church.pk %}" class="input-group input-group-sm mt-2">{% csrf_token %}{{ domain_form.domain }}<button class="btn btn-outline-primary">Add</button></form>
+      <div class="form-text">Own web address, e.g. members.yourchurch.org</div>
+      {% endif %}
+    </div></div>
+
+    <div class="card mb-3"><div class="card-header">Administrators</div>
+      <ul class="list-group list-group-flush small">
+        {% for a in admins %}
+        <li class="list-group-item d-flex justify-content-between align-items-center gap-2">
+          <div><strong>{{ a.username }}</strong>{% if a.email %}<div class="text-body-secondary">{{ a.email }}</div>{% endif %}<div class="text-body-secondary">{% if a.last_login %}Signed in {{ a.last_login|timesince }} ago{% else %}Never signed in{% endif %}</div></div>
+          <form method="post" action="{% url 'platform:church_reset_admin' church.pk %}" data-confirm="Give {{ a.username }} a new temporary password? Their current password stops working.">{% csrf_token %}<button class="btn btn-sm btn-outline-secondary" name="user" value="{{ a.id }}"><i class="bi bi-key"></i> New password</button></form>
+        </li>
+        {% empty %}<li class="list-group-item text-body-secondary">No active administrators.</li>{% endfor %}
+      </ul>
+      <div class="card-footer small text-body-secondary bg-transparent">Passwords are stored scrambled (hashed) and can't be viewed by anyone. You can only issue a new temporary one.</div>
+    </div>
+
+    <div class="card mb-3"><div class="card-header">Contact</div><div class="card-body small">
+      <div>{{ church.contact_name|default:"—" }}</div>
+      {% if church.contact_phone %}<div><a href="tel:{{ church.contact_phone }}">{{ church.contact_phone }}</a></div>{% endif %}
+      {% if church.contact_email %}<div><a href="mailto:{{ church.contact_email }}">{{ church.contact_email }}</a></div>{% endif %}
+      {% if church.notes %}<p class="mt-2 mb-0 text-body-secondary">{{ church.notes|linebreaksbr }}</p>{% endif %}
+    </div></div>
+
+    <div class="card"><div class="card-header">Access</div><div class="card-body">
+      {% if church.is_accessible %}
+      <form method="post" action="{% url 'platform:church_status' church.pk %}" class="mb-2" data-confirm="Suspend {{ church.name }}? Its staff and members won't be able to use Ecclesia until you reactivate it.">{% csrf_token %}
+        <input name="reason" class="form-control form-control-sm mb-2" placeholder="Reason (they see this)" value="{% if state.0 == 'overdue' %}Overdue payment{% endif %}">
+        <button class="btn btn-sm btn-outline-danger w-100" name="action" value="suspend"><i class="bi bi-pause-circle"></i> Suspend</button>
+      </form>
+      <form method="post" action="{% url 'platform:church_status' church.pk %}" data-confirm="Cancel {{ church.name }}? Its records are kept.">{% csrf_token %}<button class="btn btn-sm btn-link text-danger p-0" name="action" value="cancel">Cancel subscription</button></form>
+      {% else %}
+      <form method="post" action="{% url 'platform:church_status' church.pk %}">{% csrf_token %}<button class="btn btn-sm btn-success w-100" name="action" value="reactivate"><i class="bi bi-play-circle"></i> Reactivate</button></form>
+      {% endif %}
+    </div></div>
+  </div>
+</div>
+{% endblock %}

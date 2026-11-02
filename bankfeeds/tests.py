@@ -215,8 +215,6 @@ class MpesaTests(ChurchTestCase):
     def test_callbacks_reject_strangers(self):
         bad = self.client.post(reverse("c2b_confirm", args=["not-the-token"]), "{}", content_type="application/json")
         self.assertEqual(bad.status_code, 404)
-        self.payment(BusinessShortCode="999999")
-        self.assertFalse(BankTransaction.objects.exists())
         self.assertEqual(self.client.post(reverse("c2b_validate", args=[self.connection.token]), "{}", content_type="application/json").json()["ResultCode"], 0)
         with override_settings(MPESA_ALLOWED_IPS=["196.201.214.200"]):
             self.assertEqual(self.payment().status_code, 404)
@@ -237,7 +235,7 @@ class MpesaTests(ChurchTestCase):
 
         self.client.force_login(self.treasurer)
         with mock.patch.object(daraja, "_request", side_effect=fake):
-            self.client.post(reverse("bankfeeds:register", args=[self.mpesa.pk]))
+            self.client.post(reverse("bankfeeds:register", args=[self.mpesa.pk]), {"environment": "sandbox"})
         self.connection.refresh_from_db()
         self.assertIsNotNone(self.connection.registered_at)
         self.assertTrue(calls[1][0].startswith("https://sandbox.safaricom.co.ke/mpesa/c2b/"))
@@ -245,3 +243,72 @@ class MpesaTests(ChurchTestCase):
         self.assertNotIn("mpesa", calls[1][1]["ConfirmationURL"].lower())
         with self.assertRaisesMessage(daraja.DarajaError, "must not contain"):
             daraja.register_urls("247247", "https://example.com/mpesa/confirm", "https://example.com/v")
+
+
+    def test_till_payments_are_kept_even_though_safaricom_reports_the_store_number(self):
+        self.payment(BusinessShortCode="5123456")
+        self.assertEqual(BankTransaction.objects.count(), 1)
+
+    def test_connection_test_notices_are_answered_but_not_recorded(self):
+        response = self.client.post(self.url, json.dumps({"TransactionType": daraja.TEST_TRANSACTION_TYPE, "TransID": "ECCLESIA-TEST"}),
+                                    content_type="application/json")
+        self.assertEqual(response.json()["ResultCode"], 0)
+        self.assertFalse(BankTransaction.objects.exists())
+
+    @override_settings(MPESA_CONSUMER_KEY="", MPESA_CONSUMER_SECRET="")
+    def test_each_church_registers_with_its_own_keys_and_older_apps_fall_back_to_v1(self):
+        calls = []
+
+        def fake(url, data=None, headers=None, timeout=25):
+            calls.append(url)
+            if "oauth" in url:
+                return {"access_token": "t"}
+            if "/v2/" in url:
+                err = daraja.DarajaError("Not found")
+                err.status = 404
+                raise err
+            return {"ResponseCode": "0", "ResponseDescription": "success"}
+
+        self.client.force_login(self.treasurer)
+        page = self.client.get(reverse("bankfeeds:link", args=[self.mpesa.pk]))
+        self.assertContains(page, "never saved")
+        with mock.patch.object(daraja, "_request", side_effect=fake):
+            self.client.post(reverse("bankfeeds:register", args=[self.mpesa.pk]),
+                             {"consumer_key": "church-key", "consumer_secret": "church-secret", "environment": "production"}, secure=True)
+        self.connection.refresh_from_db()
+        self.assertIsNotNone(self.connection.registered_at)
+        self.assertEqual([u.split(".co.ke")[1].split("?")[0] for u in calls],
+                         ["/oauth/v1/generate", "/mpesa/c2b/v2/registerurl", "/mpesa/c2b/v1/registerurl"])
+        self.assertFalse(BankConnection.objects.filter(pk=self.connection.pk, shortcode__contains="key").exists())
+
+    def test_check_the_payment_address(self):
+        self.client.force_login(self.treasurer)
+        with mock.patch.object(daraja, "_request", return_value={"ResultCode": 0}):
+            self.client.post(reverse("bankfeeds:check_address", args=[self.mpesa.pk]), secure=True)
+        self.connection.refresh_from_db()
+        self.assertTrue(self.connection.last_check_ok)
+        with mock.patch.object(daraja, "_request", side_effect=daraja.DarajaError("timed out")):
+            self.client.post(reverse("bankfeeds:check_address", args=[self.mpesa.pk]), secure=True)
+        self.connection.refresh_from_db()
+        self.assertFalse(self.connection.last_check_ok)
+        self.assertIn("couldn't be reached", self.connection.last_check_note)
+
+    def test_move_a_live_link_off_the_bank_current_account(self):
+        BankConnection.objects.all().delete()
+        conn = BankConnection.objects.create(account=self.checking, method=BankConnection.MPESA, shortcode="247247")
+        self.client.force_login(self.treasurer)
+        page = self.client.get(reverse("bankfeeds:link", args=[self.checking.pk]))
+        self.assertContains(page, "Move the live link there")
+        self.client.post(reverse("bankfeeds:move_link", args=[self.checking.pk]), {"target": "new"})
+        conn.refresh_from_db()
+        self.assertTrue(conn.account.name.startswith("M-Pesa Paybill 247247"))
+        self.assertEqual((conn.account.subtype, conn.account.bank_name), ("bank", "Safaricom M-Pesa"))
+
+    def test_add_mpesa_account_from_bank_accounts(self):
+        self.mpesa.name = "Spare account"
+        self.mpesa.save()
+        self.client.force_login(self.treasurer)
+        self.assertContains(self.client.get(reverse("ledger:banking")), "Add M-Pesa account")
+        response = self.client.post(reverse("bankfeeds:add_mpesa_account"), {"shortcode": "123456"})
+        account = Account.objects.get(name="M-Pesa Paybill 123456")
+        self.assertRedirects(response, reverse("bankfeeds:link", args=[account.pk]) + "?method=mpesa")

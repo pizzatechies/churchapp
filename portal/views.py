@@ -20,6 +20,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
 from django.views.decorators.http import require_POST
 
+from core.accounts import ResetRequestMixin
 from core.media import ranged_file_response
 from core.models import ChurchProfile
 from core.utils import today
@@ -27,6 +28,7 @@ from giving.views import statement_data
 from members import services
 from members.models import Group, GroupMembership, Sermon
 from members.services import MembershipError
+from tenants.security import MemberPasswordResetForm
 
 from . import finances
 from .forms import PortalAuthenticationForm, ProfileForm
@@ -58,8 +60,42 @@ class PasswordChangeView(auth_views.PasswordChangeView):
     success_url = reverse_lazy("portal:profile")
 
     def form_valid(self, form):
-        messages.success(self.request, "Your password was changed.")
-        return super().form_valid(form)
+        from core.models import AccountProfile
+
+        response = super().form_valid(form)
+        AccountProfile.password_set_by_someone_else(self.request.user, False)
+        messages.success(self.request, "Your password was changed. Only you know it.")
+        return response
+
+
+class PasswordResetView(ResetRequestMixin, auth_views.PasswordResetView):
+    template_name = "portal/password_reset.html"
+    form_class = MemberPasswordResetForm
+    email_template_name = "emails/password_reset.txt"
+    subject_template_name = "emails/password_reset_subject.txt"
+    success_url = reverse_lazy("portal:password_reset_done")
+    confirm_url_name = "portal:password_reset_confirm"
+    no_email_help = "Ask the church office to set a new password for you."
+
+
+class PasswordResetDoneView(auth_views.PasswordResetDoneView):
+    template_name = "portal/password_reset_done.html"
+
+
+class PasswordResetConfirmView(auth_views.PasswordResetConfirmView):
+    template_name = "portal/password_reset_confirm.html"
+    success_url = reverse_lazy("portal:password_reset_complete")
+
+    def form_valid(self, form):
+        from core.models import AccountProfile
+
+        response = super().form_valid(form)
+        AccountProfile.password_set_by_someone_else(form.user, False)
+        return response
+
+
+class PasswordResetCompleteView(auth_views.PasswordResetCompleteView):
+    template_name = "portal/password_reset_complete.html"
 
 
 def _membership_map(member):

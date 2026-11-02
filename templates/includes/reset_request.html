@@ -1,0 +1,25 @@
+{% load static %}
+<div class="login-wrap">
+  <div class="card login-card shadow-lg">
+    <div class="card-body p-4 p-md-5">
+      <div class="text-center mb-3">
+        <img src="{% static 'brand/ecclesia-logo.svg' %}" alt="" width="56" height="56" class="mb-2">
+        <h1 class="h4 mb-1">{{ heading|default:"Forgot your password?" }}</h1>
+        {% if church %}<p class="text-body-secondary small mb-0">{{ church.name }}</p>{% endif %}
+      </div>
+      {% if email_configured %}
+      <p class="small text-body-secondary">Enter the email address on your login. We'll send a link to choose a new password. The link works for 24 hours.</p>
+      <form method="post" novalidate>{% csrf_token %}
+        <div class="mb-3"><label class="form-label" for="id_email">Email address</label>
+          <input type="email" name="email" id="id_email" class="form-control" autocomplete="email" required autofocus value="{{ form.email.value|default:'' }}">
+          {% if form.email.errors %}<div class="text-danger small mt-1">{{ form.email.errors|join:" " }}</div>{% endif %}</div>
+        <button class="btn btn-primary w-100" type="submit">Send the link</button>
+      </form>
+      <p class="small text-body-secondary mt-3 mb-0">No email on your login? {% if no_email_help %}{{ no_email_help }}{% else %}Ask an administrator to set a new password for you.{% endif %}</p>
+      {% else %}
+      <div class="alert alert-info small mb-0"><i class="bi bi-info-circle"></i> {% if no_email_help %}{{ no_email_help }}{% else %}Ask an administrator to set a new password for you.{% endif %} They will give you a temporary password, and you choose your own when you sign in.</div>
+      {% endif %}
+      <div class="text-center mt-4"><a class="small" href="{% url login_url %}"><i class="bi bi-arrow-left"></i> Back to sign in</a></div>
+    </div>
+  </div>
+</div>

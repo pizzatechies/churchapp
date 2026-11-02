@@ -178,3 +178,28 @@ class Document(models.Model):
 
     def __str__(self):
         return self.original_name
+
+
+class AccountProfile(models.Model):
+    """Per-login extras for staff and members: a phone number, and whether they must choose a new password."""
+
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="account_profile")
+    phone = models.CharField(max_length=40, blank=True)
+    must_change_password = models.BooleanField(
+        default=False, help_text="Set when someone else chose the password; cleared when the person picks their own.",
+    )
+
+    def __str__(self):
+        return f"Profile of {self.user}"
+
+    @classmethod
+    def for_user(cls, user):
+        profile, _ = cls.objects.get_or_create(user=user)
+        return profile
+
+    @classmethod
+    def password_set_by_someone_else(cls, user, value=True):
+        profile = cls.for_user(user)
+        if profile.must_change_password != value:
+            profile.must_change_password = value
+            profile.save(update_fields=["must_change_password"])

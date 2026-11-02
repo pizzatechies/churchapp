@@ -1,5 +1,5 @@
 {% load static finance %}<!doctype html>
-<html lang="en" data-bs-theme="light">
+<html lang="en" data-bs-theme="light" data-sw="{% url 'service_worker' %}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -37,7 +37,7 @@
     </a>
     {% with path=request.path %}
     <ul class="nav flex-column">
-      <li><a class="nav-link {% if path == '/' %}active{% endif %}" href="{% url 'dashboard' %}"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
+      <li><a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'dashboard' %}"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
 
       {% if caps.view_members or caps.manage_sermons %}
       <li class="nav-heading">Congregation</li>
@@ -86,7 +86,8 @@
 
       {% if caps.manage_settings or caps.manage_users or caps.view_audit %}
       <li class="nav-heading">Administration</li>
-      {% if caps.manage_settings %}<li><a class="nav-link {% if path == '/settings/' or '/settings/close' in path %}active{% endif %}" href="{% url 'settings' %}"><i class="bi bi-gear"></i> Church settings</a></li>{% endif %}
+      {% if caps.manage_settings %}<li><a class="nav-link {% if request.resolver_match.url_name == 'settings' or '/settings/close' in path %}active{% endif %}" href="{% url 'settings' %}"><i class="bi bi-gear"></i> Church settings</a></li>
+      {% if tenant %}<li><a class="nav-link {% if '/settings/subscription' in path %}active{% endif %}" href="{% url 'subscription' %}"><i class="bi bi-credit-card-2-front"></i> Subscription</a></li>{% endif %}{% endif %}
       {% if caps.manage_users %}<li><a class="nav-link {% if '/settings/users' in path %}active{% endif %}" href="{% url 'user_list' %}"><i class="bi bi-person-lock"></i> Users &amp; roles</a></li>{% endif %}
       {% if caps.view_audit %}<li><a class="nav-link {% if '/settings/audit' in path %}active{% endif %}" href="{% url 'audit_log' %}"><i class="bi bi-shield-check"></i> Audit trail</a></li>{% endif %}
       {% if caps.manage_users %}<li><a class="nav-link {% if '/settings/backup' in path %}active{% endif %}" href="{% url 'backup' %}"><i class="bi bi-cloud-download"></i> Backup</a></li>{% endif %}
@@ -109,6 +110,7 @@
           <ul class="dropdown-menu dropdown-menu-end">
             <li><span class="dropdown-item-text small text-body-secondary">{{ my_roles|join:", "|default:"No role assigned" }}</span></li>
             <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item" href="{% url 'profile' %}"><i class="bi bi-person-gear"></i> My profile</a></li>
             <li><a class="dropdown-item" href="{% url 'password_change' %}"><i class="bi bi-key"></i> Change password</a></li>
             {% if user.is_superuser %}<li><a class="dropdown-item" href="{% url 'admin:index' %}"><i class="bi bi-tools"></i> Django admin</a></li>{% endif %}
             <li>
@@ -120,6 +122,11 @@
     </header>
 
     {% include "includes/demo_banner.html" %}
+    {% if tenant and caps.manage_settings %}{% with st=tenant.state.0 %}{% if st == 'overdue' %}
+    <div class="storage-banner d-print-none" role="alert"><i class="bi bi-exclamation-circle"></i> Your Ecclesia subscription was due on {{ tenant.due_date|date:"j F Y" }}. Please pay to avoid an interruption. <a href="{% url 'subscription' %}">Details</a></div>
+    {% elif tenant.payment_due_soon %}
+    <div class="demo-banner d-print-none" role="status"><i class="bi bi-calendar-event"></i> Your {% if tenant.status == 'trial' %}free trial ends{% else %}next Ecclesia payment is due{% endif %} on {{ tenant.due_date|date:"j F Y" }}. <a href="{% url 'subscription' %}">Details</a></div>
+    {% endif %}{% endwith %}{% endif %}
     {% if media_is_temporary and caps.manage_settings %}
     <div class="storage-banner d-print-none" role="alert"><i class="bi bi-exclamation-triangle"></i> Uploaded receipts and sermons are only kept until this server restarts. Connect file storage (the S3 settings) to keep them.</div>
     {% endif %}

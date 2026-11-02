@@ -1,0 +1,25 @@
+{% extends "tenants/base.html" %}
+{% block title %}Team{% endblock %}
+{% block content %}
+<h1 class="h3 mb-0">Platform team</h1>
+<p class="text-body-secondary small">People who can sign in to this console. They can see every church's plan, payments and usage counts, but not inside any church's books.</p>
+{% if issued %}{% with username=issued.username password=issued.password %}
+<div class="card border-warning mb-3"><div class="card-header bg-warning-subtle"><i class="bi bi-key"></i> Shown only this once</div><div class="card-body">
+  <p class="mb-2">Username <code>{{ username }}</code>, temporary password:</p>
+  <div class="input-group input-group-sm mb-2" style="max-width:320px"><input id="temp-pw" class="form-control font-monospace" readonly value="{{ password }}"><button class="btn btn-outline-secondary" type="button" data-copy="#temp-pw" aria-label="Copy"><i class="bi bi-clipboard"></i></button></div>
+  <p class="small mb-0">They sign in at <code>/platform/</code> and must choose their own password straight away.</p>
+</div></div>{% endwith %}{% endif %}
+<div class="row g-3">
+  <div class="col-lg-7"><div class="card table-card"><table class="table mb-0">
+    <thead><tr><th>Username</th><th>Name</th><th>Last sign-in</th><th></th></tr></thead>
+    <tbody>{% for m in members %}<tr class="{% if not m.is_active %}text-body-tertiary{% endif %}"><td>{{ m.username }}{% if m == user %} <span class="badge text-bg-light border">you</span>{% endif %}</td><td>{{ m.get_full_name }}<div class="small text-body-secondary">{{ m.email }}</div></td><td class="small">{% if m.last_login %}{{ m.last_login|timesince }} ago{% else %}Never{% endif %}</td>
+      <td class="text-end">{% if m.is_active and m != user %}<form method="post" data-confirm="Stop {{ m.username }} signing in?">{% csrf_token %}<button class="btn btn-sm btn-link text-danger" name="deactivate" value="{{ m.pk }}">Deactivate</button></form>{% elif not m.is_active %}<span class="small">Deactivated</span>{% endif %}</td></tr>{% endfor %}</tbody>
+  </table></div></div>
+  <div class="col-lg-5"><form method="post" class="card" novalidate>{% csrf_token %}<div class="card-header">Add a team member</div><div class="card-body"><div class="row">
+    {% include "includes/field.html" with field=form.username col="col-12" %}
+    {% include "includes/field.html" with field=form.first_name col="col-6" %}
+    {% include "includes/field.html" with field=form.last_name col="col-6" %}
+    {% include "includes/field.html" with field=form.email col="col-12" %}
+  </div><button class="btn btn-primary">Add and issue a temporary password</button></div></form></div>
+</div>
+{% endblock %}

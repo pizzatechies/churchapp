@@ -3,9 +3,10 @@ from django.contrib.auth.forms import AuthenticationForm
 
 from core.forms import StyledModelForm
 from members.models import Member
+from tenants.security import LockoutMixin
 
 
-class PortalAuthenticationForm(AuthenticationForm):
+class PortalAuthenticationForm(LockoutMixin, AuthenticationForm):
     """Only people on the membership register (with a current status) can use the members app."""
 
     def confirm_login_allowed(self, user):

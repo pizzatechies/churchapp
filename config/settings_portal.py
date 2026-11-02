@@ -10,6 +10,7 @@ Run it with:  DJANGO_SETTINGS_MODULE=config.settings_portal
 from .settings import *  # noqa: F401,F403
 
 ROOT_URLCONF = "config.urls_portal"
+PUBLIC_SCHEMA_URLCONF = "config.urls_portal_public"
 WSGI_APPLICATION = "config.wsgi_portal.application"
 
 APP_NAME = "Ecclesia Connect"

@@ -1,0 +1,18 @@
+{% load static %}
+<div class="login-wrap">
+  <div class="card login-card shadow-lg"><div class="card-body p-4 p-md-5">
+    <div class="text-center mb-4">
+      <img src="{% static 'brand/ecclesia-logo.svg' %}" alt="" width="64" height="64" class="mb-2">
+      <h1 class="h4 mb-1">{% if members_app %}Ecclesia Connect{% else %}Ecclesia Admin{% endif %}</h1>
+      <p class="text-body-secondary small mb-0">Find your church to sign in</p>
+    </div>
+    {% if not_found %}<div class="alert alert-warning small">We couldn't find a church called “{{ slug }}”. Check the name your church gave you.</div>{% endif %}
+    <form method="get">
+      <label class="form-label" for="church">Your church's web address name</label>
+      <div class="input-group mb-2"><span class="input-group-text small">/church/</span><input id="church" name="church" class="form-control" placeholder="e.g. lifesource" autocapitalize="none" autocomplete="off" required autofocus value="{{ slug }}"></div>
+      <button class="btn btn-primary w-100">Continue</button>
+    </form>
+    <p class="small text-body-secondary mt-3 mb-0">Your church office has its address, for example <code>…/church/lifesource/</code>.{% if not members_app %} Ecclesia team: <a href="{% url 'platform:login' %}">platform console</a>.{% endif %}</p>
+  </div></div>
+  <div class="login-footer"><span>A product of</span><img src="{% static 'brand/pizza-technologies.png' %}" alt="Pizza Technologies"></div>
+</div>

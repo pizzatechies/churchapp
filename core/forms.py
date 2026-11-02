@@ -3,6 +3,8 @@ from django.conf import settings
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.models import Group, User
 
+from tenants.security import LockoutMixin
+
 from .models import ChurchProfile, Document
 from .permissions import ROLE_DESCRIPTIONS, ROLES
 
@@ -94,13 +96,19 @@ class UserForm(StyledModelForm):
             validate_password(password, self.instance if self.instance.pk else None)
         return password
 
-    def save(self, commit=True):
+    def save(self, commit=True, set_by=None):
+        from .models import AccountProfile
+
         user = super().save(commit=False)
-        if self.cleaned_data.get("password"):
-            user.set_password(self.cleaned_data["password"])
+        new_password = self.cleaned_data.get("password")
+        if new_password:
+            user.set_password(new_password)
         user.save()
         groups = [Group.objects.get_or_create(name=name)[0] for name in self.cleaned_data["roles"]]
         user.groups.set(groups)
+        if new_password and user != set_by:
+            # Someone else chose it: the person picks their own at first sign-in.
+            AccountProfile.password_set_by_someone_else(user)
         return user
 
 
@@ -129,7 +137,7 @@ class DocumentForm(StyledForm):
         )
 
 
-class StaffAuthenticationForm(AuthenticationForm):
+class StaffAuthenticationForm(LockoutMixin, AuthenticationForm):
     """The admin app is for church staff and volunteers with a role; members use the members app."""
 
     def confirm_login_allowed(self, user):

@@ -1,0 +1,18 @@
+/* Ecclesia platform console. Builds on app.css tokens. */
+body.platform { background: var(--app-body-bg); min-height: 100vh; display: flex; flex-direction: column; }
+body.platform > main, body.platform > .login-wrap { flex: 1 0 auto; }
+.platform-wrap { max-width: 1240px; margin: 0 auto; padding-left: 16px; padding-right: 16px; width: 100%; }
+.platform-top { background: linear-gradient(90deg, var(--royal-950, #071541), var(--royal-800)); color: #fff; padding: 10px 0; border-bottom: 3px solid var(--gold-400); }
+.platform-brand { display: flex; align-items: center; gap: 10px; color: #fff; text-decoration: none; }
+.platform-brand span { display: flex; flex-direction: column; line-height: 1.1; }
+.platform-brand small { color: var(--gold-300); font-size: 0.66rem; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 600; }
+.platform-nav { display: flex; gap: 4px; flex-wrap: wrap; }
+.platform-nav a { color: #d6def5; text-decoration: none; padding: 6px 12px; border-radius: 999px; font-size: 0.9rem; }
+.platform-nav a:hover { color: #fff; background: rgba(255, 255, 255, 0.08); }
+.platform-nav a.active { color: var(--royal-950, #071541); background: var(--gold-400); font-weight: 600; }
+.platform-icon-btn { color: #fff; border: 1px solid rgba(255, 255, 255, 0.25); }
+.platform-icon-btn:hover { color: var(--royal-950, #071541); background: var(--gold-400); border-color: var(--gold-400); }
+.platform-footer { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 18px 0; color: var(--bs-secondary-color); font-size: 0.75rem; }
+.platform-footer img { height: 26px; width: auto; }
+body.platform .login-wrap ~ .platform-footer { display: none; }
+.plan-mini li { padding: 4px 0; border-top: 1px dashed var(--app-border); }

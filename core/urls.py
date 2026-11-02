@@ -10,6 +10,7 @@ urlpatterns = [
     path("offline/", pwa.offline, name="offline"),
     path("settings/", views.settings_view, name="settings"),
     path("settings/close-books/", views.close_books, name="close_books"),
+    path("settings/subscription/", views.subscription, name="subscription"),
     path("settings/users/", views.user_list, name="user_list"),
     path("settings/users/new/", views.user_edit, name="user_create"),
     path("settings/users/<int:pk>/", views.user_edit, name="user_edit"),

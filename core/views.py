@@ -117,6 +117,21 @@ def settings_view(request):
 
 
 @require_cap("manage_settings")
+def subscription(request):
+    from tenants.middleware import current_church
+    from tenants.services import collect_usage, limits, usage_is_stale
+
+    church = current_church()
+    if church is None:
+        raise Http404
+    if usage_is_stale(church, minutes=10):
+        collect_usage(church)
+    return render(request, "core/subscription.html", {
+        "account": church, "state": church.state, "limits": limits(church), "payments": church.payments.all()[:12],
+    })
+
+
+@require_cap("manage_settings")
 def close_books(request):
     profile = ChurchProfile.get()
     form = LockDateForm(request.POST or None, instance=profile)
@@ -143,11 +158,19 @@ def user_edit(request, pk=None):
     instance = get_object_or_404(User, pk=pk) if pk else None
     form = UserForm(request.POST or None, instance=instance)
     if request.method == "POST" and form.is_valid():
+        from .limits import staff_limit_message
+
+        was_staff = bool(instance and instance.is_active and (instance.is_superuser or instance.groups.exists()))
+        becomes_staff = form.cleaned_data["is_active"] and bool(form.cleaned_data["roles"])
+        limit = staff_limit_message() if becomes_staff and not was_staff else None
         if instance and instance == request.user and not form.cleaned_data["is_active"]:
             form.add_error("is_active", "You cannot deactivate your own account.")
+        elif limit:
+            form.add_error(None, limit)
         else:
-            user = form.save()
-            messages.success(request, f"User {user.username} saved.")
+            user = form.save(set_by=request.user)
+            messages.success(request, f"User {user.username} saved." + (
+                " They'll choose their own password when they first sign in." if form.cleaned_data.get("password") and user != request.user else ""))
             return redirect("user_list")
     return render(request, "core/user_form.html", {"form": form, "instance": instance})
 
@@ -204,11 +227,12 @@ def health(request):
     """For load balancers and uptime monitors: checks the app can reach the database."""
     with connection.cursor() as cursor:
         cursor.execute("SELECT 1")
+    on_platform = getattr(connection, "schema_name", "public") == "public"
     response = JsonResponse({
         "status": "ok",
         "app": settings.APP_NAME,
         "product": settings.PRODUCT_NAME,
-        "church": ChurchProfile.cached().name,
+        "church": None if on_platform else ChurchProfile.cached().name,
     })
     # The mobile and desktop apps check this address before connecting to it.
     response["Access-Control-Allow-Origin"] = "*"

@@ -216,7 +216,8 @@ def banking(request):
         JournalLine.objects.filter(entry__status=JournalEntry.POSTED, account__subtype__in=Account.PAYMENT_SUBTYPES)
         .select_related("entry", "account", "fund").order_by("-entry__date", "-entry_id")[:15]
     )
-    return render(request, "ledger/banking.html", {"accounts": accounts, "recent": recent})
+    has_mpesa = any("pesa" in f"{a['account'].name} {a['account'].bank_name}".lower() for a in accounts)
+    return render(request, "ledger/banking.html", {"accounts": accounts, "recent": recent, "has_mpesa": has_mpesa})
 
 
 def _simple_posting_view(request, form_class, title, subtitle, action, success):

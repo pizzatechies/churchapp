@@ -7,15 +7,13 @@ if [ "$APP" = "members" ]; then
 else
     export DJANGO_SETTINGS_MODULE=config.settings
     WSGI=config.wsgi:application
-    # The admin app owns the database schema: migrate and make sure defaults exist.
-    python manage.py migrate --noinput
-    # Safe on every start: only fills in what's missing. The country preset applies on first setup only.
-    python manage.py setup_church \
-        ${CHURCH_COUNTRY:+--country "$CHURCH_COUNTRY"} \
-        ${ADMIN_USERNAME:+--admin-username "$ADMIN_USERNAME"} \
-        ${ADMIN_PASSWORD:+--admin-password "$ADMIN_PASSWORD"} \
-        ${ADMIN_EMAIL:+--admin-email "$ADMIN_EMAIL"}
-    # A public demo server starts with the sample church (reset it nightly with "manage.py reset_demo").
+    # The admin app owns the database. Safe on every start:
+    #  - moves a single-church database into its own church space the first time (one transaction),
+    #  - migrates the platform and every church,
+    #  - creates the platform super admin (PLATFORM_ADMIN_* or ADMIN_*) if missing,
+    #  - on a brand-new server with ECCLESIA_DEFAULT_CHURCH set, creates the first church.
+    python manage.py platform_setup
+    # A public demo server starts with the sample church (rebuild it nightly with "manage.py reset_demo").
     case "$ECCLESIA_DEMO_MODE" in
         1|true|yes|on) python manage.py load_demo_data --if-empty --password "${ECCLESIA_DEMO_PASSWORD:-ChurchDemo-2026}" ;;
     esac

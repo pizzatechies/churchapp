@@ -203,6 +203,13 @@ def member_edit(request, pk=None):
     member = get_object_or_404(Member, pk=pk) if pk else None
     form = MemberForm(request.POST or None, instance=member)
     if request.method == "POST" and form.is_valid():
+        from core.limits import member_limit_message
+
+        adds_current = form.cleaned_data.get("status") in Member.CURRENT and not (member and member.is_current)
+        limit = member_limit_message() if adds_current else None
+        if limit:
+            form.add_error(None, limit)
+            return render(request, "members/member_form.html", {"form": form, "member": member})
         member = form.save()
         if member.user and (member.user.email != member.email or not member.is_current):
             member.user.email = member.email
@@ -305,6 +312,12 @@ def member_import(request):
                 if dup.exists():
                     skipped += 1
                     continue
+                from core.limits import member_limit_message
+
+                limit = member_limit_message()
+                if limit:
+                    errors.append(f"Row {n} and after: {limit}")
+                    break
                 values["gender"] = _parse_gender(values.get("gender"))
                 dob = values.pop("date_of_birth", "")
                 try:

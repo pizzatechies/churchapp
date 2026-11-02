@@ -47,32 +47,73 @@
   <div class="col-xl-5">
     {% if urls %}
     <div class="card mb-3">
-      <div class="card-header"><i class="bi bi-broadcast"></i> Connect Paybill {{ connection.shortcode }} to Ecclesia</div>
-      <div class="card-body">
-        {% if connection.registered_at %}
-        <p class="mb-2"><i class="bi bi-check-circle text-positive"></i> Registered with Safaricom on {{ connection.registered_at|date:"j M Y" }}.</p>
-        {% endif %}
-        {% if connection.last_received_at %}<p class="small text-body-secondary">Last payment received {{ connection.last_received_at|timesince }} ago.</p>{% endif %}
-        <p class="small mb-2">Safaricom needs these two addresses. Keep them private: anyone with them could send fake notices.</p>
-        <label class="form-label small mb-1" for="url-confirm">Confirmation URL</label>
-        <div class="input-group input-group-sm mb-2"><input id="url-confirm" class="form-control font-monospace" readonly value="{{ urls.confirm }}"><button class="btn btn-outline-secondary" type="button" data-copy="#url-confirm" aria-label="Copy"><i class="bi bi-clipboard"></i></button></div>
-        <label class="form-label small mb-1" for="url-validate">Validation URL</label>
-        <div class="input-group input-group-sm mb-3"><input id="url-validate" class="form-control font-monospace" readonly value="{{ urls.validate }}"><button class="btn btn-outline-secondary" type="button" data-copy="#url-validate" aria-label="Copy"><i class="bi bi-clipboard"></i></button></div>
-        {% if daraja_ready %}
-        <form method="post" action="{% url 'bankfeeds:register' account.pk %}">{% csrf_token %}
-          <button class="btn btn-primary btn-sm"><i class="bi bi-cloud-upload"></i> {% if connection.registered_at %}Register again{% else %}Register with Safaricom now{% endif %}</button>
-          {% if environment == 'sandbox' %}<span class="badge text-bg-warning ms-1">Sandbox (test)</span>{% endif %}
-        </form>
-        {% else %}
-        <p class="small mb-1 fw-semibold">To register:</p>
-        <ol class="small mb-0 ps-3">
-          <li>Sign in at <strong>developer.safaricom.co.ke</strong> with the Paybill's Daraja account and open your app (or ask Safaricom's M-Pesa business team to go live for Paybill {{ connection.shortcode }}).</li>
-          <li>Use <strong>C2B → Register URL</strong> with response type <em>Completed</em> and the two addresses above.</li>
-          <li>Or, to register from here, put <code>MPESA_CONSUMER_KEY</code> and <code>MPESA_CONSUMER_SECRET</code> in the admin app's environment settings and reload this page.</li>
-        </ol>
-        {% endif %}
-      </div>
+      <div class="card-header"><i class="bi bi-broadcast"></i> Live M-Pesa: {{ connection.shortcode }}</div>
+      <ol class="list-group list-group-flush small mpesa-steps">
+        <li class="list-group-item d-flex gap-2"><span class="step-num">1</span><div class="flex-grow-1 min-w-0"><strong>Linked</strong> <i class="bi bi-check-circle-fill text-positive"></i>
+          <div class="text-body-secondary">Payments will be recorded in {{ account.name }}.</div></div></li>
+        <li class="list-group-item d-flex gap-2"><span class="step-num">2</span><div class="flex-grow-1 min-w-0"><div><strong>Payment address works</strong>
+          {% if connection.last_check_at %}{% if connection.last_check_ok %}<i class="bi bi-check-circle-fill text-positive"></i>{% else %}<i class="bi bi-x-circle-fill text-negative"></i>{% endif %}{% endif %}</div>
+          <div class="text-body-secondary mb-2">{% if connection.last_check_at %}{{ connection.last_check_note }} ({{ connection.last_check_at|timesince }} ago){% else %}Check that Safaricom will be able to reach Ecclesia.{% endif %}</div>
+          <label class="form-label small mb-1" for="url-confirm">Confirmation URL</label>
+          <div class="input-group input-group-sm mb-2"><input id="url-confirm" class="form-control font-monospace" readonly value="{{ urls.confirm }}"><button class="btn btn-outline-secondary" type="button" data-copy="#url-confirm" aria-label="Copy"><i class="bi bi-clipboard"></i></button></div>
+          <label class="form-label small mb-1" for="url-validate">Validation URL</label>
+          <div class="input-group input-group-sm mb-2"><input id="url-validate" class="form-control font-monospace" readonly value="{{ urls.validate }}"><button class="btn btn-outline-secondary" type="button" data-copy="#url-validate" aria-label="Copy"><i class="bi bi-clipboard"></i></button></div>
+          <form method="post" action="{% url 'bankfeeds:check_address' account.pk %}" data-busy-text="Checking…">{% csrf_token %}<button class="btn btn-sm btn-outline-primary"><i class="bi bi-wifi"></i> Check the payment address</button></form>
+          <div class="form-text">Keep these addresses private: they let anyone who has them send payment notices.</div>
+        </div></li>
+        <li class="list-group-item d-flex gap-2"><span class="step-num">3</span><div class="flex-grow-1 min-w-0"><div><strong>Registered with Safaricom</strong>
+          {% if connection.registered_at %}<i class="bi bi-check-circle-fill text-positive"></i>{% else %}<span class="badge text-bg-warning">Not yet: payments won't arrive until this is done</span>{% endif %}</div>
+          {% if connection.registered_at %}<div class="text-body-secondary mb-2">On {{ connection.registered_at|date:"j M Y" }}{% if connection.environment == 'sandbox' %}, in the sandbox (testing){% endif %}.</div>{% endif %}
+          <details {% if not connection.registered_at %}open{% endif %} class="mt-1">
+            <summary class="text-primary">{% if connection.registered_at %}Register again{% else %}Register now{% endif %}</summary>
+            <form method="post" action="{% url 'bankfeeds:register' account.pk %}" class="mt-2" autocomplete="off" data-busy-text="Registering with Safaricom…">{% csrf_token %}
+              <p class="mb-2">Use the <strong>consumer key</strong> and <strong>consumer secret</strong> of your church's app on <a href="https://developer.safaricom.co.ke" target="_blank" rel="noopener">developer.safaricom.co.ke</a>{% if daraja_ready %} (or leave them blank to use the platform's){% endif %}. They're used for this one request and never saved.</p>
+              <div class="row g-2">
+                <div class="col-12"><input name="consumer_key" class="form-control form-control-sm" placeholder="Consumer key" aria-label="Consumer key" {% if not daraja_ready %}required{% endif %}></div>
+                <div class="col-12"><input name="consumer_secret" type="password" class="form-control form-control-sm" placeholder="Consumer secret" aria-label="Consumer secret" {% if not daraja_ready %}required{% endif %}></div>
+                <div class="col-7"><select name="environment" class="form-select form-select-sm" aria-label="Environment">
+                  <option value="production" {% if connection.environment == 'production' %}selected{% endif %}>Live Paybill/Till</option>
+                  <option value="sandbox" {% if connection.environment == 'sandbox' %}selected{% endif %}>Sandbox (testing)</option></select></div>
+                <div class="col-5"><button class="btn btn-sm btn-primary w-100">Register</button></div>
+              </div>
+            </form>
+            <p class="mt-2 mb-1 text-body-secondary">For a live Paybill, the Daraja app must be "gone live" for {{ connection.shortcode }}. Already registered these two addresses on the Daraja portal yourself?</p>
+            <form method="post" action="{% url 'bankfeeds:mark_registered' account.pk %}">{% csrf_token %}<button class="btn btn-sm btn-link p-0">Mark as registered</button></form>
+          </details>
+        </div></li>
+        <li class="list-group-item d-flex gap-2"><span class="step-num">4</span><div class="flex-grow-1 min-w-0"><div><strong>Payments arriving</strong>
+          {% if connection.last_received_at %}<i class="bi bi-check-circle-fill text-positive"></i>{% endif %}</div>
+          <div class="text-body-secondary">{% if connection.last_received_at %}Last payment {{ connection.last_received_at|timesince }} ago · {{ line_count }} so far. <a href="{{ connection.get_absolute_url }}">Open the bank feed</a>{% else %}None yet. Once registered, send a small amount to {{ connection.shortcode }} with an envelope number as the account number.{% endif %}</div>
+          {% if connection.environment == 'sandbox' and connection.registered_at %}
+          <form method="post" action="{% url 'bankfeeds:simulate' account.pk %}" class="row g-2 mt-1" autocomplete="off">{% csrf_token %}
+            <div class="col-6"><input name="consumer_key" class="form-control form-control-sm" placeholder="Consumer key" aria-label="Consumer key"></div>
+            <div class="col-6"><input name="consumer_secret" type="password" class="form-control form-control-sm" placeholder="Consumer secret" aria-label="Consumer secret"></div>
+            <div class="col-4"><input name="amount" type="number" min="1" value="10" class="form-control form-control-sm" aria-label="Amount"></div>
+            <div class="col-4"><input name="reference" value="TEST" class="form-control form-control-sm" aria-label="Account number"></div>
+            <div class="col-4"><button class="btn btn-sm btn-outline-primary w-100">Simulate</button></div>
+          </form>
+          {% endif %}
+        </div></li>
+      </ol>
     </div>
+
+    {% if sleeps %}
+    <div class="alert alert-warning small"><i class="bi bi-moon"></i> <strong>This server sleeps when nobody is using it</strong> (Render's free plan). Safaricom gives up on a sleeping server after a few seconds, so payments made then won't appear live. Move the admin app to an always-on plan for a reliable live feed, then set <code>ALWAYS_ON=1</code>. Until then, upload the M-Pesa portal statement weekly to catch anything missed; nothing is counted twice.</div>
+    {% endif %}
+
+    {% if bank_account_as_mpesa %}
+    <div class="card mb-3 border-info"><div class="card-body small">
+      <p class="mb-2"><i class="bi bi-lightbulb text-gold"></i> <strong>Tip:</strong> M-Pesa money first lands in the Paybill's own M-Pesa account and only later moves to {{ account.name }}. Keeping a separate "M-Pesa Paybill" account in the books lets the bank statement still match: the transfer from M-Pesa shows as one line.</p>
+      {% if line_count %}<p class="mb-0 text-body-secondary">This link already has payments, so it stays here.</p>{% else %}
+      <form method="post" action="{% url 'bankfeeds:move_link' account.pk %}" class="d-flex gap-2 flex-wrap">{% csrf_token %}
+        <select name="target" class="form-select form-select-sm" style="max-width:260px" aria-label="Account">
+          <option value="new">A new “M-Pesa Paybill {{ connection.shortcode }}” account</option>
+          {% for a in mpesa_accounts %}<option value="{{ a.pk }}">{{ a.name }}</option>{% endfor %}
+        </select>
+        <button class="btn btn-sm btn-outline-primary">Move the live link there</button>
+      </form>{% endif %}
+    </div></div>
+    {% endif %}
     {% endif %}
     <div class="card">
       <div class="card-header"><i class="bi bi-shield-lock"></i> Safe by design</div>

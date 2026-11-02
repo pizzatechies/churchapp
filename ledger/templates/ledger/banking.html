@@ -9,6 +9,16 @@
 {% endif %}
 {% endblock %}
 {% block content %}
+{% if caps.manage_settings and not has_mpesa %}
+<div class="card mb-3 border-info"><div class="card-body d-flex flex-wrap align-items-center gap-3">
+  <i class="bi bi-phone fs-3 text-gold"></i>
+  <div class="flex-grow-1 small"><strong>Receive gifts live from M-Pesa.</strong> Add your Paybill or Till as its own account, then link it so each payment arrives in Ecclesia, matched to the giver.</div>
+  <form method="post" action="{% url 'bankfeeds:add_mpesa_account' %}" class="d-flex gap-2">{% csrf_token %}
+    <input name="shortcode" class="form-control form-control-sm" placeholder="Paybill no." inputmode="numeric" style="max-width:130px" aria-label="Paybill number">
+    <button class="btn btn-sm btn-primary text-nowrap">Add M-Pesa account</button>
+  </form>
+</div></div>
+{% endif %}
 <div class="row g-3 mb-3">
   {% for a in accounts %}
   <div class="col-md-6 col-xl-4">

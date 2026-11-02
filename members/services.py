@@ -106,6 +106,10 @@ def set_portal_account(member, username, password):
     user.save()
     member.user = user
     member.save(update_fields=["user"])
+    from core.models import AccountProfile
+
+    # The office chose this password: the member picks their own at first sign-in.
+    AccountProfile.password_set_by_someone_else(user)
     return user
 
 

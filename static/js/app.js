@@ -5,7 +5,7 @@
   // Installable app (Android, iOS, desktop): register the service worker.
   if ("serviceWorker" in navigator && window.isSecureContext) {
     window.addEventListener("load", function () {
-      navigator.serviceWorker.register("/sw.js").catch(function () {});
+      navigator.serviceWorker.register(document.documentElement.getAttribute("data-sw") || "/sw.js").catch(function () {});
     });
   }
 
@@ -92,6 +92,15 @@
     };
     sel.addEventListener("focus", fill);
     sel.addEventListener("pointerdown", fill);
+  });
+
+  // Long-running forms: show progress and prevent double submits
+  document.querySelectorAll("form[data-busy-text]").forEach(function (form) {
+    form.addEventListener("submit", function () {
+      var btn = form.querySelector("button:not([type=button])");
+      if (!btn) return;
+      setTimeout(function () { btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> ' + form.getAttribute("data-busy-text"); }, 0);
+    });
   });
 
   // Print buttons

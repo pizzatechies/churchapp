@@ -1,0 +1,41 @@
+{% extends "tenants/base.html" %}{% load humanize %}
+{% block title %}Onboard a church{% endblock %}
+{% block content %}
+<nav><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{% url 'platform:dashboard' %}">Churches</a></li><li class="breadcrumb-item active">Onboard a church</li></ol></nav>
+<h1 class="h3">Onboard a church</h1>
+<p class="text-body-secondary">This creates the church's own private space, with the default chart of accounts for its country, and its first administrator. It takes up to a minute.</p>
+<form method="post" class="row g-3" novalidate data-busy-text="Creating the church… this takes up to a minute">{% csrf_token %}
+  {% if form.non_field_errors %}<div class="col-12"><div class="alert alert-danger">{{ form.non_field_errors|join:" " }}</div></div>{% endif %}
+  <div class="col-xl-8">
+    <div class="card mb-3"><div class="card-header">The church</div><div class="card-body"><div class="row">
+      {% include "includes/field.html" with field=form.name col="col-md-7" %}
+      {% include "includes/field.html" with field=form.slug col="col-md-5" %}
+      {% include "includes/field.html" with field=form.country col="col-md-4" %}
+      {% include "includes/field.html" with field=form.contact_name col="col-md-4" %}
+      {% include "includes/field.html" with field=form.contact_phone col="col-md-4" %}
+      {% include "includes/field.html" with field=form.contact_email col="col-md-6" %}
+      {% include "includes/field.html" with field=form.is_default col="col-md-6" %}
+      {% include "includes/field.html" with field=form.notes col="col-12" %}
+    </div></div></div>
+    <div class="card"><div class="card-header">First administrator</div><div class="card-body"><div class="row">
+      {% include "includes/field.html" with field=form.admin_username col="col-md-4" %}
+      {% include "includes/field.html" with field=form.admin_email col="col-md-4" %}
+      {% include "includes/field.html" with field=form.admin_password col="col-md-4" %}
+    </div>
+    <p class="small text-body-secondary mb-0"><i class="bi bi-key"></i> You'll see the temporary password once, on the next page, to pass on privately. At first sign-in they must choose their own, which nobody else can see.</p>
+    </div></div>
+  </div>
+  <div class="col-xl-4">
+    <div class="card mb-3"><div class="card-header">Plan and billing</div><div class="card-body"><div class="row">
+      {% include "includes/field.html" with field=form.plan col="col-12" %}
+      {% include "includes/field.html" with field=form.billing_cycle col="col-6" %}
+      {% include "includes/field.html" with field=form.trial_days col="col-6" %}
+    </div>
+    <ul class="list-unstyled small mb-0 plan-mini">
+      {% for p in plans %}<li><strong>{{ p.name }}</strong>: KSh {{ p.monthly_price|floatformat:0|intcomma }}/month or KSh {{ p.yearly_price|floatformat:0|intcomma }}/year · {% if p.max_members %}{{ p.max_members|intcomma }} members{% else %}unlimited members{% endif %}, {% if p.max_staff %}{{ p.max_staff }} staff logins{% else %}unlimited staff{% endif %}, {{ p.storage_gb }} GB</li>{% endfor %}
+    </ul>
+    </div></div>
+    <button class="btn btn-primary w-100 btn-lg"><i class="bi bi-plus-lg"></i> Create the church</button>
+  </div>
+</form>
+{% endblock %}

@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}My profile{% endblock %}
+{% block page_title %}My profile{% endblock %}
+{% block content %}
+<div class="row g-3">
+  <div class="col-lg-7">
+    <form method="post" class="card" novalidate>{% csrf_token %}
+      <div class="card-header">My details</div>
+      <div class="card-body"><div class="row">
+        {% include "includes/field.html" with field=form.first_name col="col-md-6" %}
+        {% include "includes/field.html" with field=form.last_name col="col-md-6" %}
+        {% include "includes/field.html" with field=form.email col="col-md-6" %}
+        {% include "includes/field.html" with field=form.phone col="col-md-6" %}
+      </div></div>
+      <div class="card-footer bg-transparent"><button class="btn btn-primary">Save</button></div>
+    </form>
+  </div>
+  <div class="col-lg-5">
+    <div class="card mb-3"><div class="card-header">Sign-in</div><div class="card-body">
+      <dl class="dl-grid mb-3"><dt>Username</dt><dd><code>{{ user.username }}</code></dd><dt>Roles</dt><dd>{{ my_roles|join:", "|default:"—" }}</dd>
+        <dt>Last sign-in</dt><dd>{{ user.last_login|date:"j M Y, H:i"|default:"—" }}</dd></dl>
+      <a href="{% url 'password_change' %}" class="btn btn-outline-primary"><i class="bi bi-key"></i> Change my password</a>
+    </div></div>
+    <div class="card"><div class="card-body small text-body-secondary">
+      <i class="bi bi-shield-lock"></i> Your password is stored scrambled (hashed), so nobody, not even an administrator or Pizza Technologies, can see it. If you forget it, use <em>Forgot password?</em> on the sign-in page (it emails a link to the address above), or ask an administrator for a temporary one.
+    </div></div>
+  </div>
+</div>
+{% endblock %}

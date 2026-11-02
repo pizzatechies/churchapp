@@ -1,0 +1,17 @@
+{% extends "tenants/base.html" %}
+{% block title %}{{ church.name }} is ready{% endblock %}
+{% block content %}
+<h1 class="h3"><i class="bi bi-check-circle text-positive"></i> {{ church.name }} is ready</h1>
+<p class="text-body-secondary">Their private space is set up on the {{ church.plan.name }} plan{% if church.trial_ends %}, with a free trial until {{ church.trial_ends|date:"j F Y" }}{% endif %}.</p>
+{% include "tenants/_credentials.html" %}
+<div class="card mb-3"><div class="card-header">What the church does next</div><div class="card-body small">
+  <ol class="mb-0 ps-3">
+    <li>The administrator signs in to the staff app and chooses their own password.</li>
+    <li><strong>Church settings</strong>: name, address, currency, approval limit.</li>
+    <li><strong>Users &amp; roles</strong>: a login for each staff member (treasurer, bookkeeper, secretary…). Each person sets their own password.</li>
+    <li><strong>Opening balances</strong>, then <strong>Members</strong> (import from a spreadsheet) and members' app logins.</li>
+  </ol>
+</div></div>
+<a href="{% url 'platform:church_detail' church.pk %}" class="btn btn-primary">Open {{ church.name }}</a>
+<a href="{% url 'platform:dashboard' %}" class="btn btn-outline-secondary">All churches</a>
+{% endblock %}

@@ -7,7 +7,7 @@ from unittest import mock
 from django.test import override_settings
 from django.urls import reverse
 
-from core.models import ChurchProfile
+from core.models import AccountProfile, ChurchProfile
 from core.testing import ChurchTestCase
 from core.utils import today
 from giving.models import Campaign, Contribution, ContributionBatch, Donor, Pledge
@@ -26,10 +26,21 @@ class MembersAppTests(ChurchTestCase):
     def setUp(self):
         self.member = Member.objects.create(first_name="Njeri", last_name="Mwangi", gender=Member.FEMALE, date_of_birth=date(1994, 5, 1))
         self.user = services.set_portal_account(self.member, "njeri", "a-good-pass-123")
+        AccountProfile.password_set_by_someone_else(self.user, False)  # as if Njeri already chose her own
         self.women = Group.objects.create(name="Women's Fellowship", gender_restriction=Member.FEMALE, description="Prayer & study")
         self.men = Group.objects.create(name="Men's Fellowship", gender_restriction=Member.MALE)
         self.sermon = Sermon.objects.create(title="The Good Shepherd", preacher="Rev. Kiprono", scripture="John 10")
         self.draft = Sermon.objects.create(title="Unpublished", preacher="x", is_published=False)
+
+    def test_first_sign_in_with_an_office_set_password_asks_for_a_new_one(self):
+        AccountProfile.password_set_by_someone_else(self.user)
+        self.client.post("/login/", {"username": "njeri", "password": "a-good-pass-123"})
+        self.assertRedirects(self.client.get("/"), "/profile/password/")
+        self.assertContains(self.client.get("/profile/password/"), "Choose your own password")
+        self.client.post("/profile/password/", {"old_password": "a-good-pass-123", "new_password1": "Morning-Psalms-4410",
+                                                "new_password2": "Morning-Psalms-4410"})
+        self.assertEqual(self.client.get("/").status_code, 200)
+        self.assertFalse(AccountProfile.objects.get(user=self.user).must_change_password)
 
     def test_login_flow(self):
         self.assertRedirects(self.client.get("/"), "/login/?next=/")
@@ -119,6 +130,7 @@ class MembersGivingTests(ChurchTestCase):
     def setUp(self):
         self.member = Member.objects.create(first_name="Njeri", last_name="Mwangi", gender=Member.FEMALE)
         self.user = services.set_portal_account(self.member, "njeri", "a-good-pass-123")
+        AccountProfile.password_set_by_someone_else(self.user, False)  # as if Njeri already chose her own
         self.mine = Donor.objects.create(first_name="Njeri", last_name="Mwangi", envelope_number="201")
         self.other = Donor.objects.create(first_name="Zawadi", last_name="Otieno", envelope_number="202")
         self.day = today()

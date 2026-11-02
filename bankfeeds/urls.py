@@ -11,6 +11,11 @@ urlpatterns = [
     path("<int:account_pk>/import/", views.import_statement, name="import"),
     path("<int:account_pk>/match/", views.auto_match, name="auto_match"),
     path("<int:account_pk>/register/", views.register, name="register"),
+    path("<int:account_pk>/registered/", views.mark_registered, name="mark_registered"),
+    path("<int:account_pk>/check/", views.check_address, name="check_address"),
+    path("<int:account_pk>/simulate/", views.simulate, name="simulate"),
+    path("<int:account_pk>/move/", views.move_link, name="move_link"),
+    path("add-mpesa-account/", views.add_mpesa_account, name="add_mpesa_account"),
     path("line/<int:pk>/", views.line_action, name="line_action"),
 ]
 

@@ -44,14 +44,23 @@ if not SECRET_KEY:
 ALLOWED_HOSTS = env_list("ALLOWED_HOSTS", "localhost,127.0.0.1,[::1]" + (",testserver" if DEBUG else ""))
 CSRF_TRUSTED_ORIGINS = env_list("CSRF_TRUSTED_ORIGINS")
 
-INSTALLED_APPS = [
-    "django.contrib.admin",
-    "django.contrib.auth",
+# Each church has its own PostgreSQL schema (django-tenants). SHARED_APPS live in the
+# "public" schema used by the platform console; TENANT_APPS are created in every church.
+SHARED_APPS = [
+    "django_tenants",
+    "tenants",
     "django.contrib.contenttypes",
+    "django.contrib.auth",
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django.contrib.humanize",
+]
+TENANT_APPS = [
+    "django.contrib.contenttypes",
+    "django.contrib.auth",
+    "django.contrib.sessions",
+    "django.contrib.admin",
     "core",
     "ledger",
     "giving",
@@ -63,11 +72,24 @@ INSTALLED_APPS = [
     "portal",
     "bankfeeds",
 ]
+INSTALLED_APPS = SHARED_APPS + [app for app in TENANT_APPS if app not in SHARED_APPS]
+
+TENANT_MODEL = "tenants.Church"
+TENANT_DOMAIN_MODEL = "tenants.Domain"
+DATABASE_ROUTERS = ["django_tenants.routers.TenantSyncRouter"]
+# A church's addresses: <app address>/church/<slug>/ (or its own domain on the Kingdom plan).
+CHURCH_URL_PREFIX = "church"
+PUBLIC_SCHEMA_URLCONF = "config.urls_platform"
+# Where each app is reached, for the links the platform console shows. Optional.
+ADMIN_APP_URL = os.environ.get("ADMIN_APP_URL", "").rstrip("/")
+MEMBERS_APP_URL = os.environ.get("MEMBERS_APP_URL", "").rstrip("/")
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
-    "django.contrib.sessions.middleware.SessionMiddleware",
+    # Picks the church from the address and switches to its schema. Must come before anything that reads the database.
+    "tenants.middleware.ChurchMiddleware",
+    "tenants.middleware.ChurchSessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -75,6 +97,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "core.middleware.CurrentUserMiddleware",
+    "tenants.middleware.PasswordChangeRequiredMiddleware",
     "core.demo.DemoModeMiddleware",
 ]
 
@@ -110,6 +133,7 @@ DATABASES = {
 }
 if not DATABASES["default"]["ENGINE"].endswith("postgresql"):
     raise ImproperlyConfigured("DATABASE_URL must point to a PostgreSQL database (postgres://...).")
+DATABASES["default"]["ENGINE"] = "django_tenants.postgresql_backend"
 # Every request runs in one transaction: a failure part-way never leaves half-posted books.
 DATABASES["default"]["ATOMIC_REQUESTS"] = True
 
@@ -125,7 +149,7 @@ TIME_ZONE = os.environ.get("TIME_ZONE", "Africa/Nairobi")
 USE_I18N = True
 USE_TZ = True
 
-STATIC_URL = "static/"
+STATIC_URL = "/static/"  # absolute: the same files serve every church's addresses
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 
@@ -143,6 +167,9 @@ MPESA_CONSUMER_SECRET = os.environ.get("MPESA_CONSUMER_SECRET", "").strip()
 MPESA_ENVIRONMENT = os.environ.get("MPESA_ENVIRONMENT", "production").strip().lower()
 # Optional: only accept payment notifications from these IP addresses (Safaricom's published list).
 MPESA_ALLOWED_IPS = env_list("MPESA_ALLOWED_IPS")
+# Render's free web services sleep after 15 minutes; Safaricom's payment notices can't wake them in time.
+# Set ALWAYS_ON=1 once the admin app runs on an always-on plan.
+ON_FREE_HOSTING = env_bool("RENDER") and not env_bool("ALWAYS_ON")
 # Large sermon uploads are streamed to a temporary file rather than held in memory.
 FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
 
@@ -216,7 +243,28 @@ LOGOUT_REDIRECT_URL = "login"
 # Large grids (budgets, reconciliations, payroll) post many fields at once.
 DATA_UPLOAD_MAX_NUMBER_FIELDS = 20000
 
-CACHES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}}
+# Cache keys carry the church's schema, so one church's cached settings never show in another.
+CACHES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache", "KEY_FUNCTION": "django_tenants.cache.make_key"}}
+
+# Email, for "Forgot password". Any SMTP service works (Gmail with an app password, Brevo, Mailgun, Zoho...).
+EMAIL_HOST = os.environ.get("EMAIL_HOST", "").strip()
+EMAIL_PORT = int(os.environ.get("EMAIL_PORT", "587"))
+EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "").strip()
+EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "").strip()
+EMAIL_USE_TLS = env_bool("EMAIL_USE_TLS", EMAIL_PORT == 587)
+EMAIL_USE_SSL = env_bool("EMAIL_USE_SSL", EMAIL_PORT == 465)
+EMAIL_TIMEOUT = 20
+EMAIL_CONFIGURED = bool(EMAIL_HOST)
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend" if EMAIL_CONFIGURED else "django.core.mail.backends.console.EmailBackend"
+DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "").strip() or (f"Ecclesia <{EMAIL_HOST_USER}>" if "@" in EMAIL_HOST_USER else "Ecclesia <no-reply@pizzatechnologies.co.ke>")
+PASSWORD_RESET_TIMEOUT = 60 * 60 * 24  # reset links work for a day
+
+# Slowing down password guessing: after this many wrong passwords for one login, wait LOGIN_LOCKOUT_MINUTES.
+LOGIN_MAX_FAILURES = int(os.environ.get("LOGIN_MAX_FAILURES", "5"))
+LOGIN_MAX_FAILURES_PER_IP = int(os.environ.get("LOGIN_MAX_FAILURES_PER_IP", "30"))
+LOGIN_LOCKOUT_MINUTES = int(os.environ.get("LOGIN_LOCKOUT_MINUTES", "15"))
+
+TEST_RUNNER = "tenants.testing.ChurchTestRunner"
 
 SESSION_COOKIE_AGE = int(os.environ.get("SESSION_HOURS", "12")) * 3600
 

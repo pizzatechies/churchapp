@@ -1,0 +1,23 @@
+{% extends "tenants/base.html" %}
+{% block title %}Edit {{ church.name }}{% endblock %}
+{% block content %}
+<nav><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{% url 'platform:dashboard' %}">Churches</a></li><li class="breadcrumb-item"><a href="{% url 'platform:church_detail' church.pk %}">{{ church.name }}</a></li><li class="breadcrumb-item active">Edit</li></ol></nav>
+<h1 class="h3">Edit {{ church.name }}</h1>
+<form method="post" class="card" style="max-width:860px" novalidate>{% csrf_token %}
+  <div class="card-body"><div class="row">
+    {% if form.non_field_errors %}<div class="col-12"><div class="alert alert-danger">{{ form.non_field_errors|join:" " }}</div></div>{% endif %}
+    {% include "includes/field.html" with field=form.name col="col-md-8" %}
+    {% include "includes/field.html" with field=form.country col="col-md-4" %}
+    {% include "includes/field.html" with field=form.plan col="col-md-4" %}
+    {% include "includes/field.html" with field=form.billing_cycle col="col-md-4" %}
+    {% include "includes/field.html" with field=form.is_default col="col-md-4" %}
+    {% include "includes/field.html" with field=form.trial_ends col="col-md-6" %}
+    {% include "includes/field.html" with field=form.paid_until col="col-md-6" %}
+    {% include "includes/field.html" with field=form.contact_name col="col-md-4" %}
+    {% include "includes/field.html" with field=form.contact_phone col="col-md-4" %}
+    {% include "includes/field.html" with field=form.contact_email col="col-md-4" %}
+    {% include "includes/field.html" with field=form.notes col="col-12" %}
+  </div><p class="small text-body-secondary mb-0">The web address name (/church/{{ church.slug }}/) can't be changed, so apps and bookmarks keep working.</p></div>
+  <div class="card-footer bg-transparent"><button class="btn btn-primary">Save</button> <a class="btn btn-outline-secondary" href="{% url 'platform:church_detail' church.pk %}">Cancel</a></div>
+</form>
+{% endblock %}

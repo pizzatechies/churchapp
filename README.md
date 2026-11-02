@@ -68,6 +68,14 @@ It defaults to **Kenya** (Kenya Shillings, M-Pesa, PAYE/NSSF/SHIF/Housing Levy p
 - **Linked bank accounts (bank feeds)**: link any bank or cash account from *Bank accounts → Link account*, in one of two ways:
   - **Statement upload, any bank**: CSV or OFX from Equity, KCB, Co-op, NCBA, Absa, Stanbic, the M-Pesa business portal and others. The header row and columns are found automatically, and re-uploading or overlapping statements never duplicates a line.
   - **Live M-Pesa Paybill or Till**: Safaricom's Daraja C2B API sends each payment the moment it arrives. Gifts go into the day's open offering batch, matched to the giver by the envelope number they type as the account number (or their phone), and to a fund by a code such as `BLD`. The batch is still checked and posted by the finance team.
+
+    **Setting up live M-Pesa** (*Bank accounts → Add M-Pesa account*, then *Link account*). The link page is a four-step checklist:
+    1. *Linked*: payments are recorded in the M-Pesa account. Keep the Paybill as its own account rather than the bank current account, so the bank statement still matches; a live link on a bank account can be moved in one click while it has no payments.
+    2. *Payment address works*: Ecclesia calls its own confirmation address over the internet, as Safaricom will.
+    3. *Registered with Safaricom*: enter the consumer key and secret of the church's app on developer.safaricom.co.ke (used once, never stored), for the live Paybill or the sandbox. Or register the two addresses on the Daraja portal and click *Mark as registered*. **Nothing arrives until this step is done.** For a Till (Buy Goods), use the store/head-office number Safaricom gave you.
+    4. *Payments arriving*: shows the last payment; in the sandbox, *Simulate* asks Safaricom for a test payment.
+
+    On Render's free plan the admin app sleeps after 15 minutes and Safaricom gives up on a sleeping server, so live payments are only reliable on an always-on plan. Upload the M-Pesa portal statement to catch anything missed; nothing is counted twice.
   
   Every line is matched automatically to entries already in the books when there's exactly one candidate. The rest wait in a review list where you match, record (gift, other income, or spending such as bank charges, with a suggested category) or ignore them. Reconciliation can then tick everything the bank feed confirms in one click, and each uploaded statement's closing balance is compared with the books. Linking is read-only: Ecclesia never holds online-banking passwords and can't move money.
 - **Budgets**: monthly budget grid per fund, seeded from last year's actuals, with approval.
@@ -81,6 +89,45 @@ It defaults to **Kenya** (Kenya Shillings, M-Pesa, PAYE/NSSF/SHIF/Housing Levy p
 </p>
 
 ---
+
+## Many churches on one server: the platform console
+
+One Ecclesia server hosts many churches. **Each church has its own PostgreSQL schema**, so one church's members, gifts and books can never appear in another's, and each church has its own logins.
+
+| Address | Who | What |
+|---|---|---|
+| `<admin app>/platform/` | Pizza Technologies' super admins | Onboard churches, plans, payments, usage, suspend/reactivate |
+| `<admin app>/church/<name>/` | That church's staff | Ecclesia Admin for that church |
+| `<members app>/church/<name>/` | That church's members | Ecclesia Connect for that church |
+| `<admin app>/` and `<members app>/` | The church marked "served at the main addresses" | Keeps apps and bookmarks from before multi-church working |
+
+**Onboarding a church** (Platform console → *Onboard a church*): name, web address name, country, plan (Seed KSh 10,000 · Harvest KSh 20,000 · Kingdom KSh 30,000 a month; yearly = 10 months' price), trial length, contact, and the first administrator's username and email. Ecclesia creates the church's schema with the default chart of accounts for its country, creates the administrator, and shows a **temporary password once**. The administrator must choose their own password at first sign-in.
+
+**Monitoring:** the console lists every church with its plan, status (trial, active, overdue, suspended), paid-up date, members and staff against the plan's limits, storage, and last activity; plus monthly recurring revenue and money collected. It shows **counts only, never names or amounts from a church's books**. Record payments (M-Pesa code, months paid) on a church's page to extend its paid-up date; churches see a reminder a week before and when overdue, and their administrators see their plan, usage and payments under *Administration → Subscription*.
+
+**Plan limits** are enforced where records are added: members (Seed 300, Harvest 1,000) and staff logins (Seed 5, Harvest 15); Kingdom is unlimited and can add the church's own web addresses. Edit prices and limits under *Plans*.
+
+**The first super admin** is created on start from `PLATFORM_ADMIN_USERNAME` / `PLATFORM_ADMIN_PASSWORD` / `PLATFORM_ADMIN_EMAIL` (or, if those aren't set, the `ADMIN_*` values). Add more under *Team*.
+
+**Upgrading a single-church server:** on the first start of this version, the existing church is moved, in one transaction, into its own schema (`/church/<name>/`) and marked as served at the main addresses, so nothing changes for its staff, members or apps.
+
+## Passwords, profiles and "Forgot password"
+
+- **Everyone has their own password**: platform super admins, each church's administrators and staff, and members.
+- **Where are the passwords?** They are never stored. Django keeps only a salted one-way hash (PBKDF2), so nobody, including administrators and Pizza Technologies, can read anyone's password. People can only *set* a new one:
+
+  | Who | Sets or resets it where |
+  |---|---|
+  | Anyone, for themselves | *My profile → Change password* (staff), *Me → Change password* (members), *My account* (platform) |
+  | Anyone who forgot it | *Forgot password?* on the sign-in page: a one-day link to the email on their login |
+  | A church's staff | Their administrator: *Users & roles → the person → new password* |
+  | A church's members | The church office: *Members → the member → Members app login* |
+  | A church's administrator | The platform console: *the church → Administrators → New password* |
+
+- A password chosen by someone else is **temporary**: the person must choose their own at first sign-in.
+- **Profiles:** staff edit their name, email and phone under *My profile*; members edit their contact details under *Me*.
+- **Sign-in protection:** after 5 wrong passwords for a login, sign-in pauses for 15 minutes (`LOGIN_MAX_FAILURES`, `LOGIN_LOCKOUT_MINUTES`). Reset requests are limited per address and never reveal whether an email has a login.
+- **Email for "Forgot password"** needs an SMTP service. Set `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD` and `DEFAULT_FROM_EMAIL` (for Gmail: `smtp.gmail.com`, port 587, and an app password from your Google account). Until then the page tells people to ask their administrator.
 
 ## Why Django + PostgreSQL
 
@@ -223,6 +270,12 @@ All settings are environment variables (see `.env.example`).
 | `MPESA_CONSUMER_KEY`, `MPESA_CONSUMER_SECRET` | — | Optional: lets *Link account* register a Paybill/Till's payment address with Safaricom (Daraja). Receiving payments needs no keys |
 | `MPESA_ENVIRONMENT` | `production` | `sandbox` to test against Safaricom's sandbox |
 | `MPESA_ALLOWED_IPS` | — | Optional comma-separated list: only accept M-Pesa payment notices from these addresses |
+| `PLATFORM_ADMIN_USERNAME` / `_PASSWORD` / `_EMAIL` | the `ADMIN_*` values | First platform super admin, created on start if missing |
+| `ECCLESIA_DEFAULT_CHURCH` | — | On a brand-new server, create the first church with this web address name (uses `ADMIN_*`, `CHURCH_NAME`, `CHURCH_COUNTRY`) |
+| `ADMIN_APP_URL` / `MEMBERS_APP_URL` | worked out from the address | The apps' addresses, for links in the platform console |
+| `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `DEFAULT_FROM_EMAIL` | — | SMTP for "Forgot password" emails |
+| `LOGIN_MAX_FAILURES` / `LOGIN_LOCKOUT_MINUTES` | 5 / 15 | Sign-in protection |
+| `ALWAYS_ON` | off | Set to 1 once the admin app runs on an always-on plan (Render's free plan sleeps) |
 | `SESSION_HOURS` | 12 | How long people stay signed in |
 | `DB_SSL_REQUIRE` | off | Require SSL to the database |
 

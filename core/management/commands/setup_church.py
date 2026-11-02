@@ -3,6 +3,7 @@ from django.core.management.base import BaseCommand
 
 from core.permissions import ADMINISTRATOR
 from core.setup import setup_church
+from tenants.commands import add_church_argument, use_church
 
 
 class Command(BaseCommand):
@@ -17,8 +18,10 @@ class Command(BaseCommand):
         parser.add_argument("--admin-username", help="Also create an administrator account with this username")
         parser.add_argument("--admin-email", default="")
         parser.add_argument("--admin-password", help="Password for the administrator account")
+        add_church_argument(parser)
 
     def handle(self, *args, **opts):
+        use_church(opts["church"])
         profile = setup_church(
             church_name=opts["name"], currency_symbol=opts["currency_symbol"],
             currency_code=opts["currency_code"], fiscal_start_month=opts["fiscal_start_month"],

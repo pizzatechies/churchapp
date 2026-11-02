@@ -1,0 +1,26 @@
+{% extends "tenants/base.html" %}
+{% block title %}Plans{% endblock %}
+{% block content %}
+<h1 class="h3 mb-0">Plans</h1>
+<p class="text-body-secondary small">Prices in KSh per month. Empty member or staff limits mean unlimited. A church's limits change as soon as you save; prices apply from its next payment.</p>
+<form method="post">{% csrf_token %}{{ formset.management_form }}
+  <div class="row g-3">
+  {% for form in formset %}
+    <div class="col-lg-4"><div class="card h-100"><div class="card-header">{{ form.instance.name }} <span class="small text-body-secondary">({{ form.instance.code }})</span></div><div class="card-body"><div class="row">
+      {{ form.id }}
+      {% include "includes/field.html" with field=form.name col="col-6" %}
+      {% include "includes/field.html" with field=form.monthly_price col="col-6" %}
+      {% include "includes/field.html" with field=form.tagline col="col-12" %}
+      {% include "includes/field.html" with field=form.max_members col="col-6" %}
+      {% include "includes/field.html" with field=form.max_staff col="col-6" %}
+      {% include "includes/field.html" with field=form.storage_gb col="col-6" %}
+      {% include "includes/field.html" with field=form.yearly_months col="col-6" %}
+      {% include "includes/field.html" with field=form.support col="col-12" %}
+      {% include "includes/field.html" with field=form.custom_domains col="col-6" %}
+      {% include "includes/field.html" with field=form.is_active col="col-6" %}
+    </div></div></div></div>
+  {% endfor %}
+  </div>
+  <button class="btn btn-primary mt-3">Save plans</button>
+</form>
+{% endblock %}

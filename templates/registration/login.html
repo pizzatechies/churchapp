@@ -16,10 +16,11 @@
           <label class="form-label" for="id_username">Username</label>
           <input type="text" name="username" id="id_username" class="form-control" autocomplete="username" required autofocus value="{{ form.username.value|default:'' }}">
         </div>
-        <div class="mb-3">
+        <div class="mb-2">
           <label class="form-label" for="id_password">Password</label>
           <input type="password" name="password" id="id_password" class="form-control" autocomplete="current-password" required>
         </div>
+        <div class="text-end mb-3"><a class="small" href="{% url 'password_reset' %}">Forgot password?</a></div>
         <input type="hidden" name="next" value="{{ next }}">
         <button class="btn btn-primary w-100" type="submit">Sign in</button>
       </form>

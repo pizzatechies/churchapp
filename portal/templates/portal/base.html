@@ -1,5 +1,5 @@
 {% load static %}<!doctype html>
-<html lang="en" data-bs-theme="light">
+<html lang="en" data-bs-theme="light" data-sw="{% url 'service_worker' %}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -31,7 +31,7 @@
     </a>
     {% with path=request.path %}
     <nav class="portal-nav d-none d-md-flex ms-auto" aria-label="Main">
-      <a href="{% url 'portal:home' %}" class="{% if path == '/' %}active{% endif %}">Home</a>
+      <a href="{% url 'portal:home' %}" class="{% if request.resolver_match.url_name == 'home' %}active{% endif %}">Home</a>
       <a href="{% url 'portal:groups' %}" class="{% if '/groups' in path %}active{% endif %}">Groups &amp; fellowships</a>
       <a href="{% url 'portal:sermons' %}" class="{% if '/sermons' in path %}active{% endif %}">Sermons</a>
       {% if church.members_see_own_giving or church.members_see_finances %}<a href="{% url 'portal:giving' %}" class="{% if '/giving' in path or '/church-finances' in path %}active{% endif %}">Giving</a>{% endif %}
@@ -54,7 +54,7 @@
 </main>
 {% with path=request.path %}
 <nav class="portal-tabs d-md-none" aria-label="Main">
-  <a href="{% url 'portal:home' %}" class="{% if path == '/' %}active{% endif %}"><i class="bi bi-house-door"></i><span>Home</span></a>
+  <a href="{% url 'portal:home' %}" class="{% if request.resolver_match.url_name == 'home' %}active{% endif %}"><i class="bi bi-house-door"></i><span>Home</span></a>
   <a href="{% url 'portal:groups' %}" class="{% if '/groups' in path %}active{% endif %}"><i class="bi bi-people"></i><span>Groups</span></a>
   <a href="{% url 'portal:sermons' %}" class="{% if '/sermons' in path %}active{% endif %}"><i class="bi bi-play-circle"></i><span>Sermons</span></a>
   {% if church.members_see_own_giving or church.members_see_finances %}<a href="{% url 'portal:giving' %}" class="{% if '/giving' in path or '/church-finances' in path %}active{% endif %}"><i class="bi bi-heart"></i><span>Giving</span></a>{% endif %}

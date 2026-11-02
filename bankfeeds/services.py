@@ -369,3 +369,15 @@ def feed_entry_line_ids(rec):
     entry_ids |= set(txns.exclude(contribution__isnull=True).values_list("contribution__batch__journal_entry", flat=True))
     entry_ids.discard(None)
     return set(JournalLine.objects.filter(account=rec.account, entry_id__in=entry_ids).values_list("pk", flat=True))
+
+
+def create_mpesa_account(shortcode=""):
+    """A bank-type account for the money that sits in the M-Pesa Paybill/Till before it moves to the bank."""
+    taken = set(Account.objects.values_list("number", flat=True))
+    number = next(str(n) for n in range(1030, 1100) if str(n) not in taken)
+    name = f"M-Pesa Paybill {shortcode}".strip() if shortcode else "M-Pesa Paybill"
+    base, n = name, 2
+    while Account.objects.filter(name=name).exists():
+        name, n = f"{base} ({n})", n + 1
+    return Account.objects.create(number=number, name=name, type=Account.ASSET, subtype="bank", bank_name="Safaricom M-Pesa",
+                                  description="Money paid to the church's M-Pesa Paybill or Till, before it is moved to the bank.")

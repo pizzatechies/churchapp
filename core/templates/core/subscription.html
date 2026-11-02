@@ -1,0 +1,55 @@
+{% extends "base.html" %}{% load humanize %}
+{% block title %}Subscription{% endblock %}
+{% block page_title %}Ecclesia subscription{% endblock %}
+{% block page_subtitle %}<p class="text-body-secondary mb-0">Your plan with Pizza Technologies, what it includes and how much of it you're using.</p>{% endblock %}
+{% block content %}
+<div class="row g-3">
+  <div class="col-xl-8">
+    <div class="card mb-3"><div class="card-body">
+      <div class="d-flex flex-wrap justify-content-between gap-3">
+        <div>
+          <div class="stat-label">Plan</div>
+          <div class="h4 mb-0">{{ account.plan.name }} <span class="badge {% if state.0 == 'active' %}text-bg-success{% elif state.0 == 'trial' %}text-bg-info{% else %}text-bg-warning{% endif %} fs-6 align-middle">{{ state.1 }}</span></div>
+          <div class="text-body-secondary small">{{ account.plan.tagline }}</div>
+        </div>
+        <div class="text-md-end">
+          <div class="stat-label">{{ account.get_billing_cycle_display }} price</div>
+          <div class="h4 mb-0">KSh {{ account.price|floatformat:0|intcomma }}</div>
+          <div class="small text-body-secondary">{% if account.billing_cycle == 'yearly' %}{{ account.plan.yearly_months }} months' price for 12{% else %}per month{% endif %}</div>
+        </div>
+      </div>
+      <hr>
+      <dl class="dl-grid mb-0">
+        {% if account.status == 'trial' and not account.paid_until %}<dt>Free trial ends</dt><dd>{{ account.trial_ends|date:"j F Y"|default:"—" }}</dd>{% endif %}
+        <dt>Paid up to</dt><dd>{% if account.paid_until %}{{ account.paid_until|date:"j F Y" }}{% else %}Not paid yet{% endif %}{% if state.0 == 'overdue' %} <span class="text-negative">· {{ account.days_overdue }} day{{ account.days_overdue|pluralize }} overdue</span>{% endif %}</dd>
+        <dt>Web address name</dt><dd><code>/church/{{ account.slug }}/</code></dd>
+        <dt>Support</dt><dd>{{ account.plan.support }}</dd>
+      </dl>
+    </div></div>
+    <div class="card mb-3"><div class="card-header">Usage</div><div class="card-body"><div class="row g-3">
+      {% for label, used, allowed, over in limits %}
+      <div class="col-md-4">
+        <div class="small text-body-secondary">{{ label }}</div>
+        <div class="fs-5 fw-semibold {% if over %}text-negative{% endif %}">{{ used|intcomma }}{% if allowed %} <span class="fs-6 fw-normal text-body-secondary">of {{ allowed|intcomma }}</span>{% else %} <span class="fs-6 fw-normal text-body-secondary">unlimited</span>{% endif %}</div>
+        {% if allowed %}<div class="progress mt-1" role="progressbar" aria-label="{{ label }}"><div class="progress-bar {% if over %}bg-danger{% endif %}" style="width: {% widthratio used allowed 100 %}%; max-width:100%"></div></div>{% endif %}
+      </div>
+      {% endfor %}
+    </div><p class="small text-body-secondary mb-0 mt-3">Member logins for Ecclesia Connect are unlimited on every plan.</p></div></div>
+    <div class="card table-card"><div class="card-header">Payments</div>
+      <table class="table table-sm mb-0"><thead><tr><th>Date</th><th class="num">Amount</th><th>Reference</th><th>Pays for</th></tr></thead>
+      <tbody>{% for p in payments %}<tr><td>{{ p.paid_on|date:"j M Y" }}</td><td class="num">KSh {{ p.amount|floatformat:2|intcomma }}</td><td class="small">{{ p.reference }}</td><td class="small">{{ p.covers_from|date:"j M Y" }} – {{ p.covers_to|date:"j M Y" }}</td></tr>
+      {% empty %}<tr><td colspan="4" class="small text-body-secondary p-3">No payments yet.</td></tr>{% endfor %}</tbody></table>
+    </div>
+  </div>
+  <div class="col-xl-4">
+    <div class="card"><div class="card-header"><i class="bi bi-phone"></i> How to pay</div><div class="card-body small">
+      <p>Pay Pizza Technologies by M-Pesa or bank transfer, using <strong>{{ account.slug|upper }}</strong> as the account/reference, then send the confirmation to:</p>
+      <ul class="list-unstyled mb-3">
+        <li><i class="bi bi-envelope"></i> <a href="mailto:info@pizzatechnologies.co.ke">info@pizzatechnologies.co.ke</a></li>
+        <li><i class="bi bi-whatsapp"></i> <a href="https://wa.me/254747354677">+254 747 354 677</a> (call or WhatsApp)</li>
+      </ul>
+      <p class="mb-0 text-body-secondary">To change plan or switch to yearly billing (two months free), contact us on the same numbers.</p>
+    </div></div>
+  </div>
+</div>
+{% endblock %}

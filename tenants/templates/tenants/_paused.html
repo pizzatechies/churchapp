@@ -1,0 +1,9 @@
+{% load static %}
+<div class="login-wrap">
+  <div class="card login-card shadow-lg"><div class="card-body p-4 p-md-5 text-center">
+    <img src="{% static 'brand/ecclesia-logo.svg' %}" alt="" width="56" height="56" class="mb-2">
+    <h1 class="h4">{{ church.name }} is paused</h1>
+    <p class="small text-body-secondary">Ecclesia isn't available for {{ church.name }} at the moment{% if church.suspended_reason %} ({{ church.suspended_reason|lower }}){% endif %}. All records are safe.</p>
+    <p class="small mb-0">Church leaders: contact Pizza Technologies at <a href="mailto:info@pizzatechnologies.co.ke">info@pizzatechnologies.co.ke</a> or <a href="https://wa.me/254747354677">+254 747 354 677</a> (call or WhatsApp).</p>
+  </div></div>
+</div>

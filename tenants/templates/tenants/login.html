@@ -1,0 +1,27 @@
+{% extends "tenants/base.html" %}{% load static %}
+{% block title %}Sign in{% endblock %}
+{% block anonymous %}
+<div class="login-wrap">
+  <div class="card login-card shadow-lg">
+    <div class="card-body p-4 p-md-5">
+      <div class="text-center mb-4">
+        <img src="{% static 'brand/ecclesia-logo.svg' %}" alt="" width="64" height="64" class="mb-2">
+        <h1 class="h4 mb-0">Platform console</h1>
+        <p class="text-body-secondary small mb-0">For the Ecclesia team at Pizza Technologies</p>
+      </div>
+      {% if form.non_field_errors %}<div class="alert alert-danger small">{% for e in form.non_field_errors %}{{ e }}{% endfor %}</div>{% endif %}
+      <form method="post">{% csrf_token %}
+        <div class="mb-3"><label class="form-label" for="id_username">Username</label>
+          <input type="text" name="username" id="id_username" class="form-control" autocomplete="username" required autofocus value="{{ form.username.value|default:'' }}"></div>
+        <div class="mb-2"><label class="form-label" for="id_password">Password</label>
+          <input type="password" name="password" id="id_password" class="form-control" autocomplete="current-password" required></div>
+        <div class="text-end mb-3"><a class="small" href="{% url 'platform:password_reset' %}">Forgot password?</a></div>
+        <input type="hidden" name="next" value="{{ next }}">
+        <button class="btn btn-primary w-100" type="submit">Sign in</button>
+      </form>
+      <p class="small text-body-secondary mt-4 mb-0">Church staff and members: sign in at your church's own address, for example <code>/church/yourchurch/</code>.</p>
+    </div>
+  </div>
+  <div class="login-footer"><span>A product of</span><img src="{% static 'brand/pizza-technologies.png' %}" alt="Pizza Technologies"></div>
+</div>
+{% endblock %}

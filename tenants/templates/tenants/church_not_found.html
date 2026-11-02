@@ -1,0 +1,4 @@
+{% extends "tenants/base.html" %}
+{% block title %}Church not found{% endblock %}
+{% block anonymous %}{% include "tenants/_find.html" with not_found=True %}{% endblock %}
+{% block content %}{% include "tenants/_find.html" with not_found=True %}{% endblock %}

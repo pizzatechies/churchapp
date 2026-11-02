@@ -41,8 +41,9 @@ class BankConnection(models.Model):
     )
     method = models.CharField(max_length=12, choices=METHOD_CHOICES, default=STATEMENT)
     shortcode = models.CharField(
-        "Paybill or Till number", max_length=12, blank=True,
-        help_text="The business short code payments are made to, e.g. 247247.",
+        "Paybill or store number", max_length=12, blank=True,
+        help_text="Your Paybill number (e.g. 247247). For a Till (Buy Goods), the store/head-office number "
+                  "Safaricom gave you, not the till number people pay to.",
     )
     token = models.CharField(max_length=64, unique=True, default=new_token, editable=False)
     auto_record_gifts = models.BooleanField(
@@ -58,7 +59,14 @@ class BankConnection(models.Model):
         Account, null=True, blank=True, on_delete=models.SET_NULL, related_name="+",
         limit_choices_to={"type": Account.INCOME}, verbose_name="Default category",
     )
+    PRODUCTION = "production"
+    SANDBOX = "sandbox"
+    ENVIRONMENT_CHOICES = [(PRODUCTION, "Live (production)"), (SANDBOX, "Sandbox (testing)")]
+    environment = models.CharField("Safaricom environment", max_length=12, choices=ENVIRONMENT_CHOICES, default=PRODUCTION)
     registered_at = models.DateTimeField(null=True, blank=True, help_text="When the address was registered with Safaricom.")
+    last_check_at = models.DateTimeField(null=True, blank=True)
+    last_check_ok = models.BooleanField(default=False)
+    last_check_note = models.CharField(max_length=255, blank=True)
     last_received_at = models.DateTimeField(null=True, blank=True)
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+")
     created_at = models.DateTimeField(auto_now_add=True)
